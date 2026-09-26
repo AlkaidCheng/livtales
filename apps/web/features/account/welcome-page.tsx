@@ -8,7 +8,7 @@ import { AccountPage } from "../../components/account-page";
 import { ErrorNotice, LoadingState } from "../../components/feedback";
 import type { HourCycle } from "../../i18n/active-preferences";
 import { isLocale, type LocaleChoice } from "../../i18n/locale-preference";
-import { locales } from "../../i18n/locales";
+import { languageHourCycle, locales } from "../../i18n/locales";
 import { takeAfterSignIn } from "../../lib/after-sign-in";
 import { useAuthSession } from "../../lib/auth-session";
 import { useUpdateAccount } from "../../lib/friend-queries";
@@ -64,6 +64,10 @@ export function WelcomePage() {
     isLocale(user.locale)
       ? user.locale
       : "system");
+  // The clock From language comes to, for the language chosen above.
+  const languageClock = languageHourCycle(
+    languageChoice === "system" ? active : languageChoice,
+  );
   const activeName =
     locales.find((entry) => entry.tag === active)?.native ?? active;
 
@@ -131,6 +135,7 @@ export function WelcomePage() {
         <label className="field">
           <span>{t("welcome.language")}</span>
           <select
+            className="account-select"
             onChange={(event) => {
               const next = event.target.value;
               setLanguage(isLocale(next) ? next : "system");
@@ -148,20 +153,28 @@ export function WelcomePage() {
           </select>
         </label>
         <TimeZoneField
-          hourCycle={hourCycle}
+          hourCycle={hourCycle ?? languageClock}
           onChange={setTimeZone}
           value={timeZone}
         />
         <label className="field">
           <span>{t("welcome.clock")}</span>
           <select
+            className="account-select"
             onChange={(event) => {
               const next = event.target.value;
               setHourCycle(next === "h12" || next === "h23" ? next : null);
             }}
             value={hourCycle ?? ""}
           >
-            <option value="">{t("welcome.clockFromLanguage")}</option>
+            <option value="">
+              {t("welcome.clockFromLanguage", {
+                clock:
+                  languageClock === "h23"
+                    ? t("welcome.twentyFourHour")
+                    : t("welcome.twelveHour"),
+              })}
+            </option>
             <option value="h23">{t("welcome.twentyFourHour")}</option>
             <option value="h12">{t("welcome.twelveHour")}</option>
           </select>

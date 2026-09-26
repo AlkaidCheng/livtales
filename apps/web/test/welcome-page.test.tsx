@@ -112,6 +112,9 @@ describe("the Welcome step", () => {
     expect(zone).toHaveTextContent(/^Device · /);
     const clock = screen.getByRole("combobox", { name: "Clock" });
     expect(clock).toHaveValue("");
+    expect(
+      screen.getByRole("option", { name: "From language (12-hour)" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/detected from this device/)).toBeVisible();
 
     await user.type(name, "Mira Planner");

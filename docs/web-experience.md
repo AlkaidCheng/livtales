@@ -812,7 +812,13 @@ format is From language (the language's convention: 12-hour for English and
 Traditional Chinese, 24-hour for Simplified Chinese), 12-hour, or 24-hour.
 Week starts on is From language (Sunday for English and Traditional Chinese,
 Monday for Simplified Chinese), Monday, or Sunday; the week strip, the month
-grid, the date pickers, and the period labels start on that day. An Event's
+grid, the date pickers, and the period labels start on that day. Each From
+language choice names what it comes to in the display language, as From
+language (12-hour) or From language (Sunday), and Welcome's Clock names it
+for the language chosen above it. The four Language & time controls share
+one menu width and chevron; the zone's button shows the city alone there
+(its list shows the offsets). On a phone every row of the section puts its
+menu under its label at full width, the zone's button with its offset. An Event's
 own time zone field is unchanged; a new Event or schedule item takes the
 account's zone as its default.
 

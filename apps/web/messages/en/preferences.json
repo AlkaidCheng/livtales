@@ -26,7 +26,7 @@
     }
   },
   "timeFormat": "Time format",
-  "fromLanguage": "From language",
+  "fromLanguageChoice": "From language ({choice})",
   "twelveHour": "12-hour",
   "twentyFourHour": "24-hour",
   "now": "Now: {time}",

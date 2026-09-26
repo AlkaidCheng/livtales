@@ -1412,6 +1412,17 @@ h3 {
   grid-column: 1 / -1;
 }
 
+/* The account screens' menus draw the time zone picker's chevron. */
+select.account-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23928880' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 38px;
+  text-overflow: ellipsis;
+}
+
 .check-field {
   align-items: center;
   color: var(--ink);
@@ -9933,6 +9944,18 @@ html:has(.event-create-dialog[open]) {
   padding: 0 8px 0 10px;
 }
 
+/* A menu draws the same chevron as the time zone picker's button, in the
+   faint tone both themes share. */
+.setting-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23928880' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 14px;
+  padding-right: 28px;
+  text-overflow: ellipsis;
+}
+
 .setting-row-control > .setting-select {
   width: 172px;
 }
@@ -10052,7 +10075,7 @@ html:has(.event-create-dialog[open]) {
   gap: 8px;
   min-height: 44px;
   min-width: 0;
-  padding: 10px 10px 10px 12px;
+  padding: 10px 12px;
   text-align: start;
   width: 100%;
 }
@@ -10063,18 +10086,18 @@ html:has(.event-create-dialog[open]) {
   outline: 3px solid var(--focus);
 }
 
+/* In Settings the button is one of the row menus: their width, their
+   chevron, and the city alone (the list shows each zone's offset). */
 .time-zone-trigger.setting-zone {
   background: var(--surface);
   border-color: var(--line);
   border-radius: 8px;
   font-size: 0.82rem;
   gap: 6px;
-  min-height: 0;
   height: 32px;
-  max-width: 260px;
-  min-width: 172px;
-  padding: 0 6px 0 10px;
-  width: auto;
+  min-height: 0;
+  padding: 0 8px 0 10px;
+  width: 172px;
 }
 
 .time-zone-trigger-city {
@@ -10093,7 +10116,7 @@ html:has(.event-create-dialog[open]) {
 }
 
 .time-zone-trigger-chevron {
-  color: var(--muted);
+  color: var(--faint);
   flex: none;
   height: 16px;
   stroke: currentColor;
@@ -10101,6 +10124,22 @@ html:has(.event-create-dialog[open]) {
   stroke-linejoin: round;
   stroke-width: 2;
   width: 16px;
+}
+
+.time-zone-trigger.setting-zone .time-zone-trigger-chevron {
+  height: 14px;
+  width: 14px;
+}
+
+.time-zone-trigger.setting-zone .time-zone-trigger-offset {
+  display: none;
+}
+
+/* Language & time names what From language comes to, so its four menus
+   share a wider column. */
+.setting-rows-menus .setting-row-control > .setting-select,
+.setting-rows-menus .setting-row-control > .time-zone-trigger {
+  width: 200px;
 }
 
 .time-zone-dialog {
@@ -10361,6 +10400,28 @@ html:has(.event-create-dialog[open]) {
   .setting-row-value {
     max-width: 100%;
     text-align: left;
+  }
+
+  /* Language & time puts every menu under its label, full width, so the
+     rows read as one column; the zone's button has room for its offset. */
+  .setting-rows-menus > .setting-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .setting-rows-menus .setting-row-control {
+    display: flex;
+  }
+
+  .setting-rows-menus .setting-row-control > .setting-select,
+  .setting-rows-menus .setting-row-control > .time-zone-trigger {
+    width: 100%;
+  }
+
+  .setting-rows-menus
+    .time-zone-trigger.setting-zone
+    .time-zone-trigger-offset {
+    display: inline;
   }
 }
 

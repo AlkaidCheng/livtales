@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { languageHourCycle } from "../i18n/locales";
 import {
   normalizeSearch,
   parseOffsetQuery,
@@ -146,5 +147,13 @@ describe("search text", () => {
     expect(parseOffsetQuery("8")).toBeNull();
     expect(parseOffsetQuery("+15")).toBeNull();
     expect(parseOffsetQuery("utc")).toBeNull();
+  });
+});
+
+describe("the language's clock", () => {
+  it("is 12-hour for English and Traditional Chinese, 24-hour for Simplified", () => {
+    expect(languageHourCycle("en")).toBe("h12");
+    expect(languageHourCycle("zh-Hant")).toBe("h12");
+    expect(languageHourCycle("zh-Hans")).toBe("h23");
   });
 });

@@ -323,6 +323,10 @@ describe("the Settings dialog", () => {
     const clock = screen.getByRole("combobox", { name: "Time format" });
     await waitFor(() => expect(clock).toHaveValue(""));
     expect(clock).toHaveAccessibleDescription(/^Now: /);
+    // From language names what the language comes to.
+    expect(
+      within(clock).getByRole("option", { name: "From language (12-hour)" }),
+    ).toBeInTheDocument();
     await user.selectOptions(clock, "24-hour");
     expect(clock).toHaveValue("h23");
     await waitFor(() =>
@@ -342,6 +346,9 @@ describe("the Settings dialog", () => {
 
     const week = screen.getByRole("combobox", { name: "Week starts on" });
     expect(week).toHaveValue("");
+    expect(
+      within(week).getByRole("option", { name: "From language (Sunday)" }),
+    ).toBeInTheDocument();
     await user.selectOptions(week, "Monday");
     await waitFor(async () =>
       expect((await storedPreferences()).weekStart).toBe(1),

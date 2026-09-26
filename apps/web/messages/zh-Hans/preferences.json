@@ -26,7 +26,7 @@
     }
   },
   "timeFormat": "时间格式",
-  "fromLanguage": "跟随语言",
+  "fromLanguageChoice": "跟随语言（{choice}）",
   "twelveHour": "12 小时制",
   "twentyFourHour": "24 小时制",
   "now": "现在：{time}",

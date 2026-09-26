@@ -40,6 +40,14 @@ export function languageWeekStart(locale: string): 1 | 7 {
   );
 }
 
+/** The clock the language writes times on, when no clock is chosen. */
+export function languageHourCycle(locale: string): "h12" | "h23" {
+  const cycle = new Intl.DateTimeFormat(locale, {
+    hour: "numeric",
+  }).resolvedOptions().hourCycle;
+  return cycle === "h23" || cycle === "h24" ? "h23" : "h12";
+}
+
 export const defaultLocale: Locale = "en";
 
 /** The cookie that carries an explicit choice; absent means the browser's. */

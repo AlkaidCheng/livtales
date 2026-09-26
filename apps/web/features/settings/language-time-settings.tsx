@@ -10,6 +10,7 @@ import { TimeZonePicker } from "../../components/time-zone-picker";
 import { formatDateTime } from "../../lib/format";
 import { useSessionQuery, useUpdatePreferences } from "../../lib/queries";
 import { useClock } from "../../lib/use-clock";
+import { languageHourCycle, languageWeekStart } from "../../i18n/locales";
 import { useDisplayPreferences } from "../../lib/use-display-preferences";
 import { SettingRow } from "./setting-row";
 
@@ -45,8 +46,13 @@ export function LanguageTimeSettings() {
     pending.weekStart !== undefined
       ? pending.weekStart
       : (user?.weekStart ?? null);
+  // What From language comes to in the display language.
+  const languageClock =
+    languageHourCycle(locale) === "h23" ? t("twentyFourHour") : t("twelveHour");
+  const languageDay =
+    languageWeekStart(locale) === 1 ? t("monday") : t("sunday");
   return (
-    <div className="setting-rows">
+    <div className="setting-rows setting-rows-menus">
       <SettingRow label={t("language")}>
         {(control) => (
           <LocaleControl
@@ -76,7 +82,9 @@ export function LanguageTimeSettings() {
             }}
             value={hourCycle ?? ""}
           >
-            <option value="">{t("fromLanguage")}</option>
+            <option value="">
+              {t("fromLanguageChoice", { choice: languageClock })}
+            </option>
             <option value="h12">{t("twelveHour")}</option>
             <option value="h23">{t("twentyFourHour")}</option>
           </select>
@@ -93,7 +101,9 @@ export function LanguageTimeSettings() {
             }}
             value={weekStart ?? ""}
           >
-            <option value="">{t("fromLanguage")}</option>
+            <option value="">
+              {t("fromLanguageChoice", { choice: languageDay })}
+            </option>
             <option value={1}>{t("monday")}</option>
             <option value={7}>{t("sunday")}</option>
           </select>
