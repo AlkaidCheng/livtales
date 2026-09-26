@@ -68,6 +68,17 @@ beforeEach(async () => {
   );
 });
 
+beforeEach(() => {
+  for (const method of ["showModal", "close"] as const) {
+    Object.defineProperty(HTMLDialogElement.prototype, method, {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        this.toggleAttribute("open", method === "showModal");
+      },
+    });
+  }
+});
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -98,20 +109,31 @@ describe("the Welcome step", () => {
       screen.getByRole("option", { name: "Browser default (English)" }),
     ).toBeVisible();
     const zone = screen.getByRole("combobox", { name: "Time zone" });
-    expect(zone).toHaveValue("");
-    expect(screen.getByRole("option", { name: /^Device: / })).toBeVisible();
+    expect(zone).toHaveTextContent(/^Device · /);
     const clock = screen.getByRole("combobox", { name: "Clock" });
     expect(clock).toHaveValue("");
     expect(screen.getByText(/detected from this device/)).toBeVisible();
 
     await user.type(name, "Mira Planner");
     await user.selectOptions(clock, "h23");
+    // The zone list finds a zone by its country's name, in any language
+    // the app speaks, and shows its time on the clock just chosen.
+    await user.click(zone);
+    await user.type(
+      screen.getByRole("combobox", { name: "Search time zones" }),
+      "新西兰",
+    );
+    const auckland = screen.getByRole("option", { name: /^Auckland/ });
+    expect(auckland).toHaveTextContent(/New Zealand/);
+    expect(auckland).toHaveTextContent(/\b\d{2}:\d{2}\b/);
+    await user.click(auckland);
+    expect(zone).toHaveTextContent(/^Auckland/);
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/events"));
     expect(requests).toContainEqual({
       method: "PATCH",
       path: "/api/auth/me",
-      body: { hourCycle: "h23" },
+      body: { timeZone: "Pacific/Auckland", hourCycle: "h23" },
     });
     expect(requests).toContainEqual({
       method: "PATCH",
@@ -121,6 +143,7 @@ describe("the Welcome step", () => {
     const me = await (await store.fetch("/api/auth/session")).json();
     expect(me.user).toMatchObject({
       displayName: "Mira Planner",
+      timeZone: "Pacific/Auckland",
       hourCycle: "h23",
     });
     expect(me.user.onboardedAt).not.toBeNull();

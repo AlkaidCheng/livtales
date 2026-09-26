@@ -147,23 +147,25 @@ export function WelcomePage() {
             ))}
           </select>
         </label>
-        <div className="account-row">
-          <TimeZoneField onChange={setTimeZone} value={timeZone} />
-          <label className="field">
-            <span>{t("welcome.clock")}</span>
-            <select
-              onChange={(event) => {
-                const next = event.target.value;
-                setHourCycle(next === "h12" || next === "h23" ? next : null);
-              }}
-              value={hourCycle ?? ""}
-            >
-              <option value="">{t("welcome.clockFromLanguage")}</option>
-              <option value="h23">{t("welcome.twentyFourHour")}</option>
-              <option value="h12">{t("welcome.twelveHour")}</option>
-            </select>
-          </label>
-        </div>
+        <TimeZoneField
+          hourCycle={hourCycle}
+          onChange={setTimeZone}
+          value={timeZone}
+        />
+        <label className="field">
+          <span>{t("welcome.clock")}</span>
+          <select
+            onChange={(event) => {
+              const next = event.target.value;
+              setHourCycle(next === "h12" || next === "h23" ? next : null);
+            }}
+            value={hourCycle ?? ""}
+          >
+            <option value="">{t("welcome.clockFromLanguage")}</option>
+            <option value="h23">{t("welcome.twentyFourHour")}</option>
+            <option value="h12">{t("welcome.twelveHour")}</option>
+          </select>
+        </label>
         <p className="account-hint">{t("welcome.hint")}</p>
         {preferences.isError ? <ErrorNotice error={preferences.error} /> : null}
         {account.isError ? <ErrorNotice error={account.error} /> : null}

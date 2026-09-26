@@ -349,31 +349,39 @@ describe("the Settings dialog", () => {
     expect(activeTimePreferences().weekStart).toBe(1);
     expect(week).toHaveValue("1");
 
+    // The zone is a picker: its button names the device's zone until one
+    // is chosen, and opens a list that finds a zone by city or country.
     const zone = screen.getByRole("combobox", { name: "Time zone" });
-    expect(zone).toHaveValue("");
+    expect(zone).toHaveTextContent(/^Device · /);
     expect(zone).toHaveAccessibleDescription(
       "Times are shown in this zone. Device follows wherever you are.",
     );
+    await user.click(zone);
+    const picker = screen.getByRole("dialog", { name: "Time zone" });
+    const search = within(picker).getByRole("combobox", {
+      name: "Search time zones",
+    });
+    expect(search).toHaveFocus();
     expect(
-      within(zone).getByRole("option", { name: /^Device: / }),
-    ).toBeVisible();
-    await user.type(
-      screen.getByRole("searchbox", { name: "Search time zones" }),
-      "tokyo",
-    );
+      within(picker).getByRole("option", { name: /^Device time zone/ }),
+    ).toHaveAttribute("aria-selected", "true");
+    await user.type(search, "japan");
+    const tokyo = within(picker).getByRole("option", { name: /^Tokyo/ });
+    expect(tokyo).toHaveTextContent("UTC+09:00");
     expect(
-      within(zone).getByRole("option", { name: /^Tokyo \(UTC\+09:00\)$/ }),
-    ).toBeVisible();
-    expect(
-      within(zone).queryByRole("option", { name: /^Shanghai/ }),
+      within(picker).queryByRole("option", { name: /^Shanghai/ }),
     ).toBeNull();
-    await user.selectOptions(zone, "Asia/Tokyo");
+    await user.keyboard("{Enter}");
     await waitFor(async () =>
       expect((await storedPreferences()).timeZone).toBe("Asia/Tokyo"),
     );
     expect(activeTimePreferences().timeZone).toBe("Asia/Tokyo");
-    expect(zone).toHaveValue("Asia/Tokyo");
-    await user.selectOptions(zone, "");
+    expect(screen.queryByRole("dialog", { name: "Time zone" })).toBeNull();
+    expect(zone).toHaveTextContent(/^TokyoUTC\+09:00$/);
+    expect(zone).toHaveFocus();
+    // The device's zone is the first row of the list with no search.
+    await user.click(zone);
+    await user.click(screen.getByRole("option", { name: /^Device time zone/ }));
     await waitFor(async () =>
       expect((await storedPreferences()).timeZone).toBeNull(),
     );

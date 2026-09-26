@@ -142,17 +142,28 @@ test("keeps the language, clock, zone, and week on the account and applies them 
   await expect(now).toHaveText(/\d{2}:\d{2}$/);
   await expect(now).not.toHaveText(/[AP]M$/);
 
-  // A chosen zone moves the task's clock; the search narrows the list.
+  // A chosen zone moves the task's clock. The picker opens over Settings,
+  // finds a zone by city or country, and Escape closes it alone.
   const zone = page.getByRole("combobox", { name: "Time zone", exact: true });
-  await expect(zone).toHaveValue("");
-  await page
-    .getByRole("searchbox", { name: "Search time zones", exact: true })
-    .fill("utc");
-  await expect(
-    zone.getByRole("option", { name: /^UTC \(UTC\+00:00\)$/ }),
-  ).toBeAttached();
-  await zone.selectOption("UTC");
-  await expect(zone).toHaveValue("UTC");
+  await expect(zone).toContainText(/^Device · /);
+  await zone.click();
+  const zones = page.getByRole("dialog", { name: "Time zone", exact: true });
+  const search = zones.getByRole("combobox", {
+    name: "Search time zones",
+    exact: true,
+  });
+  await expect(search).toBeFocused();
+  await search.fill("iceland");
+  await expect(zones.getByRole("option").first()).toContainText("Reykjavik");
+  await page.keyboard.press("Escape");
+  await expect(zones).toHaveCount(0);
+  await expect(settings).toBeVisible();
+  await expect(zone).toBeFocused();
+  await zone.click();
+  await search.fill("utc");
+  await zones.getByRole("option", { name: /^UTC/ }).first().click();
+  await expect(zones).toHaveCount(0);
+  await expect(zone).toHaveText(/^UTCUTC\+00:00$/);
 
   // The week starts on Monday once chosen, whatever the language says.
   await choose(page, "Week starts on", "Monday");
@@ -181,7 +192,7 @@ test("keeps the language, clock, zone, and week on the account and applies them 
   await expect(
     page.getByRole("combobox", { name: "Week starts on", exact: true }),
   ).toHaveValue("1");
-  await expect(zone).toHaveValue("UTC");
+  await expect(zone).toHaveText(/^UTCUTC\+00:00$/);
   await expect(language).toHaveValue("en");
 
   // Sign out everywhere ends this session too.
