@@ -382,7 +382,8 @@ test("opens Settings over an event's view and returns to it as it was left @webk
 
   // Every section's rows fit it too: a control too wide for its label's
   // line moves under the label, and nothing in the section scrolls
-  // sideways.
+  // sideways. Language & time keeps each menu beside its label, with the
+  // caption under both.
   const content = settings.locator(".section-dialog-content");
   for (const name of ["General", "Language & time", "Appearance"]) {
     await sections.getByRole("button", { name, exact: true }).click();
@@ -399,12 +400,18 @@ test("opens Settings over an event's view and returns to it as it was left @webk
       const zone = await settings
         .getByRole("combobox", { name: "Time zone", exact: true })
         .boundingBox();
+      const label = await settings
+        .getByText("Time zone", { exact: true })
+        .boundingBox();
       const caption = await settings
         .getByText(/^Times are shown in this zone\./u)
         .boundingBox();
-      expect(zone?.y).toBeGreaterThanOrEqual(
-        (caption?.y ?? Number.POSITIVE_INFINITY) + (caption?.height ?? 0),
-      );
+      const area = await content.boundingBox();
+      if (!zone || !label || !caption || !area)
+        throw new Error("The time zone row is not laid out.");
+      expect(zone.y).toBeLessThan(label.y + label.height);
+      expect(caption.y).toBeGreaterThanOrEqual(zone.y + zone.height - 1);
+      expect(zone.x + zone.width).toBeLessThanOrEqual(area.x + area.width);
     }
   }
 });
