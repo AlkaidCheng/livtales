@@ -282,7 +282,7 @@ test("someone new signs up through the link, completes Welcome, and accepts @web
   await page.getByRole("button", { name: "Confirm" }).click();
   // Welcome first, then back to the link, where Accept is explicit.
   await expect(page).toHaveURL(/\/welcome$/u);
-  await page.getByRole("textbox", { name: "Name" }).fill(`Dan ${tag}`);
+  await page.getByRole("textbox", { name: "Display name" }).fill(`Dan ${tag}`);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(new RegExp(`/invite/${token}$`, "u"));
   await expect(page.getByText("Come along.")).toBeVisible();

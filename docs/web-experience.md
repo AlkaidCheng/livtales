@@ -18,8 +18,9 @@ sentence and takes the six-digit code sent to it (Send a new code issues
 another; a sign-in attempt on an unverified address also sends one and
 lands on the same screen; the screen opened by hand asks for the address
 too). The first sign-in of a new account then opens Welcome (`/welcome`),
-once: the account's `@username` and email at the top, then the Name
-(required), the Language (Browser default, or one of the languages), the
+once: the account's `@username` and email at the top, then the Display name
+(required; a nickname or first name, which friends and people you share
+with see, with autofill offering a nickname rather than a full name), the Language (Browser default, or one of the languages), the
 Time zone (the zone picker described under Settings) and the Clock (the
 device's until changed), each on a row of its own, and Continue, which
 opens the app; the step comes back until it is completed, and the
@@ -766,7 +767,7 @@ whose control does not fit beside its name puts the control under it; a
 switch always stays beside its name.
 
 General holds
-the Name, changed here with Save name, the username as chosen at sign-up,
+the Display name, changed here with Save name, the username as chosen at sign-up,
 which cannot be changed, and the email as the account holds it; Who can
 find you, under its own caption, with By username always on,
 and By name and By email as switches the account turns off to be left out of

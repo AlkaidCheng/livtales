@@ -99,7 +99,7 @@ describe("the Welcome step", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Welcome to LivTales" }),
     ).toBeVisible();
-    const name = screen.getByRole("textbox", { name: "Name" });
+    const name = screen.getByRole("textbox", { name: "Display name" });
     expect(name).toHaveValue("");
     expect(name).toBeRequired();
     expect(screen.getByRole("combobox", { name: "Language" })).toHaveValue(
@@ -160,7 +160,7 @@ describe("the Welcome step", () => {
     );
     render(<WelcomePage />, { wrapper });
     await user.type(
-      await screen.findByRole("textbox", { name: "Name" }),
+      await screen.findByRole("textbox", { name: "Display name" }),
       "Mira Planner",
     );
     await user.click(screen.getByRole("button", { name: "Continue" }));
@@ -185,6 +185,6 @@ describe("the Welcome step", () => {
     await waitFor(() =>
       expect(router.replace).toHaveBeenCalledWith("/sign-in"),
     );
-    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Display name" })).toBeNull();
   });
 });

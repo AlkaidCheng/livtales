@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
 
 import { AccountPage } from "../../components/account-page";
 import { ErrorNotice, LoadingState } from "../../components/feedback";
@@ -40,6 +40,9 @@ export function WelcomePage() {
   const adoptLocale = useAdoptAccountLocale();
   const user = session.data?.user;
   const [name, setName] = useState("");
+  const nameId = useId();
+  const nameLabelId = `${nameId}-label`;
+  const nameHintId = `${nameId}-hint`;
   const [language, setLanguage] = useState<LocaleChoice | null>(null);
   const [timeZone, setTimeZone] = useState<string | null>(null);
   const [hourCycle, setHourCycle] = useState<HourCycle | null>(null);
@@ -123,14 +126,20 @@ export function WelcomePage() {
         <h1 className="account-title">{t("welcome.title")}</h1>
         <p className="account-intro">{t("welcome.intro")}</p>
         <label className="field">
-          <span>{t("welcome.name")}</span>
+          <span id={nameLabelId}>{t("welcome.name")}</span>
           <input
-            autoComplete="name"
+            aria-describedby={nameHintId}
+            aria-labelledby={nameLabelId}
+            autoComplete="nickname"
             maxLength={120}
             onChange={(event) => setName(event.target.value)}
+            placeholder={t("welcome.namePlaceholder")}
             required
             value={name}
           />
+          <span className="field-hint-line" id={nameHintId}>
+            {t("welcome.nameHint")}
+          </span>
         </label>
         <label className="field">
           <span>{t("welcome.language")}</span>

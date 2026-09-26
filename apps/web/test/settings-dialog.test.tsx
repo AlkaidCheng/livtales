@@ -160,7 +160,7 @@ describe("the Settings dialog", () => {
       within(dialog).getByRole("heading", { level: 2, name: "General" }),
     ).toBeVisible();
     await waitFor(() =>
-      expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue(
+      expect(screen.getByRole("textbox", { name: "Display name" })).toHaveValue(
         "Sample planner",
       ),
     );
@@ -248,7 +248,7 @@ describe("the Settings dialog", () => {
   it("changes the name through PATCH /api/account and keeps it on the session", async () => {
     const user = userEvent.setup();
     renderAt("general");
-    const name = await screen.findByRole("textbox", { name: "Name" });
+    const name = await screen.findByRole("textbox", { name: "Display name" });
     await waitFor(() => expect(name).toHaveValue("Sample planner"));
     const save = screen.getByRole("button", { name: "Save name" });
     expect(save).toBeDisabled();

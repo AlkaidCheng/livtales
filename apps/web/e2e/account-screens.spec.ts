@@ -53,12 +53,14 @@ test("creates an account with a username, confirms the code, completes the Welco
   await expect(page).toHaveURL(/\/welcome$/u);
   await expect(page.getByText(`@${username}`)).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("");
+  await expect(page.getByRole("textbox", { name: "Display name" })).toHaveValue(
+    "",
+  );
   await expect(page.getByRole("combobox", { name: "Language" })).toHaveValue(
     "system",
   );
   await page.screenshot({ path: testInfo.outputPath("welcome.png") });
-  await page.getByRole("textbox", { name: "Name" }).fill(`Mira ${tag}`);
+  await page.getByRole("textbox", { name: "Display name" }).fill(`Mira ${tag}`);
   await page.getByRole("combobox", { name: "Clock" }).selectOption("h23");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(/\/events$/u);
@@ -72,7 +74,7 @@ test("creates an account with a username, confirms the code, completes the Welco
   // The old Settings address opens Settings over Events.
   await page.goto("/settings");
   await expect(page).toHaveURL(/\/events\?settings=general$/u);
-  await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue(
+  await expect(page.getByRole("textbox", { name: "Display name" })).toHaveValue(
     `Mira ${tag}`,
   );
   await page.goto("/events?settings=language");
