@@ -108,7 +108,7 @@ export async function exerciseComponentShortcuts(
   await page.keyboard.press("Escape");
   await expect(add).toBeFocused();
   await setKeyboardPreferences(page, "reset", async (section) => {
-    await expect(preference(section)).toHaveValue("disabled");
+    await expect(preference(section)).toHaveText("Off");
   });
   await expect(add).toHaveAttribute("aria-keyshortcuts", "/");
 }

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
 import { chooseLayout } from "./helpers/component-views";
+import { chooseFromMenu } from "./helpers/menu";
 import { setDue } from "./helpers/date-rows";
 import { openEventView } from "./helpers/event-view";
 import { expectHorizontalReflow } from "./helpers/page-navigation";
@@ -61,8 +62,8 @@ function shown(
 /** Chooses an option from a Settings row's menu, which then shows it. */
 async function choose(page: Page, menu: string, option: string) {
   const select = page.getByRole("combobox", { name: menu, exact: true });
-  await select.selectOption({ label: option });
-  await expect(select.locator("option:checked")).toHaveText(option);
+  await chooseFromMenu(page, select, option);
+  await expect(select).toHaveText(option);
 }
 
 test("keeps the language, clock, zone, and week on the account and applies them everywhere @webkit-desktop", async ({
@@ -124,15 +125,17 @@ test("keeps the language, clock, zone, and week on the account and applies them 
     name: "Language",
     exact: true,
   });
-  await language.selectOption({ label: hans.simplified });
+  await chooseFromMenu(page, language, hans.simplified);
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-Hans");
   await expect(
     page.getByRole("dialog", { name: hans.settings, exact: true }),
   ).toBeVisible();
   await expect(page.locator(".workspace-nav")).toContainText(hans.people);
-  await page
-    .getByRole("combobox", { name: hans.language, exact: true })
-    .selectOption({ label: "English" });
+  await chooseFromMenu(
+    page,
+    page.getByRole("combobox", { name: hans.language, exact: true }),
+    "English",
+  );
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
   // A 24-hour clock changes every time shown, the Now line included.
@@ -188,12 +191,12 @@ test("keeps the language, clock, zone, and week on the account and applies them 
   await expect(page).toHaveURL(/\/events\?settings=language$/u);
   await expect(
     page.getByRole("combobox", { name: "Time format", exact: true }),
-  ).toHaveValue("h23");
+  ).toHaveText("24-hour");
   await expect(
     page.getByRole("combobox", { name: "Week starts on", exact: true }),
-  ).toHaveValue("1");
+  ).toHaveText("Monday");
   await expect(zone).toHaveText(/^UTCUTC\+00:00$/);
-  await expect(language).toHaveValue("en");
+  await expect(language).toHaveText("English");
 
   // Sign out everywhere ends this session too.
   await sections.getByRole("button", { name: "General", exact: true }).click();

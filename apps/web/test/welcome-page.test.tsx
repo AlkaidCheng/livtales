@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "../app/providers";
 import { WelcomePage } from "../features/account/welcome-page";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
+import { chooseFromMenu } from "./helpers/menu";
 
 const router = vi.hoisted(() => ({
   push: vi.fn(),
@@ -102,23 +103,17 @@ describe("the Welcome step", () => {
     const name = screen.getByRole("textbox", { name: "Display name" });
     expect(name).toHaveValue("");
     expect(name).toBeRequired();
-    expect(screen.getByRole("combobox", { name: "Language" })).toHaveValue(
-      "system",
-    );
     expect(
-      screen.getByRole("option", { name: "Browser default (English)" }),
-    ).toBeVisible();
+      screen.getByRole("combobox", { name: "Language" }),
+    ).toHaveTextContent("Browser default (English)");
     const zone = screen.getByRole("combobox", { name: "Time zone" });
     expect(zone).toHaveTextContent(/^Device · /);
     const clock = screen.getByRole("combobox", { name: "Clock" });
-    expect(clock).toHaveValue("");
-    expect(
-      screen.getByRole("option", { name: "From language (12-hour)" }),
-    ).toBeInTheDocument();
+    expect(clock).toHaveTextContent("From language (12-hour)");
     expect(screen.getByText(/detected from this device/)).toBeVisible();
 
     await user.type(name, "Mira Planner");
-    await user.selectOptions(clock, "h23");
+    await chooseFromMenu(user, clock, "24-hour");
     // The zone list finds a zone by its country's name, in any language
     // the app speaks, and shows its time on the clock just chosen.
     await user.click(zone);

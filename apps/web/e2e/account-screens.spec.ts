@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test } from "./fixtures";
 import { latestCodeFor } from "./helpers/mailbox";
+import { chooseFromMenu } from "./helpers/menu";
 
 test("creates an account with a username, confirms the code, completes the Welcome step, and signs in by username @webkit-desktop", async ({
   page,
@@ -56,12 +57,16 @@ test("creates an account with a username, confirms the code, completes the Welco
   await expect(page.getByRole("textbox", { name: "Display name" })).toHaveValue(
     "",
   );
-  await expect(page.getByRole("combobox", { name: "Language" })).toHaveValue(
-    "system",
+  await expect(page.getByRole("combobox", { name: "Language" })).toHaveText(
+    /^Browser default/,
   );
   await page.screenshot({ path: testInfo.outputPath("welcome.png") });
   await page.getByRole("textbox", { name: "Display name" }).fill(`Mira ${tag}`);
-  await page.getByRole("combobox", { name: "Clock" }).selectOption("h23");
+  await chooseFromMenu(
+    page,
+    page.getByRole("combobox", { name: "Clock" }),
+    "24-hour",
+  );
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(/\/events$/u);
   await expect(
@@ -78,8 +83,8 @@ test("creates an account with a username, confirms the code, completes the Welco
     `Mira ${tag}`,
   );
   await page.goto("/events?settings=language");
-  await expect(page.getByRole("combobox", { name: "Time format" })).toHaveValue(
-    "h23",
+  await expect(page.getByRole("combobox", { name: "Time format" })).toHaveText(
+    "24-hour",
   );
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Settings" })).toHaveCount(0);

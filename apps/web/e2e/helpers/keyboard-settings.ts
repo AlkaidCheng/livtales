@@ -1,4 +1,12 @@
 import { expect, type Locator, type Page } from "@playwright/test";
+import { chooseFromMenu } from "./menu";
+
+/** How the Add a component menu names each binding. */
+const componentChoices = {
+  slash: "/",
+  "modified-slash": /\+ \/$/,
+  disabled: "Off",
+} as const;
 
 /** The Keyboard section of Settings, where the shortcut preferences live. */
 export const keyboardSection = (page: Page) =>
@@ -88,9 +96,11 @@ export async function setKeyboardPreferences(
         .getByRole("switch", { name: "Open Search", exact: true })
         .setChecked(preferences.command === "enabled");
     if (preferences.component !== undefined)
-      await section
-        .getByRole("combobox", { name: "Add a component", exact: true })
-        .selectOption(preferences.component);
+      await chooseFromMenu(
+        page,
+        section.getByRole("combobox", { name: "Add a component", exact: true }),
+        componentChoices[preferences.component],
+      );
     if (preferences.editor !== undefined)
       await section
         .getByRole("switch", { name: "Submit an editor", exact: true })

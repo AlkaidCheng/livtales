@@ -22,6 +22,7 @@ import {
   timeZoneRegions,
 } from "../lib/time-zones";
 import { useDisplayPreferences } from "../lib/use-display-preferences";
+import { openPickerPanel, revealRow } from "../lib/picker-panel";
 import { isKnownTimeZone, zoneOffsetLabel } from "../lib/zone";
 import { CheckIcon, ChevronDownIcon, SearchIcon } from "./icons";
 
@@ -69,22 +70,6 @@ function knownTimeZones(chosen: string | null): readonly string[] {
 const page = 8;
 
 /**
- * Scrolls the list, and only the list, so the row shows below the region
- * label that sticks to its top: into the middle when `center`, else by
- * the least distance.
- */
-function reveal(list: HTMLElement | null, row: Element | null, center = false) {
-  if (list === null || !(row instanceof HTMLElement)) return;
-  const label = 32;
-  const top = row.offsetTop;
-  const bottom = top + row.offsetHeight;
-  if (center) list.scrollTop = top - (list.clientHeight - row.offsetHeight) / 2;
-  else if (top - label < list.scrollTop) list.scrollTop = top - label;
-  else if (bottom > list.scrollTop + list.clientHeight)
-    list.scrollTop = bottom - list.clientHeight;
-}
-
-/**
  * A time zone field: a button naming the chosen zone (or the device's) that
  * opens a searchable list. The search finds a zone by its city, by its
  * country in the reader's language, English, or Chinese, by its name or
@@ -101,7 +86,8 @@ export function TimeZonePicker({
   onChange,
   id,
   className,
-  align = "start",
+  variant = "field",
+  align = variant === "compact" ? "end" : "start",
   hourCycle,
   ...described
 }: {
@@ -109,6 +95,8 @@ export function TimeZonePicker({
   readonly onChange: (timeZone: string | null) => void;
   readonly id?: string | undefined;
   readonly className?: string | undefined;
+  /** The look of a form's full-width field, or of a Settings row's menu. */
+  readonly variant?: "field" | "compact";
   /** Which edge of the button the list lines up with. */
   readonly align?: "start" | "end";
   /** The clock the rows' times use; the account's when not given. */
@@ -223,7 +211,9 @@ export function TimeZonePicker({
     const choice = choices[index];
     if (choice === undefined) return;
     setActiveKey(choice.key);
-    reveal(list.current, document.getElementById(optionId(choice.key)));
+    revealRow(list.current, document.getElementById(optionId(choice.key)), {
+      top: 32,
+    });
   }
 
   function close() {
@@ -237,44 +227,22 @@ export function TimeZonePicker({
     close();
   }
 
-  // Opening shows the list modally over whatever holds the field (a dialog
-  // included), next to the button, and starts on the chosen zone.
+  // Opening shows the list next to the button and starts on the chosen zone.
   useLayoutEffect(() => {
-    const element = dialog.current;
+    const panel = dialog.current;
     const anchor = button.current;
-    if (!open || element === null || anchor === null) return;
-    if (!element.open) element.showModal?.();
-    const sheet =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(max-width: 560px)").matches;
-    const place = element.style;
-    for (const property of ["left", "top", "bottom", "width", "max-height"])
-      place.removeProperty(property);
-    if (!sheet) {
-      // Below the button when the list fits there, else on the roomier
-      // side; the list keeps to the button's edge as its matches shrink it.
-      const rect = anchor.getBoundingClientRect();
-      const width = Math.min(Math.max(rect.width, 400), window.innerWidth - 24);
-      const below = window.innerHeight - rect.bottom - 18;
-      const above = rect.top - 18;
-      const downward = below >= 320 || below >= above;
-      const left = align === "end" ? rect.right - width : rect.left;
-      place.left = `${Math.max(12, Math.min(left, window.innerWidth - width - 12))}px`;
-      place.width = `${width}px`;
-      place.maxHeight = `${Math.min(440, downward ? below : above)}px`;
-      if (downward) place.top = `${rect.bottom + 6}px`;
-      else place.bottom = `${window.innerHeight - rect.top + 6}px`;
-    }
+    if (!open || panel === null || anchor === null) return;
+    openPickerPanel(panel, anchor, { align, minWidth: 400, maxHeight: 440 });
     field.current?.focus();
   }, [open, align]);
 
   // The list opens, and returns from a search, on the chosen zone.
   useLayoutEffect(() => {
     if (!open || !browsing) return;
-    reveal(
+    revealRow(
       list.current,
       list.current?.querySelector('[aria-selected="true"]') ?? null,
-      true,
+      { center: true },
     );
   }, [open, browsing]);
 
@@ -362,20 +330,26 @@ export function TimeZonePicker({
         aria-controls={open ? dialogId : undefined}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className={["time-zone-trigger", className].filter(Boolean).join(" ")}
+        className={[
+          "picker-trigger",
+          variant === "compact" && "is-compact",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
         id={id}
         onClick={show}
         ref={button}
         role="combobox"
         type="button"
       >
-        <span className="time-zone-trigger-city">
+        <span className="picker-trigger-value">
           {value === null
             ? picker("deviceChoice", { city: chosenCity })
             : chosenCity}
         </span>
         <span className="time-zone-trigger-offset">{chosenOffset}</span>
-        <ChevronDownIcon className="time-zone-trigger-chevron" />
+        <ChevronDownIcon className="picker-trigger-chevron" />
       </button>
       {/* The panel lives at the document's end, clear of the styles of the
           form or row that holds the button. */}
@@ -383,7 +357,7 @@ export function TimeZonePicker({
         ? createPortal(
             <dialog
               aria-label={t("timeZone")}
-              className="time-zone-dialog"
+              className="picker-panel time-zone-panel"
               id={dialogId}
               // The list closes alone: a dialog or sheet holding the field
               // hears neither the Escape nor the cancel.

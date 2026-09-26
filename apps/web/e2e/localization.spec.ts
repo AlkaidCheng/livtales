@@ -7,6 +7,7 @@ import {
   workspaceNavigation,
 } from "./helpers/quiet-chrome";
 import { setDates } from "./helpers/date-rows";
+import { chooseFromMenu } from "./helpers/menu";
 import { openEventView } from "./helpers/event-view";
 
 // The Chinese strings the journey looks for, as escapes so the spec stays
@@ -98,9 +99,11 @@ async function chooseLanguage(
       response.url().endsWith("/api/auth/me") &&
       response.ok(),
   );
-  await page
-    .getByRole("combobox", { name: names.languageMenu, exact: true })
-    .selectOption({ label: language });
+  await chooseFromMenu(
+    page,
+    page.getByRole("combobox", { name: names.languageMenu, exact: true }),
+    language,
+  );
   await kept;
 }
 

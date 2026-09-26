@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import type { TaskResponse } from "@livtales/schemas";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
@@ -17,6 +17,7 @@ import { loadMessages } from "../i18n/messages";
 import { type Locale, localeCookie } from "../i18n/locales";
 import { formatDateTime } from "../lib/format";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
+import { chooseFromMenu } from "./helpers/menu";
 
 const router = vi.hoisted(() => ({
   push: vi.fn(),
@@ -31,6 +32,14 @@ vi.mock("next/navigation", () => ({
 let store: SandboxStore;
 
 beforeEach(() => {
+  for (const method of ["showModal", "close"] as const) {
+    Object.defineProperty(HTMLDialogElement.prototype, method, {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        this.toggleAttribute("open", method === "showModal");
+      },
+    });
+  }
   store = new SandboxStore({ getItem: () => null, setItem: () => undefined });
   vi.stubGlobal("localStorage", window.sessionStorage);
   window.sessionStorage.setItem(
@@ -80,7 +89,7 @@ function ChoiceHarness({
   return (
     <NextIntlClientProvider locale={locale} messages={catalogs[locale]}>
       <LocaleSync />
-      <LocaleControl />
+      <LocaleControl label="Language" />
     </NextIntlClientProvider>
   );
 }
@@ -94,18 +103,15 @@ it("stores the chosen language in the cookie and puts it on the document", async
   };
   render(<ChoiceHarness catalogs={catalogs} />);
   const language = screen.getByRole("combobox");
-  expect(language).toHaveValue("system");
-  expect(
-    within(language).getByRole("option", { name: "System" }),
-  ).toBeInTheDocument();
-  await user.selectOptions(language, "\u7b80\u4f53\u4e2d\u6587");
+  expect(language).toHaveTextContent("System");
+  await chooseFromMenu(user, language, "\u7b80\u4f53\u4e2d\u6587");
   expect(document.cookie).toContain(`${localeCookie}=zh-Hans`);
   expect(window.localStorage.getItem(localeCookie)).toBe("zh-Hans");
   expect(router.refresh).toHaveBeenCalled();
   expect(document.documentElement.lang).toBe("zh-Hans");
-  expect(language).toHaveValue("zh-Hans");
+  expect(language).toHaveTextContent("\u7b80\u4f53\u4e2d\u6587");
   expect(formatDateTime(null)).toBe("\u672a\u5b89\u6392");
-  await user.selectOptions(language, "\u8ddf\u968f\u7cfb\u7edf");
+  await chooseFromMenu(user, language, "\u8ddf\u968f\u7cfb\u7edf");
   expect(document.cookie).not.toContain(`${localeCookie}=zh`);
   expect(window.localStorage.getItem(localeCookie)).toBeNull();
   expect(document.documentElement.lang).toBe("en");

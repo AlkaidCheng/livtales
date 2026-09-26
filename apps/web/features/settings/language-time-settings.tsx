@@ -6,6 +6,7 @@ import type { PreferencesRequest } from "@livtales/schemas";
 
 import { ErrorNotice } from "../../components/feedback";
 import { LocaleControl } from "../../components/locale-control";
+import { MenuSelect } from "../../components/menu-select";
 import { TimeZonePicker } from "../../components/time-zone-picker";
 import { formatDateTime } from "../../lib/format";
 import { useSessionQuery, useUpdatePreferences } from "../../lib/queries";
@@ -57,7 +58,7 @@ export function LanguageTimeSettings() {
         {(control) => (
           <LocaleControl
             {...control}
-            className="setting-select"
+            label={t("language")}
             onChange={(choice) =>
               update.mutate({ locale: choice === "system" ? null : choice })
             }
@@ -71,42 +72,42 @@ export function LanguageTimeSettings() {
         label={t("timeFormat")}
       >
         {(control) => (
-          <select
+          <MenuSelect
             {...control}
-            className="setting-select"
-            onChange={(event) => {
-              const next = event.target.value;
-              choose({
-                hourCycle: next === "h12" || next === "h23" ? next : null,
-              });
-            }}
+            label={t("timeFormat")}
+            onChange={(next) =>
+              choose({ hourCycle: next === "" ? null : next })
+            }
+            options={[
+              {
+                value: "",
+                label: t("fromLanguageChoice", { choice: languageClock }),
+              },
+              { value: "h12", label: t("twelveHour") },
+              { value: "h23", label: t("twentyFourHour") },
+            ]}
             value={hourCycle ?? ""}
-          >
-            <option value="">
-              {t("fromLanguageChoice", { choice: languageClock })}
-            </option>
-            <option value="h12">{t("twelveHour")}</option>
-            <option value="h23">{t("twentyFourHour")}</option>
-          </select>
+          />
         )}
       </SettingRow>
       <SettingRow label={t("weekStart")}>
         {(control) => (
-          <select
+          <MenuSelect
             {...control}
-            className="setting-select"
-            onChange={(event) => {
-              const next = Number(event.target.value);
-              choose({ weekStart: next === 1 || next === 7 ? next : null });
-            }}
-            value={weekStart ?? ""}
-          >
-            <option value="">
-              {t("fromLanguageChoice", { choice: languageDay })}
-            </option>
-            <option value={1}>{t("monday")}</option>
-            <option value={7}>{t("sunday")}</option>
-          </select>
+            label={t("weekStart")}
+            onChange={(next) =>
+              choose({ weekStart: next === "" ? null : next === "1" ? 1 : 7 })
+            }
+            options={[
+              {
+                value: "",
+                label: t("fromLanguageChoice", { choice: languageDay }),
+              },
+              { value: "1", label: t("monday") },
+              { value: "7", label: t("sunday") },
+            ]}
+            value={weekStart === null ? "" : String(weekStart)}
+          />
         )}
       </SettingRow>
       <TimeZoneRow
@@ -132,10 +133,9 @@ function TimeZoneRow({
       {(control) => (
         <TimeZonePicker
           {...control}
-          align="end"
-          className="setting-zone"
           onChange={onChange}
           value={value}
+          variant="compact"
         />
       )}
     </SettingRow>

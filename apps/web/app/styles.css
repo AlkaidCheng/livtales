@@ -1413,17 +1413,6 @@ h3 {
   grid-column: 1 / -1;
 }
 
-/* The account screens' menus draw the time zone picker's chevron. */
-select.account-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23928880' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-position: right 12px center;
-  background-repeat: no-repeat;
-  background-size: 16px;
-  padding-right: 38px;
-  text-overflow: ellipsis;
-}
-
 .check-field {
   align-items: center;
   color: var(--ink);
@@ -9930,9 +9919,7 @@ html:has(.event-create-dialog[open]) {
   text-transform: uppercase;
 }
 
-/* The compact controls: a text field at 32px; a menu, restyled below,
-   fits its choices. */
-.setting-select,
+/* The compact text field: 32px, on the canvas. */
 .setting-input {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -9943,29 +9930,6 @@ html:has(.event-create-dialog[open]) {
   height: 32px;
   min-width: 0;
   padding: 0 8px 0 10px;
-}
-
-/* A menu in a row is a quiet value button: its choice on a soft fill, as
-   wide as its choices, with the time zone picker's chevron in the faint
-   tone both themes share. The time zone's own button matches it. */
-.setting-select {
-  appearance: none;
-  background-color: var(--surface-subtle);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23928880' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-position: right 10px center;
-  background-repeat: no-repeat;
-  background-size: 14px;
-  border-color: transparent;
-  cursor: pointer;
-  font-weight: 500;
-  height: 34px;
-  max-width: 100%;
-  padding: 0 32px 0 12px;
-  text-overflow: ellipsis;
-}
-
-.setting-select:hover {
-  border-color: var(--line);
 }
 
 .setting-input {
@@ -10067,11 +10031,12 @@ html:has(.event-create-dialog[open]) {
   }
 }
 
-/* The time zone picker: a button naming the zone, opening a searchable
-   list of zones next to it (a sheet on a phone). The button takes the look
-   of the field it stands in: a form's full-width field, or a Settings
-   row's compact menu. */
-.time-zone-trigger {
+/* A picker: a button showing the choice that opens a panel of choices
+   next to it (a sheet on a phone), used by the menus and the time zone
+   picker. The button takes the look of the field it stands in: a form's
+   full-width field, or a Settings row's compact menu, a quiet value
+   button with its choice on a soft fill, as wide as its choice. */
+.picker-trigger {
   align-items: center;
   background: var(--field-surface, var(--surface));
   border: 1px solid var(--line-strong);
@@ -10088,15 +10053,13 @@ html:has(.event-create-dialog[open]) {
   width: 100%;
 }
 
-.time-zone-trigger:focus-visible,
-.time-zone-trigger[aria-expanded="true"] {
+.picker-trigger:focus-visible,
+.picker-trigger[aria-expanded="true"] {
   border-color: var(--accent);
   outline: 3px solid var(--focus);
 }
 
-/* In Settings the button is one of the row menus: their fill, height,
-   and chevron, and the city alone (the list shows each zone's offset). */
-.time-zone-trigger.setting-zone {
+.picker-trigger.is-compact {
   background: var(--surface-subtle);
   border-color: transparent;
   border-radius: 8px;
@@ -10110,11 +10073,11 @@ html:has(.event-create-dialog[open]) {
   width: auto;
 }
 
-.time-zone-trigger.setting-zone:hover {
+.picker-trigger.is-compact:hover {
   border-color: var(--line);
 }
 
-.time-zone-trigger-city {
+.picker-trigger-value {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -10129,7 +10092,7 @@ html:has(.event-create-dialog[open]) {
   font-variant-numeric: tabular-nums;
 }
 
-.time-zone-trigger-chevron {
+.picker-trigger-chevron {
   color: var(--faint);
   flex: none;
   height: 16px;
@@ -10140,12 +10103,14 @@ html:has(.event-create-dialog[open]) {
   width: 16px;
 }
 
-.time-zone-trigger.setting-zone .time-zone-trigger-chevron {
+.picker-trigger.is-compact .picker-trigger-chevron {
   height: 14px;
   width: 14px;
 }
 
-.time-zone-trigger.setting-zone .time-zone-trigger-offset {
+/* In Settings the zone's button shows the city alone; the list shows each
+   zone's offset. */
+.picker-trigger.is-compact .time-zone-trigger-offset {
   display: none;
 }
 
@@ -10181,7 +10146,7 @@ html:has(.event-create-dialog[open]) {
   min-width: 0;
 }
 
-.time-zone-dialog {
+.picker-panel {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -10196,12 +10161,12 @@ html:has(.event-create-dialog[open]) {
   position: fixed;
 }
 
-.time-zone-dialog[open] {
+.picker-panel[open] {
   display: flex;
   flex-direction: column;
 }
 
-.time-zone-dialog::backdrop {
+.picker-panel::backdrop {
   background: transparent;
 }
 
@@ -10374,19 +10339,111 @@ html:has(.event-create-dialog[open]) {
   text-wrap: balance;
 }
 
+/* A menu's panel: its options, the chosen one checked, the one the keys
+   are on shaded. On a phone it is a pop-up in the middle of the screen,
+   titled with what it chooses. */
+.menu-panel-title {
+  display: none;
+}
+
+.menu-list {
+  flex: 1;
+  min-height: 0;
+  outline: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  position: relative;
+}
+
+.menu-option {
+  align-items: center;
+  border-radius: 7px;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font-size: 0.86rem;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 16px;
+  min-height: 36px;
+  padding: 6px 8px 6px 12px;
+  white-space: nowrap;
+}
+
+.menu-option.is-active {
+  background: var(--surface-subtle);
+}
+
+.menu-list:focus-visible .menu-option.is-active {
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+
+.menu-option.is-chosen .menu-option-label {
+  font-weight: 650;
+}
+
+.menu-option-check {
+  color: var(--accent);
+  height: 16px;
+  opacity: 0;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  width: 16px;
+}
+
+.menu-option.is-chosen .menu-option-check {
+  opacity: 1;
+}
+
 @media (max-width: 560px) {
-  .time-zone-dialog {
+  .picker-panel {
     border-bottom: 0;
     border-radius: 18px 18px 0 0;
     box-shadow: 0 -12px 32px rgb(0 0 0 / 0.16);
-    height: min(85dvh, 640px);
     inset: auto 0 0;
+    max-height: min(85dvh, 640px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     width: 100%;
   }
 
-  .time-zone-dialog::backdrop {
+  .picker-panel::backdrop {
     background: var(--scrim);
+  }
+
+  .time-zone-panel {
+    height: min(85dvh, 640px);
+  }
+
+  .picker-panel.menu-panel {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow-raised);
+    height: fit-content;
+    inset: 0;
+    margin: auto;
+    max-height: min(70dvh, 480px);
+    padding-bottom: 0;
+    width: min(340px, calc(100% - 48px));
+  }
+
+  .menu-panel-title {
+    color: var(--ink);
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 650;
+    margin: 0;
+    padding: 18px 20px 4px;
+  }
+
+  .menu-list {
+    padding: 6px 8px 10px;
+  }
+
+  .menu-option {
+    font-size: 1rem;
+    min-height: 50px;
   }
 
   .time-zone-search {

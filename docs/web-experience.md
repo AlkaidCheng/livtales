@@ -816,7 +816,7 @@ Monday for Simplified Chinese), Monday, or Sunday; the week strip, the month
 grid, the date pickers, and the period labels start on that day. Each From
 language choice names what it comes to in the display language, as From
 language (12-hour) or From language (Sunday), and Welcome's Clock names it
-for the language chosen above it. Settings' menus are quiet value buttons: the choice on a soft fill with a chevron, as wide as their choices. Language & time keeps each menu on its label's line and sets the caption under both, on every screen; the zone's button there shows the city alone (its list shows the offsets). An Event's
+for the language chosen above it. Settings' menus are quiet value buttons: the choice on a soft fill with a chevron, as wide as their choices. They and Welcome's Language and Clock open the app's own list next to the button, as wide as its longest option (on a phone, a pop-up in the middle of the screen titled with what it chooses), with the chosen option checked; the arrow keys, Home and End, and a typed first letter move through it, Enter or Space chooses, and Escape or a click outside closes it alone, back on its button. Language & time keeps each menu on its label's line and sets the caption under both, on every screen; the zone's button there shows the city alone (its list shows the offsets). An Event's
 own time zone field is unchanged; a new Event or schedule item takes the
 account's zone as its default.
 

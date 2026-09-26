@@ -8,6 +8,7 @@ import {
   useLocaleChoice,
 } from "../i18n/locale-preference";
 import { locales } from "../i18n/locales";
+import { MenuSelect } from "./menu-select";
 
 /**
  * The language menu: System for the browser's, then each language in its
@@ -16,10 +17,11 @@ import { locales } from "../i18n/locales";
  */
 export function LocaleControl({
   onChange,
+  label,
   ...attributes
 }: {
   readonly id?: string;
-  readonly className?: string;
+  readonly label: string;
   readonly "aria-labelledby"?: string;
   readonly "aria-describedby"?: string;
   readonly onChange?: ((choice: LocaleChoice) => void) | undefined;
@@ -27,22 +29,23 @@ export function LocaleControl({
   const t = useTranslations("theme");
   const { choice, setChoice } = useLocaleChoice();
   return (
-    <select
+    <MenuSelect<LocaleChoice>
       {...attributes}
-      onChange={(event) => {
-        const next = event.target.value;
+      label={label}
+      onChange={(next) => {
         const chosen = isLocale(next) ? next : "system";
         setChoice(chosen);
         onChange?.(chosen);
       }}
+      options={[
+        { value: "system", label: t("system") },
+        ...locales.map((locale) => ({
+          value: locale.tag,
+          label: locale.native,
+          lang: locale.tag,
+        })),
+      ]}
       value={choice}
-    >
-      <option value="system">{t("system")}</option>
-      {locales.map((locale) => (
-        <option key={locale.tag} lang={locale.tag} value={locale.tag}>
-          {locale.native}
-        </option>
-      ))}
-    </select>
+    />
   );
 }
