@@ -42,6 +42,7 @@ test("reads each event as one compact card with its own Share and menu, in the g
       displayName: "Kyoto in November",
       startsOn: "2030-11-02",
       endsOn: "2030-11-06",
+      location: "Kyoto",
     },
     { displayName: "A quiet studio weekend" },
   ]) {
@@ -58,17 +59,37 @@ test("reads each event as one compact card with its own Share and menu, in the g
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/u);
 
-  // The card: the tile, the name, and the dates; no period line, no arrow.
-  const kyoto = page.getByRole("link", { name: /Kyoto in November/ });
-  await expect(kyoto.locator(".event-date-mark span")).toHaveText("NOV");
-  await expect(kyoto.locator(".event-date-mark strong")).toHaveText("2");
-  await expect(kyoto).toContainText("Nov 2, 2030 to Nov 6, 2030");
+  // The card: the name and the dates with the place under the month the
+  // event starts in; no date tile, no period line, no arrow.
+  const november = page.locator(".event-month", {
+    has: page.getByRole("button", { name: "November 1 event" }),
+  });
+  const kyoto = november.getByRole("link", { name: /Kyoto in November/ });
+  await expect(
+    page.getByRole("heading", { level: 2, name: "2030" }),
+  ).toBeVisible();
+  await expect(kyoto).toContainText("Nov 2, 2030 to Nov 6, 2030 · Kyoto");
+  await expect(
+    kyoto.getByRole("heading", { level: 4, name: "Kyoto in November" }),
+  ).toBeVisible();
   await expect(kyoto).not.toContainText("Scheduled");
   await expect(kyoto.locator(".card-arrow")).toHaveCount(0);
-  const studio = page.getByRole("link", { name: /A quiet studio weekend/ });
-  await expect(studio.locator(".event-date-mark strong")).toHaveText("TBD");
-  await expect(studio.locator(".event-date-mark span")).toHaveCount(0);
+  await expect(page.locator(".event-date-mark")).toHaveCount(0);
+  const undated = page.locator(".event-month", {
+    has: page.getByRole("button", { name: "No date yet 1 event" }),
+  });
+  const studio = undated.getByRole("link", { name: /A quiet studio weekend/ });
   await expect(studio).toContainText("Date to be decided");
+  // The headings run across the whole grid, a card's width twice over.
+  if (!phone) {
+    const heading = await page
+      .getByRole("button", { name: "November 1 event" })
+      .boundingBox();
+    const grid = await november.locator(".event-layout-grid").boundingBox();
+    const cardBox = await kyoto.boundingBox();
+    expect(heading?.width).toBeCloseTo(grid?.width ?? 0, 0);
+    expect(heading?.width ?? 0).toBeGreaterThan((cardBox?.width ?? 0) * 1.9);
+  }
   const heights = await page
     .locator(".event-card")
     .evaluateAll((cards) =>

@@ -31,6 +31,8 @@ test("pages Events and filters the full collection at responsive widths", async 
   const count = page.getByRole("status", { name: "Event count" });
   await expect(count).toHaveText("20 events loaded");
   await expect(page.getByRole("link", { name: /Gathering 22/ })).toHaveCount(0);
+  const undated = page.getByRole("button", { name: /^No date yet/ });
+  await expect(undated).toHaveText("No date yet 20 events");
   await page.getByLabel("Filter events by name").fill("Gathering 22");
   await expect(count).toHaveText("1 event loaded");
   await expect(
@@ -44,6 +46,8 @@ test("pages Events and filters the full collection at responsive widths", async 
   await expect(
     page.getByRole("button", { name: "Load more events" }),
   ).toHaveCount(0);
+  // The next page continues the same group under its one heading.
+  await expect(undated).toHaveText("No date yet 23 events");
   const links = await page
     .locator(".event-card")
     .evaluateAll((cards) => cards.map((card) => card.getAttribute("href")));
