@@ -39,7 +39,10 @@ test("keeps date navigation and dialog return focus usable across browser engine
   await expect(dialog.getByLabel("Event name", { exact: true })).toHaveValue(
     "",
   );
-  await trigger.evaluate((element) => element.setAttribute("disabled", ""));
+  // By its label, not its role: a phone's add button hides under the dialog.
+  await page
+    .locator('button[aria-label="New event"]')
+    .evaluate((element) => element.setAttribute("disabled", ""));
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(page.locator("#workspace-content")).toBeFocused();
