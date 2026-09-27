@@ -1,6 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 import { openEventView } from "../../e2e/helpers/event-view";
-import { accountBlock } from "../../e2e/helpers/quiet-chrome";
+import {
+  accountReturn,
+  focusAccountBlock,
+} from "../../e2e/helpers/quiet-chrome";
 
 const sandboxUrl = new URL(
   "../../../../.livtales/sandbox/livtales.html",
@@ -22,7 +25,7 @@ test("opens Settings over the page by its address in the fragment", async ({
   expect(eventAddress).toMatch(/\?view=todos$/u);
 
   // From the account menu: an entry of its own over the event's To-dos.
-  await accountBlock(page).focus();
+  await focusAccountBlock(page);
   await page.keyboard.press("Enter");
   await page
     .getByRole("menu", { name: "Account", exact: true })
@@ -47,10 +50,10 @@ test("opens Settings over the page by its address in the fragment", async ({
   await expect(
     page.getByRole("tab", { name: "To-dos", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  await expect(accountBlock(page)).toBeFocused();
+  await expect(accountReturn(page)).toBeFocused();
 
   // Back closes it as well.
-  await accountBlock(page).focus();
+  await focusAccountBlock(page);
   await page.keyboard.press("Enter");
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
   await expect(settings).toBeVisible();

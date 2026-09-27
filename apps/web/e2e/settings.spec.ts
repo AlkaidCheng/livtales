@@ -5,7 +5,11 @@ import { chooseFromMenu } from "./helpers/menu";
 import { setDue } from "./helpers/date-rows";
 import { openEventView } from "./helpers/event-view";
 import { expectHorizontalReflow } from "./helpers/page-navigation";
-import { accountBlock, openCollection } from "./helpers/quiet-chrome";
+import {
+  accountReturn,
+  focusAccountBlock,
+  openCollection,
+} from "./helpers/quiet-chrome";
 
 // The Chinese strings the journey looks for, as escapes so the spec stays
 // ASCII like the rest of the suite.
@@ -21,12 +25,13 @@ const settingsDialog = (page: Page) =>
 
 /**
  * Opens Settings from the account menu, over the page the journey is on.
- * The menu opens from the keyboard, so every engine has focus on the
- * account block, where closing Settings returns it (a tap in mobile
- * WebKit focuses no button).
+ * The menu opens from the keyboard, so every engine has focus where
+ * closing Settings returns it: the account block, or the phone's menu
+ * control, which opens the drawer the block ends (a tap in mobile WebKit
+ * focuses no button).
  */
 async function openSettings(page: Page) {
-  await accountBlock(page).focus();
+  await focusAccountBlock(page);
   await page.keyboard.press("Enter");
   const menu = page.getByRole("menu", { name: "Account", exact: true });
   await expect(menu).toBeVisible();
@@ -315,18 +320,19 @@ test("opens Settings over an event's view and returns to it as it was left @webk
   });
 
   // The close control returns to the event's To-dos as they were left,
-  // with focus back on the account block.
+  // with focus back on the account block (the menu control on a phone,
+  // whose drawer closed as Settings opened).
   await settings
     .getByRole("button", { name: "Close settings", exact: true })
     .click();
   await expectLeftAsItWas();
-  await expect(accountBlock(page)).toBeFocused();
+  await expect(accountReturn(page)).toBeFocused();
 
   // Escape closes it the same way.
   await openSettings(page);
   await page.keyboard.press("Escape");
   await expectLeftAsItWas();
-  await expect(accountBlock(page)).toBeFocused();
+  await expect(accountReturn(page)).toBeFocused();
 
   // Back closes it too, and Forward opens it again.
   await openSettings(page);

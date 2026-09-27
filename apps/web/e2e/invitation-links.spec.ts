@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
 import { latestCodeFor } from "./helpers/mailbox";
+import { openDrawer } from "./helpers/quiet-chrome";
 
 /** Signs the browser in as a development identity, leaving any session first, and waits for the workspace. */
 async function signInAs(page: Page, name: string, email: string) {
@@ -12,6 +13,7 @@ async function signInAs(page: Page, name: string, email: string) {
 }
 
 async function signOut(page: Page, name: string) {
+  await openDrawer(page);
   await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in/u);

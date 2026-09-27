@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import { expect, type Page, test } from "./fixtures";
+import { openDrawer } from "./helpers/quiet-chrome";
 
 const signOut = async (page: Page, name: string) => {
+  await openDrawer(page);
   await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in/u);

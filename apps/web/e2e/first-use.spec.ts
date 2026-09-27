@@ -8,6 +8,7 @@ import {
 } from "./helpers/first-use";
 import { outcomeNotice } from "./helpers/lifecycle";
 import { expectHorizontalReflow } from "./helpers/page-navigation";
+import { expectEventPlace } from "./helpers/quiet-chrome";
 
 test("starts an undated plan with the keyboard and reopens it after recovery @webkit-desktop @webkit-mobile", async ({
   page,
@@ -122,9 +123,7 @@ test("starts an undated plan with the keyboard and reopens it after recovery @we
     headers,
   });
   expect(await restoredTasks.json()).toEqual(savedTasks);
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toHaveText(
-    /^Personal\s*\/\s*Events$/u,
-  );
+  await expectEventPlace(page, "Personal");
   await activateWithKeyboard(
     page,
     page.getByRole("link", { name: "All events", exact: true }),

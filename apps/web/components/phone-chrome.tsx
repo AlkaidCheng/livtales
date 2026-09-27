@@ -14,9 +14,8 @@ import {
 } from "react";
 import { openCommandPalette } from "../lib/command-palette";
 import { canSwitchWorkspace, isSwitchWorkspaceKeys } from "../lib/keyboard";
-import { personInitials } from "../lib/person-collection";
 import { useCurrentWorkspaceIdentity } from "../lib/use-workspace-identity";
-import { AccountMenuItems } from "./account-menu";
+import { AccountBlock, AccountMenuItems } from "./account-menu";
 import { BottomSheet } from "./bottom-sheet";
 import { BrandLogo } from "./brand-logo";
 import { MenuIcon } from "./icons";
@@ -33,21 +32,29 @@ import {
   switchWorkspaceShortcutKeys,
 } from "./workspace-switcher";
 
+/**
+ * What is open: the drawer, the switcher's sheet, or one of the sheets
+ * that rise over the open drawer (the account's, and Theme from it).
+ */
 type Sheet = "drawer" | "workspace" | "account" | "theme";
 
 /**
  * The phone's app bar and what opens from it. At the left the menu
  * control opens the sidebar as a drawer: the brand, then the collections
- * (Search, Events, Tasks, People) in the account's order; a long press on
- * one enters customization, and the Collections header offers Done until
- * it is left. Beside it the current workspace as a mark and its name (the
- * home symbol and "Personal" for the account's own, the owner's initials
- * and name for one shared with it), opening the switcher as a sheet from
- * the bottom; at the right the account's avatar, opening the account
- * sheet: Friends, Settings, Sign out, and what More offers under them
- * (Trash, Theme, Customize sidebar, Help, and Keyboard shortcuts on a
- * keyboard device). Cmd/Ctrl+Shift+K opens the switcher sheet as it opens
- * the rail's list.
+ * (Search, Events, Tasks, People) in the account's order, and at its foot
+ * the account block as the rail's foot shows it (the avatar, the
+ * account's name, and the current space). A long press on a collection
+ * enters customization, and the Collections header offers Done until it
+ * is left. The account block opens the account sheet over the drawer:
+ * Friends, Settings, Sign out, and what More offers under them (Trash,
+ * Theme, Customize sidebar, Help, and Keyboard shortcuts on a keyboard
+ * device). Dismissing that sheet, or Theme's from it, returns to the
+ * drawer; an entry taken closes both. Beside the menu control the current
+ * workspace as a mark and its name (the home symbol and "Personal" for the
+ * account's own, the owner's initials and name for one shared with it),
+ * opening the switcher as a sheet from the bottom, and on an event's page
+ * a slash and the link back to Events. Cmd/Ctrl+Shift+K opens the
+ * switcher sheet as it opens the rail's list.
  */
 export function PhoneChrome({
   session,
@@ -68,28 +75,36 @@ export function PhoneChrome({
 }) {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   // What a choice inside a sheet or the drawer opens next (the palette,
-  // or the drawer to customize), run once the modal has closed and given
-  // focus back to its control, so the next one takes focus from there.
+  // the switcher, or the install steps), run once every modal has closed
+  // and given focus back to its control, so the next one takes focus from
+  // there.
   const [next, setNext] = useState<{ run: () => void } | null>(null);
   const t = useTranslations("workspace");
   const account = useTranslations("account");
   const nav = useTranslations("nav");
   const common = useTranslations("common");
   const theme = useTranslations("theme");
+  const eventText = useTranslations("event");
   const install = useInstallControl();
   const identity = useCurrentWorkspaceIdentity(session);
   const spaceDialogs = useSpaceDialogs();
   const workspaceMenu = useRef<HTMLDivElement>(null);
   const accountMenu = useRef<HTMLDivElement>(null);
   const themeSheet = useRef<HTMLDivElement>(null);
+  const drawerOpen =
+    sheet === "drawer" || sheet === "account" || sheet === "theme";
+  const onEvent = pathname.startsWith("/events/");
 
   const close = useCallback(() => setSheet(null), []);
+  const backToDrawer = useCallback(() => setSheet("drawer"), []);
   const closeDrawer = useCallback(() => {
     setSheet(null);
     onCustomize(false);
   }, [onCustomize]);
 
-  // Cmd/Ctrl+Shift+K toggles the switcher sheet; pressed inside it, closes it.
+  // Cmd/Ctrl+Shift+K toggles the switcher sheet; pressed inside it, closes
+  // it. Over the drawer, the drawer closes first, so the switcher returns
+  // focus to the bar.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (
@@ -104,7 +119,12 @@ export function PhoneChrome({
       }
       if (!canSwitchWorkspace(event)) return;
       event.preventDefault();
-      setSheet((open) => (open === "workspace" ? null : "workspace"));
+      if (sheet === "workspace") setSheet(null);
+      else if (sheet === null) setSheet("workspace");
+      else {
+        setSheet(null);
+        setNext({ run: () => setSheet("workspace") });
+      }
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -121,7 +141,8 @@ export function PhoneChrome({
       themeSheet.current?.querySelector<HTMLElement>("input:checked")?.focus();
   }, [sheet]);
 
-  // The sheets close in their own effects, before this one runs.
+  // The sheets and the drawer close in their own layout effects, before
+  // this one runs.
   useEffect(() => {
     if (sheet !== null || next === null) return;
     setNext(null);
@@ -155,12 +176,16 @@ export function PhoneChrome({
           className="phone-menu"
           aria-label={nav("menu")}
           aria-haspopup="dialog"
-          aria-expanded={sheet === "drawer"}
+          aria-expanded={drawerOpen}
           onClick={() =>
             setSheet((open) => (open === "drawer" ? null : "drawer"))
           }
         >
           <MenuIcon />
+          {/* The account's dot, while its block is out of sight in the drawer. */}
+          {pendingRequests > 0 ? (
+            <span className="profile-dot" aria-hidden="true" />
+          ) : null}
         </button>
         <button
           type="button"
@@ -176,24 +201,99 @@ export function PhoneChrome({
           <WorkspaceMark mark={identity.mark} />
           <span className="phone-workspace-name">{identity.title}</span>
         </button>
-        <button
-          type="button"
-          className="account-trigger phone-account"
-          aria-haspopup="dialog"
-          aria-expanded={sheet === "account"}
-          // Named by its person, as the rail's account block reads.
-          aria-label={session.user.displayName}
-          onClick={() =>
-            setSheet((open) => (open === "account" ? null : "account"))
-          }
-        >
-          <span className="profile-mark" aria-hidden="true">
-            {personInitials(session.user.displayName)}
-            {pendingRequests > 0 ? <span className="profile-dot" /> : null}
-          </span>
-        </button>
+        {onEvent ? (
+          <>
+            <span aria-hidden="true" className="phone-crumb-separator">
+              /
+            </span>
+            <Link
+              aria-label={eventText("allEvents")}
+              className="phone-crumb"
+              href="/events"
+            >
+              {nav("events")}
+            </Link>
+          </>
+        ) : null}
       </header>
-      <PhoneDrawer open={sheet === "drawer"} onClose={closeDrawer}>
+      <BottomSheet
+        open={sheet === "workspace"}
+        label={t("switch")}
+        onClose={close}
+      >
+        <div
+          ref={workspaceMenu}
+          role="menu"
+          aria-label={t("switch")}
+          className="sheet-menu"
+          onKeyDown={onMenuKeyDown}
+        >
+          <WorkspaceSwitcherList
+            session={session}
+            onChoose={choose}
+            onNewSpace={() => closeThen(spaceDialogs.openNewSpace)}
+            onManageSpace={() => closeThen(spaceDialogs.openManageSpace)}
+            onClose={close}
+          />
+        </div>
+      </BottomSheet>
+      <BottomSheet
+        open={sheet === "account"}
+        label={account("menu")}
+        onClose={backToDrawer}
+      >
+        <p className="quiet-menu-heading account-identity sheet-identity">
+          <strong>{session.user.displayName}</strong>
+          <span>{session.user.email}</span>
+        </p>
+        {/* One menu, so the arrow keys walk from the account's entries
+            into More's group under them. */}
+        <div
+          ref={accountMenu}
+          role="menu"
+          aria-label={account("menu")}
+          className="sheet-menu"
+          onKeyDown={onMenuKeyDown}
+        >
+          {/* Settings opens as the sheet and the drawer close, which gives
+              focus back to the menu control, where closing Settings
+              returns it. */}
+          <AccountMenuItems
+            pendingRequests={pendingRequests}
+            onSignOut={onSignOut}
+            onChoose={closeDrawer}
+            onSettings={closeDrawer}
+          />
+          <hr className="quiet-menu-separator" />
+          {/* biome-ignore lint/a11y/useSemanticElements: A group of menu items, not a form fieldset. */}
+          <div role="group" aria-label={nav("more")} className="sheet-menu">
+            <MoreMenuItems
+              onChoose={closeDrawer}
+              onSettings={closeDrawer}
+              onTheme={() => setSheet("theme")}
+              onCustomize={() => {
+                setSheet("drawer");
+                onCustomize(true);
+              }}
+              installMode={install.mode}
+              onInstall={() => closeThen(install.activate)}
+            />
+          </div>
+        </div>
+      </BottomSheet>
+      <BottomSheet
+        open={sheet === "theme"}
+        label={theme("title")}
+        onClose={backToDrawer}
+      >
+        <div className="sheet-theme" ref={themeSheet}>
+          <ThemeControls />
+        </div>
+      </BottomSheet>
+      {/* After the sheets, so a sheet over the drawer closes first and
+          gives focus back to the account block before the drawer closes
+          and gives it back to the menu control. */}
+      <PhoneDrawer open={drawerOpen} onClose={closeDrawer}>
         <div className="sidebar-head">
           <Link className="brand" href="/events" onClick={closeDrawer}>
             <BrandLogo />
@@ -235,82 +335,16 @@ export function PhoneChrome({
             headingDone
           />
         </nav>
-      </PhoneDrawer>
-      <BottomSheet
-        open={sheet === "workspace"}
-        label={t("switch")}
-        onClose={close}
-      >
-        <div
-          ref={workspaceMenu}
-          role="menu"
-          aria-label={t("switch")}
-          className="sheet-menu"
-          onKeyDown={onMenuKeyDown}
-        >
-          <WorkspaceSwitcherList
+        <div className="sidebar-footer">
+          <AccountBlock
             session={session}
-            onChoose={choose}
-            onNewSpace={() => closeThen(spaceDialogs.openNewSpace)}
-            onManageSpace={() => closeThen(spaceDialogs.openManageSpace)}
-            onClose={close}
-          />
-        </div>
-      </BottomSheet>
-      <BottomSheet
-        open={sheet === "account"}
-        label={account("menu")}
-        onClose={close}
-      >
-        <p className="quiet-menu-heading account-identity sheet-identity">
-          <strong>{session.user.displayName}</strong>
-          <span>{session.user.email}</span>
-        </p>
-        {/* One menu, so the arrow keys walk from the account's entries
-            into More's group under them. */}
-        <div
-          ref={accountMenu}
-          role="menu"
-          aria-label={account("menu")}
-          className="sheet-menu"
-          onKeyDown={onMenuKeyDown}
-        >
-          {/* Settings opens as its sheet closes, which gives focus back to
-              the avatar, where closing Settings returns it. */}
-          <AccountMenuItems
             pendingRequests={pendingRequests}
-            onSignOut={onSignOut}
-            onChoose={close}
-            onSettings={close}
+            aria-haspopup="dialog"
+            aria-expanded={sheet === "account"}
+            onClick={() => setSheet("account")}
           />
-          <hr className="quiet-menu-separator" />
-          {/* biome-ignore lint/a11y/useSemanticElements: A group of menu items, not a form fieldset. */}
-          <div role="group" aria-label={nav("more")} className="sheet-menu">
-            <MoreMenuItems
-              onChoose={close}
-              onSettings={close}
-              onTheme={() => setSheet("theme")}
-              onCustomize={() =>
-                closeThen(() => {
-                  onCustomize(true);
-                  setSheet("drawer");
-                })
-              }
-              installMode={install.mode}
-              onInstall={() => closeThen(install.activate)}
-            />
-          </div>
         </div>
-      </BottomSheet>
-      <BottomSheet
-        open={sheet === "theme"}
-        label={theme("title")}
-        onClose={close}
-      >
-        <div className="sheet-theme" ref={themeSheet}>
-          <ThemeControls />
-        </div>
-      </BottomSheet>
+      </PhoneDrawer>
       {install.steps}
     </>
   );

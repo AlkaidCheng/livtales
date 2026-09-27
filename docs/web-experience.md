@@ -42,11 +42,14 @@ Collections section (Events, Tasks, People) in the order the account keeps,
 then the account block (the account's name with the current space
 under it) with a More control beside it. A phone (under 760px) has no rail
 and no bottom bar: an app bar fixed at the top of every page holds a menu
-control at the left, the current space beside it (its mark and name),
-and the account's avatar at the right, with space for the device's safe
-area. The menu control opens the sidebar as a drawer from the left edge (the
-logo with a close control, Search, and the Collections in the kept order,
-the open page current as on the rail) over a scrim; choosing a collection
+control at the left and the current space beside it (its mark and name),
+followed on an event's page by a slash and Events, a link back to the
+Events list, with space for the device's safe area. The account is not in
+the bar: while friend requests wait, the menu control carries the dot the
+account block shows. The menu control opens the sidebar as a drawer from
+the left edge (the logo with a close control, Search, the Collections in
+the kept order, the open page current as on the rail, and at its foot the
+account block as the rail's reads) over a scrim; choosing a collection
 opens it and closes the drawer, Escape, the scrim, or the close control
 closes it, and focus returns to the menu control. There is no other header:
 each page starts with its own title. Search in the rail, or in the drawer,
@@ -69,8 +72,8 @@ and Done ends customize mode. A collection that ships later appends in its
 default place. The phone's drawer has no pencil: a finger held half a
 second on a collection enters customize mode in place (the tap that follows
 stays on the page), the Collections heading reads "Collections - Done" until
-Done is chosen, and Customize sidebar in the account sheet opens the drawer
-already customizing.
+Done is chosen, and Customize sidebar in the account sheet returns to the
+drawer already customizing.
 
 On a window wide enough for the sidebar, a control beside the logo collapses
 it: the sidebar slides off the left edge as the content follows (at once when
@@ -161,7 +164,7 @@ reads "Move and remove N links" when the move removes links, else "Move to
 {space}". When the links changed after the review, the move is refused, the
 review reloads with "This changed since you reviewed it. Review it again.",
 and a retry keeps the same move so a lost response cannot move it twice. A
-move opens the new space on the same event, whose breadcrumb names it, with a
+move opens the new space on the same event, whose place names it, with a
 notice ("Moved {event} to {space}." and the links removed) that offers Open
 {old space}, which returns to that space's Events.
 
@@ -180,12 +183,16 @@ closes it, and focus returns to the control that opened it). The space
 control in the app bar (the current space's mark and name) opens the
 switcher's list as a sheet, without the way
 back the rail's list has; Cmd/Ctrl+Shift+K opens and closes it too. The
-avatar opens the account sheet: the account's name and email, Friends (with
-the requests waiting), Settings, Sign out, then More's entries as a second
-group of the same menu (Trash, Theme, Customize sidebar, Help, and Keyboard
-shortcuts on a keyboard device), so the arrow keys walk the whole list.
-Theme opens its own sheet with the same controls as the rail's panel, and
-Customize sidebar opens the drawer customizing.
+account block at the drawer's foot opens the account sheet over the
+drawer: the account's name and email, Friends (with the requests waiting),
+Settings, Sign out, then More's entries as a second group of the same menu
+(Trash, Theme, Customize sidebar, Help, and Keyboard shortcuts on a
+keyboard device), so the arrow keys walk the whole list. Dismissing the
+sheet leads back to the drawer, on the block; an entry taken closes the
+sheet and the drawer together, so a surface it opens (Settings, the
+install steps) returns focus to the menu control. Theme opens its own
+sheet with the same controls as the rail's panel, which leads back to the
+drawer as well, and Customize sidebar returns to the drawer customizing.
 
 A phone also has an add button: a seal about 60px across, fixed 18px from
 the bottom right corner and clear of the home indicator, drawn in the shape
@@ -812,8 +819,8 @@ inside the dialog. On a narrow screen (up to 640px) the dialog fills the
 screen and the sections become a row that scrolls sideways above the
 section, without the title and group captions; a 320px screen never
 scrolls sideways. Focus starts on the current section's row and returns,
-on closing, to the control that opened Settings (the account block, More,
-or the avatar on a phone).
+on closing, to the control that opened Settings (the account block or
+More; on a phone the menu control, whose drawer closes as Settings opens).
 
 Each section has an address on the page underneath: a `settings` query
 parameter (`general`, `language`, `appearance`, `keyboard`, or `members`)
@@ -1045,10 +1052,11 @@ not yet reviewed the two Chinese catalogs; wording may change.
   "Shared with me" for an event reached through a share alone), a slash,
   and the Events link, which returns to the collection. An undated event
   shows no date line; Set dates opens the editor on the schedule. On a phone
-  the head is compact: the breadcrumb and the actions share the first row,
-  the title sits under them, and a share reads as a tag beside the date
-  ("Shared by Chen Li" and the role) in place of the access line; the Events
-  page's chips sit closer above the cards.
+  the head is compact: the app bar names the place (the current space, a
+  slash, and the Events link), so the head has no breadcrumb row; the title
+  and the actions share the first row, and a share reads as a tag beside
+  the date ("Shared by Chen Li" and the role) in place of the access line;
+  the Events page's chips sit closer above the cards.
 - On a touch screen (a finger or a pen; a mouse never swipes, at any
   width), a sideways swipe on the event's content moves one tab along the
   strip in the order it shows: its pages, then its views, with hidden and

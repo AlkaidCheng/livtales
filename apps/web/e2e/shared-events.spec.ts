@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
-import { isPhone, workspaceBlock } from "./helpers/quiet-chrome";
+import {
+  expectEventPlace,
+  isPhone,
+  openDrawer,
+  workspaceBlock,
+} from "./helpers/quiet-chrome";
 import { chooseRowAction } from "./helpers/row-menu";
 
 const signIn = async (page: Page, name: string, email: string) => {
@@ -12,6 +17,7 @@ const signIn = async (page: Page, name: string, email: string) => {
 };
 
 const signOut = async (page: Page, name: string) => {
+  await openDrawer(page);
   await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in/u);
@@ -156,10 +162,9 @@ test("shows the events shared with an account beside its own, opens one in place
   await expect(page.getByText("Book the ryokan")).toBeVisible();
   // The chrome stays on Ben's own workspace: the block that names it still reads Personal.
   await expect(workspaceBlock(page)).toContainText("Personal");
-  // Above the title, the event's place reads as a share, not Ana's space.
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toHaveText(
-    /^Shared with me\s*\/\s*Events$/u,
-  );
+  // Above the title, the event's place reads as a share, not Ana's space;
+  // a phone's bar names Ben's own space, whose Events list it.
+  await expectEventPlace(page, isPhone(page) ? "Personal" : "Shared with me");
   await page.getByRole("link", { name: "All events", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/u);
 

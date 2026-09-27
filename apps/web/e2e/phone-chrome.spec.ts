@@ -4,7 +4,9 @@ import { expect, test } from "./fixtures";
 import { expectHorizontalReflow } from "./helpers/page-navigation";
 import {
   accountBlock,
+  accountReturn,
   drawer,
+  focusAccountBlock,
   menuControl,
   searchPalette,
   workspaceControl,
@@ -24,11 +26,17 @@ async function longPress(row: Locator) {
   await row.dispatchEvent("pointerup", touch);
 }
 
-/** The vertical middle of an element, in viewport pixels. */
-async function middle(locator: Locator) {
-  const box = await locator.boundingBox();
-  if (box === null) throw new Error("The element has no box.");
-  return box.y + box.height / 2;
+/** An element's box, in viewport pixels. */
+async function boxOf(locator: Locator) {
+  const found = await locator.boundingBox();
+  if (found === null) throw new Error("The element has no box.");
+  return found;
+}
+
+/** The bottom edge of an element, in viewport pixels. */
+async function bottom(locator: Locator) {
+  const { y, height } = await boxOf(locator);
+  return y + height;
 }
 
 const signIn = async (page: Page, name: string, email: string) => {
@@ -39,7 +47,7 @@ const signIn = async (page: Page, name: string, email: string) => {
   await expect(page).toHaveURL(/\/events$/u);
 };
 
-test("gives the phone an app bar whose menu opens the sidebar as a drawer, with the workspace and the account as sheets @webkit-mobile", async ({
+test("gives the phone an app bar whose menu opens the sidebar as a drawer ending with the account, and the workspace as a sheet @webkit-mobile", async ({
   page,
   request,
 }, testInfo) => {
@@ -118,10 +126,10 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   page.on("pageerror", (error) => errors.push(error.message));
   await signIn(page, "Ben Wu", benEmail);
 
-  // The app bar: the menu control, the workspace as its mark and name (the
-  // home mark and "Personal" for the account's own), and the avatar with
-  // the account's initials. No bar at the foot: the page's only
-  // navigation is the sidebar's, folded into the drawer.
+  // The app bar: the menu control and the workspace as its mark and name
+  // (the home mark and "Personal" for the account's own), nothing more on
+  // the Events list; the account is in the drawer. No bar at the foot:
+  // the page's only navigation is the sidebar's, folded into the drawer.
   const bar = page.locator(".phone-bar");
   await expect(bar).toBeVisible();
   await expect(menuControl(page)).toBeVisible();
@@ -129,8 +137,9 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await expect(
     workspaceControl(page).locator(".workspace-mark-home"),
   ).toHaveCount(1);
-  await expect(accountBlock(page)).toHaveAccessibleName("Ben Wu");
-  await expect(accountBlock(page).locator(".profile-mark")).toHaveText("BW");
+  await expect(bar.getByRole("button")).toHaveCount(2);
+  await expect(bar.getByRole("link")).toHaveCount(0);
+  await expect(bar.locator(".profile-mark")).toHaveCount(0);
   await expect(page.getByRole("navigation")).toHaveCount(0);
   await expect(page.locator("aside.sidebar")).toHaveCount(0);
   // New event is the add button at the foot, the header's own gone.
@@ -143,8 +152,9 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await page.screenshot({ path: testInfo.outputPath("app-bar.png") });
 
   // The menu opens the sidebar as a drawer: the brand, Search, and the
-  // collections with the open page current. Escape closes it and hands
-  // focus back to the menu control.
+  // collections with the open page current, and at its foot the account
+  // block as the rail's reads (the initials, the name, and the space).
+  // Escape closes it and hands focus back to the menu control.
   await menuControl(page).click();
   await expect(drawer(page)).toBeVisible();
   await expect(
@@ -164,6 +174,11 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
     collections.getByRole("link", { name: "Events", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await expect(drawer(page)).toBeInViewport();
+  const block = drawer(page).locator(".sidebar-footer .account-trigger");
+  await expect(block).toHaveAccessibleName("Ben Wu Personal");
+  await expect(block.locator(".profile-mark")).toHaveText("BW");
+  expect(await bottom(drawer(page))).toBeGreaterThan((await bottom(block)) - 1);
+  expect((await bottom(drawer(page))) - (await bottom(block))).toBeLessThan(24);
   await page.screenshot({ path: testInfo.outputPath("drawer.png") });
   await page.keyboard.press("Escape");
   await expect(drawer(page)).toBeHidden();
@@ -255,15 +270,18 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await workspaceEntry(page, "Personal").click();
   await expect(workspaceControl(page)).toContainText("Personal");
 
-  // The avatar opens the account sheet: the account's name and email,
-  // Friends, Settings, Sign out, then More's entries under them; no
-  // shortcuts entry, as a phone has no keyboard to list them for.
-  // Customize sidebar opens the drawer customizing; Theme opens its own
-  // sheet, and Escape from it lands back on the avatar.
-  await accountBlock(page).click();
+  // The account block at the drawer's foot opens the account sheet over
+  // the drawer: the account's name and email, Friends, Settings, Sign out,
+  // then More's entries under them; no shortcuts entry, as a phone has no
+  // keyboard to list them for. Escape leads back to the drawer. Customize
+  // sidebar leaves the drawer open, customizing; Theme opens its own
+  // sheet, and Escape from it lands back on the block.
+  await menuControl(page).click();
+  await block.click();
   const account = page.getByRole("menu", { name: "Account", exact: true });
   await expect(account).toBeVisible();
   await expect(account).toBeInViewport();
+  await expect(drawer(page)).toBeVisible();
   await expect(page.locator(".sheet-identity")).toContainText("Ben Wu");
   await expect(page.locator(".sheet-identity")).toContainText(benEmail);
   // Safari on an iPhone offers Install app (the home-screen steps) too.
@@ -284,6 +302,10 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
     account.getByRole("menuitem", { name: /^Friends/ }),
   ).toBeFocused();
   await page.screenshot({ path: testInfo.outputPath("account-sheet.png") });
+  await page.keyboard.press("Escape");
+  await expect(account).toHaveCount(0);
+  await expect(drawer(page)).toBeVisible();
+  await block.click();
   await account
     .getByRole("menuitem", { name: "Customize sidebar", exact: true })
     .click();
@@ -291,9 +313,7 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await expect(drawer(page)).toBeVisible();
   await expect(done).toBeVisible();
   await done.click();
-  await page.keyboard.press("Escape");
-  await expect(drawer(page)).toBeHidden();
-  await accountBlock(page).click();
+  await block.click();
   await account.getByRole("menuitem", { name: "Theme", exact: true }).click();
   const theme = page.getByRole("dialog", { name: "Theme", exact: true });
   await expect(theme).toBeVisible();
@@ -316,23 +336,31 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(theme).toHaveCount(0);
+  await expect(drawer(page)).toBeVisible();
   await expect(accountBlock(page)).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer(page)).toBeHidden();
 
-  // The event page's head: the breadcrumb and the actions share the first
-  // row, the title sits under them, and a share reads as a tag beside
-  // the date ("Shared by Chen Li", the role) in place of the line.
+  // The event page: the bar names its place, the space then "/ Events",
+  // and the head starts with the title, its actions beside it, with no
+  // row above; a share reads as a tag beside the date ("Shared by Chen
+  // Li", the role) in place of the line.
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
+  const title = page.getByRole("heading", {
+    level: 1,
+    name: "Kyoto in November",
+  });
+  await expect(title).toBeVisible();
+  await expect(bar).toContainText(/Personal\s*\/\s*Events$/u);
+  const back = bar.getByRole("link", { name: "All events", exact: true });
+  await expect(back).toHaveAttribute("href", "/events");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Kyoto in November" }),
-  ).toBeVisible();
-  const crumbs = page.locator(".event-hero .event-crumbs");
+    page.getByRole("navigation", { name: "Breadcrumb" }),
+  ).toHaveCount(0);
   const actions = page.locator(".event-hero .event-actions");
   expect(
-    Math.abs((await middle(crumbs)) - (await middle(actions))),
-  ).toBeLessThan(4);
-  expect(await middle(page.getByRole("heading", { level: 1 }))).toBeGreaterThan(
-    await middle(actions),
-  );
+    Math.abs((await boxOf(title)).y - (await boxOf(actions)).y),
+  ).toBeLessThan(8);
   const tag = page.locator(".event-access-tag");
   await expect(tag).toBeVisible();
   await expect(tag).toContainText("Shared by Chen Li");
@@ -344,18 +372,110 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await expectHorizontalReflow(page);
   await page.screenshot({ path: testInfo.outputPath("event-head.png") });
 
-  // At the narrowest width the bar keeps its three controls in view.
+  // At the narrowest width the bar keeps the menu, the space, and the way
+  // back in view, and Events returns to the list.
   await page.setViewportSize({ width: 320, height: 568 });
   await expect(menuControl(page)).toBeInViewport();
   await expect(workspaceControl(page)).toBeInViewport();
-  await expect(accountBlock(page)).toBeInViewport();
+  await expect(back).toBeInViewport();
   await expectHorizontalReflow(page);
+  await back.click();
+  await expect(page).toHaveURL(/\/events$/u);
+  await expect(bar.getByRole("link")).toHaveCount(0);
 
   // Sign out from the account sheet.
-  await accountBlock(page).click();
+  await menuControl(page).click();
+  await block.click();
   await account
     .getByRole("menuitem", { name: "Sign out", exact: true })
     .click();
   await expect(page).toHaveURL(/\/sign-in/u);
+  expect(errors).toEqual([]);
+});
+
+test("names the place in the phone's bar and opens the account from the drawer's foot, by keyboard too @webkit-mobile", async ({
+  page,
+  request,
+}, testInfo) => {
+  test.skip(
+    !testInfo.project.name.endsWith("mobile"),
+    "The app bar is the phone's; a wider viewport keeps the rail.",
+  );
+  const email = `place-${randomUUID()}@example.test`;
+  const planner = await (
+    await request.post("/api/auth/development/sign-in", {
+      data: { email, displayName: "Mei Chen" },
+    })
+  ).json();
+  const plan = await (
+    await request.post("/api/events", {
+      headers: { authorization: `Bearer ${planner.accessToken}` },
+      data: { displayName: "Autumn gathering" },
+    })
+  ).json();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await signIn(page, "Mei Chen", email);
+
+  // On the Events list the bar holds the menu and the space alone.
+  const bar = page.locator(".phone-bar");
+  await expect(workspaceControl(page)).toHaveAccessibleName("Space: Personal");
+  await expect(bar.getByRole("link")).toHaveCount(0);
+
+  // On the event the space goes on to "/ Events", and Events leads back.
+  await page.getByRole("link", { name: /Autumn gathering/ }).click();
+  await expect(page).toHaveURL(
+    new RegExp(`/events/${plan.id}(?:\\?.*)?$`, "u"),
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Autumn gathering" }),
+  ).toBeVisible();
+  await expect(bar).toContainText(/Personal\s*\/\s*Events$/u);
+  await page.screenshot({ path: testInfo.outputPath("event-bar.png") });
+  await bar.getByRole("link", { name: "All events", exact: true }).click();
+  await expect(page).toHaveURL(/\/events$/u);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Events", exact: true }),
+  ).toBeVisible();
+
+  // From the keyboard: the menu control opens the drawer, the account
+  // block at its foot opens the account sheet on Friends, and Escape leads
+  // back one step at a time, to the block and then to the menu control.
+  await page.getByRole("link", { name: /Autumn gathering/ }).click();
+  await expect(bar).toContainText(/Personal\s*\/\s*Events$/u);
+  await focusAccountBlock(page);
+  await expect(accountBlock(page)).toBeFocused();
+  await expect(accountBlock(page)).toHaveAccessibleName("Mei Chen Personal");
+  await page.keyboard.press("Enter");
+  const account = page.getByRole("menu", { name: "Account", exact: true });
+  await expect(
+    account.getByRole("menuitem", { name: /^Friends/ }),
+  ).toBeFocused();
+  await expect(accountBlock(page)).toHaveAttribute("aria-expanded", "true");
+  await page.screenshot({
+    path: testInfo.outputPath("account-over-drawer.png"),
+  });
+  await page.keyboard.press("Escape");
+  await expect(account).toHaveCount(0);
+  await expect(accountBlock(page)).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer(page)).toBeHidden();
+  await expect(menuControl(page)).toBeFocused();
+
+  // Settings from the sheet closes the sheet and the drawer behind it;
+  // closing Settings returns to the event, on the menu control.
+  const eventUrl = page.url();
+  await focusAccountBlock(page);
+  await page.keyboard.press("Enter");
+  await account
+    .getByRole("menuitem", { name: "Settings", exact: true })
+    .click();
+  const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+  await expect(settings).toBeVisible();
+  await expect(drawer(page)).toBeHidden();
+  await page.keyboard.press("Escape");
+  await expect(settings).toHaveCount(0);
+  await expect(page).toHaveURL(eventUrl);
+  await expect(accountReturn(page)).toBeFocused();
   expect(errors).toEqual([]);
 });

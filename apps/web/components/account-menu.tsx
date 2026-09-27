@@ -4,12 +4,14 @@ import type { AccessibleWorkspace, SessionResponse } from "@livtales/schemas";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
+  type ButtonHTMLAttributes,
   useCallback,
   useEffect,
   useId,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type Ref,
 } from "react";
 import { canSwitchWorkspace, isSwitchWorkspaceKeys } from "../lib/keyboard";
 import { personInitials } from "../lib/person-collection";
@@ -104,8 +106,49 @@ export function AccountMenuItems({
 }
 
 /**
- * The rail's foot as one block: the avatar, the account's name, and the
- * current space under it, opening a menu above it.
+ * The account as one block: the avatar (with a dot while friend requests
+ * wait), the account's name, and the current space under it, then a
+ * caret. The rail's foot and the phone's drawer end with it; the surface
+ * gives it the menu it opens and the attributes that name that menu.
+ */
+export function AccountBlock({
+  session,
+  pendingRequests = 0,
+  ref,
+  ...props
+}: Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "type" | "className" | "children"
+> & {
+  readonly session: SessionResponse;
+  readonly pendingRequests?: number | undefined;
+  readonly ref?: Ref<HTMLButtonElement> | undefined;
+}) {
+  const identity = useCurrentWorkspaceIdentity(session);
+  return (
+    <button {...props} ref={ref} type="button" className="account-trigger">
+      <span className="profile-mark" aria-hidden="true">
+        {personInitials(session.user.displayName)}
+        {pendingRequests > 0 ? <span className="profile-dot" /> : null}
+      </span>
+      <span className="profile-copy">
+        <strong>{session.user.displayName}</strong>
+        <span>{identity.title}</span>
+      </span>
+      <svg
+        aria-hidden="true"
+        className="account-caret"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path d="m6 10 6 6 6-6" />
+      </svg>
+    </button>
+  );
+}
+
+/**
+ * The rail's foot: the account block, opening a menu above it.
  * The menu's first row is the current space (its mark, name, and role),
  * which replaces the menu with the switcher's list until Escape leads
  * back; then Friends (with the requests waiting), Settings, and Sign out.
@@ -209,33 +252,16 @@ export function AccountMenu({
 
   return (
     <div className="account-menu" ref={root}>
-      <button
-        type="button"
-        className="account-trigger"
+      <AccountBlock
+        session={session}
+        pendingRequests={pendingRequests}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={`${id}-menu`}
         aria-keyshortcuts={switchWorkspaceShortcutKeys}
         onClick={() => (open ? close(false) : setLevel("account"))}
         ref={trigger}
-      >
-        <span className="profile-mark" aria-hidden="true">
-          {personInitials(session.user.displayName)}
-          {pendingRequests > 0 ? <span className="profile-dot" /> : null}
-        </span>
-        <span className="profile-copy">
-          <strong>{session.user.displayName}</strong>
-          <span>{identity.title}</span>
-        </span>
-        <svg
-          aria-hidden="true"
-          className="account-caret"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <path d="m6 10 6 6 6-6" />
-        </svg>
-      </button>
+      />
       {open ? (
         <div
           ref={menu}

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
 import { openEventView } from "./helpers/event-view";
+import { openDrawer } from "./helpers/quiet-chrome";
 
 const signIn = async (page: Page, name: string, email: string) => {
   await page.goto("/sign-in/development");
@@ -13,6 +14,7 @@ const signIn = async (page: Page, name: string, email: string) => {
 // The sign-in page re-renders under a signed-in account, so an account
 // signs out through its profile menu before the next signs in.
 const signOut = async (page: Page, name: string) => {
+  await openDrawer(page);
   await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in/u);

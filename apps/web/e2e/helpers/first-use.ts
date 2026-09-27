@@ -6,7 +6,12 @@ import {
 } from "@playwright/test";
 import { expectNoDates } from "./date-rows";
 import { expectHorizontalReflow } from "./page-navigation";
-import { choosePageOptionWithKeyboard, moreControl } from "./quiet-chrome";
+import {
+  choosePageOptionWithKeyboard,
+  isPhone,
+  menuControl,
+  moreControl,
+} from "./quiet-chrome";
 
 export async function tabTo(page: Page, target: Locator) {
   await expect(target).toBeVisible();
@@ -25,10 +30,12 @@ export async function activateWithKeyboard(page: Page, target: Locator) {
 
 /**
  * Reaches Trash from More with the keyboard. The rail's menu opens on it;
- * the phone's account sheet opens on Friends, and the arrows walk down
- * into More's group to it.
+ * a phone opens its drawer from the menu control, the account sheet from
+ * the block at the drawer's foot on Friends, and the arrows walk down into
+ * More's group to it.
  */
 export async function openTrashWithKeyboard(page: Page) {
+  if (isPhone(page)) await activateWithKeyboard(page, menuControl(page));
   await activateWithKeyboard(page, moreControl(page));
   const trash = page.getByRole("menuitem", { name: "Trash", exact: true });
   for (let index = 0; index < 8; index += 1) {

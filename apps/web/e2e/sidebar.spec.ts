@@ -50,8 +50,9 @@ test("keeps the rail's order and hidden collections on the account @webkit-deskt
     .toEqual(["Events", "Tasks", "People"]);
 
   // A phone arranges in its drawer: Customize sidebar from the account
-  // sheet opens it with Done in the Collections heading (a finger's long
-  // press on a collection gets there too, in the phone chrome journey).
+  // sheet, which rises from the drawer's foot, returns to the drawer with
+  // Done in the Collections heading (a finger's long press on a collection
+  // gets there too, in the phone chrome journey).
   if (testInfo.project.name.endsWith("mobile")) {
     await closeDrawer(page);
     const more = await openMoreMenu(page);

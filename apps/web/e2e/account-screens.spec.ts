@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
 import { latestCodeFor } from "./helpers/mailbox";
 import { chooseFromMenu } from "./helpers/menu";
+import { openDrawer } from "./helpers/quiet-chrome";
 
 test("creates an account with a username, confirms the code, completes the Welcome step, and signs in by username @webkit-desktop", async ({
   page,
@@ -69,6 +70,7 @@ test("creates an account with a username, confirms the code, completes the Welco
   );
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(/\/events$/u);
+  await openDrawer(page);
   await expect(
     page.getByRole("button", { name: new RegExp(`^Mira ${tag}`) }),
   ).toBeVisible();
@@ -90,6 +92,7 @@ test("creates an account with a username, confirms the code, completes the Welco
   await expect(page.getByRole("dialog", { name: "Settings" })).toHaveCount(0);
 
   // Sign out; sign in by username, in any case, with the same password.
+  await openDrawer(page);
   await page.getByRole("button", { name: new RegExp(`^Mira ${tag}`) }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in/u);
@@ -106,6 +109,7 @@ test("creates an account with a username, confirms the code, completes the Welco
   await page.screenshot({ path: testInfo.outputPath("sign-in.png") });
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/events$/u);
+  await openDrawer(page);
   await expect(
     page.getByRole("button", { name: new RegExp(`^Mira ${tag}`) }),
   ).toBeVisible();
