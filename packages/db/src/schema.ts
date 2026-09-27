@@ -883,6 +883,88 @@ export const eventPageRevisions = pgTable(
   ],
 );
 
+/** Where an account left an event: one of its views, or one of its pages. */
+export type EventPlaceRow =
+  { readonly view: string } | { readonly page: string };
+
+/** What a tab, a page component, or a collection page was left with, by name. */
+export type ViewChoicesRow = Readonly<Record<string, unknown>>;
+
+/**
+ * An account's own view of an Event, from its first save: where it was
+ * left, its tab strip, its page order, and each page component's layout
+ * (a view, or null for the kind's default).
+ */
+export const userEventViews = pgTable(
+  "user_event_views",
+  {
+    userId: uuid("user_id").notNull(),
+    eventId: uuid("event_id").notNull(),
+    place: jsonb("place").$type<EventPlaceRow>(),
+    tabs: jsonb("tabs")
+      .$type<EventTabsPreferenceRow>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    pages: jsonb("pages")
+      .$type<readonly string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    layouts: jsonb("layouts")
+      .$type<Readonly<Record<string, string | null>>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    openedAt: timestamp("opened_at", { mode: "date", withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: createUpdatedAtColumn(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.eventId] }),
+    index("user_event_views_opened_idx").on(
+      table.userId,
+      table.openedAt.desc(),
+      table.eventId.desc(),
+    ),
+    index("user_event_views_event_idx").on(table.eventId),
+  ],
+);
+
+/** The choices one tab (by view key) or page component (by id) of an account's view keeps. */
+export const userComponentChoices = pgTable(
+  "user_component_choices",
+  {
+    userId: uuid("user_id").notNull(),
+    eventId: uuid("event_id").notNull(),
+    component: text("component").notNull(),
+    choices: jsonb("choices").$type<ViewChoicesRow>().notNull(),
+    updatedAt: createUpdatedAtColumn(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.eventId, table.component] }),
+    index("user_component_choices_updated_idx").on(
+      table.userId,
+      table.updatedAt.desc(),
+      table.eventId.desc(),
+      table.component.desc(),
+    ),
+  ],
+);
+
+export const accountPages = ["events", "tasks", "people"] as const;
+export type AccountPageKey = (typeof accountPages)[number];
+
+/** The choices an account left the Events, Tasks, or People page with. */
+export const userPageChoices = pgTable(
+  "user_page_choices",
+  {
+    userId: uuid("user_id").notNull(),
+    page: text("page").$type<AccountPageKey>().notNull(),
+    choices: jsonb("choices").$type<ViewChoicesRow>().notNull(),
+    updatedAt: createUpdatedAtColumn(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.page] })],
+);
+
 export type UserRow = typeof users.$inferSelect;
 export type NewUserRow = typeof users.$inferInsert;
 export type UserIdentityRow = typeof userIdentities.$inferSelect;
@@ -896,6 +978,9 @@ export type EmailVerificationRow = typeof emailVerifications.$inferSelect;
 export type UserConnectionRow = typeof userConnections.$inferSelect;
 export type UserInvitationRow = typeof userInvitations.$inferSelect;
 export type PendingShareRow = typeof pendingShares.$inferSelect;
+export type UserEventViewRow = typeof userEventViews.$inferSelect;
+export type UserComponentChoicesRow = typeof userComponentChoices.$inferSelect;
+export type UserPageChoicesRow = typeof userPageChoices.$inferSelect;
 export type WorkspaceRow = typeof workspaces.$inferSelect;
 export type NewWorkspaceRow = typeof workspaces.$inferInsert;
 export type WorkspaceMemberRow = typeof workspaceMembers.$inferSelect;
