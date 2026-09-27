@@ -14,7 +14,6 @@ import {
   useSessionQuery,
 } from "../lib/queries";
 import { useContentUndoShortcut } from "../lib/use-content-undo-shortcut";
-import { useMoveKeptViews } from "../lib/use-move-kept-views";
 import {
   DisplayPreferencesProvider,
   timePreferencesOf,
@@ -51,7 +50,6 @@ export function WorkspaceShell({ children }: { readonly children: ReactNode }) {
   const sidebar = useSidebar();
   const phone = useIsPhone();
   useContentUndoShortcut();
-  useMoveKeptViews(session.data?.user.id, credential?.homeWorkspaceId);
 
   // Opening another workspace notes the moment on the account, so the
   // switcher lists it by recency on every device. The note is written

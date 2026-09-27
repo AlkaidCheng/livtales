@@ -41,9 +41,6 @@ export interface KeptViewsOwner {
 
 type Entry = readonly [key: string, value: unknown];
 
-const idPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function read(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
@@ -142,19 +139,6 @@ interface KeptEventView {
   readonly choices: Readonly<Record<string, ViewChoices>>;
 }
 
-/** The events this browser kept a place or choices for, for the account. */
-function keptEventIds(accountId: string): string[] {
-  const ids = [
-    ...readEntries(keptViewStores.places),
-    ...readEntries(keptViewStores.choices),
-  ].flatMap(([key]) => {
-    if (!key.startsWith(`${accountId}:`)) return [];
-    const eventId = key.slice(accountId.length + 1).split(":")[0] ?? "";
-    return idPattern.test(eventId) ? [eventId] : [];
-  });
-  return [...new Set(ids)];
-}
-
 /**
  * The change that moves what the browser kept into the account's view:
  * the place when the view has none, and each tab's choices the view does
@@ -223,36 +207,6 @@ export async function moveKeptEventView(
       putBack(keptViewStores.choices, choices);
     }
     return layout.yours;
-  }
-}
-
-/**
- * Moves the kept places and choices of every event this browser holds
- * for the account, one event at a time, skipping the events `skip` names
- * (those whose own read moves them). An event the account can no longer
- * open is forgotten.
- */
-export async function moveKeptEventViews(
-  client: LivTalesApiClient,
-  accountId: string,
-  skip: (eventId: string) => boolean,
-): Promise<void> {
-  for (const eventId of keptEventIds(accountId)) {
-    if (skip(eventId)) continue;
-    try {
-      await moveKeptEventView(
-        client,
-        accountId,
-        await client.getEventLayoutWithView(eventId),
-      );
-    } catch (error) {
-      if (!isFinal(error)) return;
-      const prefix = `${accountId}:${eventId}`;
-      claimEntries(keptViewStores.places, (key) => key === prefix);
-      claimEntries(keptViewStores.choices, (key) =>
-        key.startsWith(`${prefix}:`),
-      );
-    }
   }
 }
 
@@ -346,22 +300,6 @@ export function mayHoldKeptViews(foldAccount?: string): boolean {
     keptViewStores.taskView,
     ...(foldAccount === undefined ? [] : [keptViewStores.folds(foldAccount)]),
   ].some((key) => read(key) !== null);
-}
-
-/** Whether this browser still keeps anything for the account to move. */
-export function hasKeptViews(owner: KeptViewsOwner): boolean {
-  return (
-    keptEventIds(owner.accountId).length > 0 ||
-    readEntries(keptViewStores.choices).some(
-      ([key]) => key === `${owner.accountId}:tasks`,
-    ) ||
-    [
-      keptViewStores.eventLayout,
-      keptViewStores.peopleLayout,
-      keptViewStores.taskView,
-      keptViewStores.folds(owner.foldAccount),
-    ].some((key) => read(key) !== null)
-  );
 }
 
 /**

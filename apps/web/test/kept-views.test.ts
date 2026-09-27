@@ -13,10 +13,8 @@ import {
 } from "vitest";
 
 import {
-  hasKeptViews,
   keptViewStores,
   moveKeptEventView,
-  moveKeptEventViews,
   moveKeptPageChoices,
 } from "../lib/kept-views";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
@@ -104,7 +102,6 @@ describe("the one-time move of what this browser kept", () => {
       [`${me}:${event.id}:calendar`, { layout: "month", noteSort: "edited" }],
       [`${me}:tasks`, { show: "all" }],
     ]);
-    expect(hasKeptViews(owner)).toBe(true);
     requests = [];
 
     const view = await moveKeptEventView(
@@ -185,26 +182,6 @@ describe("the one-time move of what this browser kept", () => {
     expect(window.localStorage.getItem(keptViewStores.places)).toBeNull();
   });
 
-  it("moves every kept event but those being read, and forgets an event that is gone", async () => {
-    const gone = crypto.randomUUID();
-    const read = (await client.listEvents({})).items.find(
-      (candidate) => candidate.id !== event.id,
-    );
-    assert(read);
-    keep(keptViewStores.places, [
-      [`${me}:${event.id}`, { view: "calendar" }],
-      [`${me}:${gone}`, { view: "notes" }],
-      [`${me}:${read.id}`, { view: "notes" }],
-    ]);
-    await moveKeptEventViews(client, me, (eventId) => eventId === read.id);
-    expect((await client.getEventLayoutWithView(event.id)).yours.place).toEqual(
-      { view: "calendar" },
-    );
-    expect(entries(keptViewStores.places)).toEqual([
-      [`${me}:${read.id}`, { view: "notes" }],
-    ]);
-  });
-
   it("saves each collection page's kept choices while the account keeps none, and forgets them", async () => {
     await client.updatePageChoices("people", {
       choices: { sort: "updated" },
@@ -249,6 +226,5 @@ describe("the one-time move of what this browser kept", () => {
     expect(entries(keptViewStores.choices)).toEqual([
       [`${other}:tasks`, { show: "done" }],
     ]);
-    expect(hasKeptViews(owner)).toBe(false);
   });
 });

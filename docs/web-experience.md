@@ -1039,8 +1039,8 @@ not yet reviewed the two Chinese catalogs; wording may change.
   with a notice. The Tasks and People pages keep theirs the same way. What
   an earlier version kept in the browser instead (the places, the tabs'
   choices, the folds, and the three layouts) is saved to the account once,
-  where the account keeps nothing for it yet, and the browser then forgets
-  it.
+  the first time that event or page is opened, where the account keeps
+  nothing for it yet, and the browser then forgets it.
 - Event views have bookmarkable URLs, such as `/events/OBJECT_ID?view=calendar`.
   Reload and browser Back/Forward preserve the selected view. An event
   opened at an address that names neither a view nor a page returns to
