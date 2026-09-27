@@ -124,8 +124,7 @@
   background: transparent;
   border-radius: 0;
   border-width: 0 0 1px;
-  height: 73px;
-  padding: 8px 4px;
+  padding: 10px 4px;
 }
 .event-layout-list .event-card:hover {
   background: color-mix(in srgb, var(--surface-subtle) 55%, transparent);

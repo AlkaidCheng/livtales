@@ -32,6 +32,8 @@
     "list": "List"
   },
   "undated": "Date to be decided",
+  "noDate": "No date yet",
+  "groupCount": "{count, plural, one {# event} other {# events}}",
   "actionsFor": "Actions for {name}",
   "menu": {
     "edit": "Edit event",

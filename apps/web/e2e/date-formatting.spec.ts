@@ -67,7 +67,7 @@ test("creates a date-only range and switches to multi-day exact times @webkit-de
 
 // Dates are worded in the application's language, which is negotiated from
 // the browser's: a German browser gets English (German is not offered), so
-// its badges read the English month while the day still follows the zone.
+// its months read in English while the day still follows the zone.
 for (const display of [
   {
     locale: "en-US",
@@ -136,29 +136,39 @@ for (const display of [
       await page.getByLabel("Name", { exact: true }).fill("Event planner");
       await page.getByLabel("Email").fill(email);
       await page.getByRole("button", { name: "Continue" }).click();
-      const month = await page.evaluate(
+      const [month, monthName] = await page.evaluate(
         ({ application, timezoneId, timestamp }) =>
-          new Intl.DateTimeFormat(application, {
-            month: "short",
-            timeZone: timezoneId,
-          }).format(new Date(timestamp)),
+          (["short", "long"] as const).map((month) =>
+            new Intl.DateTimeFormat(application, {
+              month,
+              timeZone: timezoneId,
+            }).format(new Date(timestamp)),
+          ),
         { ...display, timestamp },
       );
-      const card = page.getByRole("link", { name: /Month boundary/ });
-      await expect(card.locator(".event-date-mark span")).toHaveText(
-        month.toUpperCase(),
+      // The Events list places the card under the month its start falls in
+      // the zone, its day with the weekday and the time, and the undated
+      // one under No date yet. A year before this one starts folded.
+      const year = page.getByRole("button", { name: /^2026/ });
+      if ((await year.getAttribute("aria-expanded")) === "false")
+        await year.click();
+      const card = page
+        .locator(".event-month", {
+          has: page.getByRole("button", { name: `${monthName} 1 event` }),
+        })
+        .getByRole("link", { name: /Month boundary/ });
+      await expect(card.locator("p").first()).toHaveText(
+        new RegExp(`^\\w{3}, ${month} ${Number(display.day)} · `),
       );
-      await expect(card.locator(".event-date-mark strong")).toHaveText(
-        String(Number(display.day)),
-      );
-      const undated = page.getByRole("link", { name: /Unscheduled plan/ });
-      await expect(undated.locator(".event-date-mark strong")).toHaveText(
-        "TBD",
-      );
-      await expect(undated.locator(".event-date-mark span")).toHaveCount(0);
+      const undated = page
+        .locator(".event-month", {
+          has: page.getByRole("button", { name: "No date yet 1 event" }),
+        })
+        .getByRole("link", { name: /Unscheduled plan/ });
+      await expect(undated).toContainText("Date to be decided");
       // The Calendar and Reminders rows read the moment on their meta line,
-      // in the same month and day the badge shows; the separator before the
-      // time differs between engines (", " or " at ").
+      // in the same month and day the card shows, with the year; the
+      // separator before the time differs between engines (", " or " at ").
       const onTheDay = new RegExp(
         `^${month} ${Number(display.day)}, 2026(,| at) `,
       );

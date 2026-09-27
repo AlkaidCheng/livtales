@@ -257,7 +257,8 @@ exact boundary. The first page's
 reference time is retained across its continuation pages. It never sets the
 authorization clock: every request rechecks current access and grant expiry.
 
-Date order is start ascending, undated last, then folded name and ID. Date-only
+Date order is start ascending, undated last, then folded name and ID; with
+`filter=past` it is start descending, the most recent first. Date-only
 starts use a UTC day anchor for ordering, not an asserted occurrence time. Name order
 is folded name then ID. Updated order is update time descending then ID. Names
 use PostgreSQL `lower(display_name) COLLATE "C"`, not browser locale collation.

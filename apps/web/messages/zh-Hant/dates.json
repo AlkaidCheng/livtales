@@ -11,6 +11,7 @@
   },
   "hint": "{date}（{relative}）",
   "range": "{start} 至 {end}",
+  "span": "{start}至{end}",
   "duration": {
     "minutes": "{minutes} 分鐘",
     "hours": "{hours} 小時",

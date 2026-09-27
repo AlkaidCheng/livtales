@@ -5,7 +5,11 @@ import { instantDayKey, instantWallInput, wallInstant } from "./zone";
 const dateFormats = new Map<string, Intl.DateTimeFormat>();
 const nameCollators = new Map<string, Intl.Collator>();
 
-function dateFormat(locale: string, options: Intl.DateTimeFormatOptions) {
+/** A date formatter, kept for reuse when its zone is named. */
+export function dateFormat(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+) {
   // Device-default formatters must follow system timezone changes.
   if (options.timeZone === undefined)
     return new Intl.DateTimeFormat(locale, options);

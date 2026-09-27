@@ -2332,11 +2332,123 @@ a.search-result:hover {
   gap: 10px;
 }
 
-/* One compact card: the date tile, three rows of text (the name, the
-   dates, a line for sharing), and the controls at the right edge. The
-   card is one fixed height so every card in the grid shares its
-   baselines; the link is the card, the controls sit beside it. */
+/* The list by year, then month: a year heading in the display face, a
+   month heading in small capitals with its count at the right, each a
+   button that folds its group to that one line. The groups stack in the
+   list's column, so a heading runs across the whole grid. */
+.event-groups,
+.event-year,
+.event-month {
+  display: grid;
+  gap: 8px;
+}
+
+.event-fold-heading {
+  font: inherit;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.event-fold {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--faint);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 6px;
+  padding: 0;
+  text-align: start;
+  width: 100%;
+}
+
+.event-fold-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.event-fold-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  margin-left: auto;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.event-fold-chevron {
+  flex: none;
+  height: 14px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  transition: transform 150ms ease;
+  width: 14px;
+}
+
+.event-fold[aria-expanded="false"] .event-fold-chevron {
+  transform: rotate(-90deg);
+}
+
+.event-fold:hover {
+  color: var(--muted);
+}
+
+.event-fold-year {
+  margin-top: 14px;
+}
+
+.event-year:first-child > .event-fold-year {
+  margin-top: 0;
+}
+
+.event-fold-year .event-fold {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  gap: 8px;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.event-fold-year .event-fold-name {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.event-fold-year .event-fold-count {
+  font-family: var(--font-body);
+}
+
+/* An open year has no count; its chevron keeps the right edge. */
+.event-fold-year .event-fold-name + .event-fold-chevron {
+  margin-left: auto;
+}
+
+.event-fold-month .event-fold {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding-top: 6px;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-fold-chevron {
+    transition: none;
+  }
+}
+
+/* One compact card: the name, the dates with the place, a line for
+   sharing when the event is shared, and the controls at the right edge.
+   The card takes its content's height; cards side by side in the grid
+   stretch to the taller one. The link is the card, the controls sit
+   beside it. The copy takes the card's flexible width, so a mark can
+   stand at its left. */
 .event-card-shell {
+  display: grid;
   position: relative;
 }
 
@@ -2348,8 +2460,7 @@ a.search-result:hover {
   color: inherit;
   display: flex;
   gap: 12px;
-  height: 74px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   text-decoration: none;
   transition: border-color 150ms ease;
 }
@@ -2358,48 +2469,11 @@ a.search-result:hover {
   border-color: var(--line-strong);
 }
 
-.event-date-mark {
-  align-items: center;
-  background: var(--accent-soft);
-  border-radius: 10px;
-  color: var(--accent);
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 2px;
-  height: 56px;
-  justify-content: center;
-  line-height: 1;
-  width: 52px;
-}
-
-.event-date-mark span {
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
-.event-date-mark strong {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 400;
-  line-height: 1;
-}
-
-.event-date-mark .event-date-tbd {
-  font-size: 1rem;
-}
-
-.period-past .event-date-mark,
-.period-unscheduled .event-date-mark {
-  background: var(--surface-subtle);
-  color: var(--muted);
-}
-
 .event-card-copy {
   --card-title: inherit;
   display: grid;
   flex: 1;
+  gap: 2px;
   min-width: 0;
   /* The controls' gutter, so a long name never runs under them. */
   padding-right: 60px;
@@ -2409,7 +2483,7 @@ a.search-result:hover {
   --card-title: var(--muted);
 }
 
-.event-card-copy h2 {
+.event-card-name {
   color: var(--card-title);
   font-family: var(--font-body);
   font-size: 0.9rem;
@@ -2432,14 +2506,14 @@ a.search-result:hover {
   white-space: nowrap;
 }
 
-/* The third line: the sharer's tag and the role, or the count shared
-   with; an empty line on the other cards keeps every card's height. */
+/* The third line, on a shared event's card alone: the sharer's tag and
+   the role, or the count shared with. */
 .event-card-share-line {
   align-items: center;
   display: flex;
   gap: 8px;
   height: 18px;
-  margin-top: 4px;
+  margin-top: 2px;
   min-width: 0;
 }
 
@@ -9819,7 +9893,7 @@ html:has(.event-create-dialog[open]) {
     .section-dialog-caption,
     .setting-group-title,
     .rail-heading,
-    .event-date-mark span,
+    .event-fold-month .event-fold-name,
     .date-tile span
   ) {
   letter-spacing: 0.02em;

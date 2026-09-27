@@ -116,15 +116,21 @@ function compareName(first: EventCandidate, second: EventCandidate): number {
   );
 }
 
-function compareDate(first: EventCandidate, second: EventCandidate): number {
+/**
+ * Date order: forward from the earliest start, undated last, or back from
+ * the most recent start for the Past list; ties by name.
+ */
+function compareDate(
+  first: EventCandidate,
+  second: EventCandidate,
+  back: boolean,
+): number {
   const firstDate = schedulePosition(first);
   const secondDate = schedulePosition(second);
   if (firstDate === null && secondDate !== null) return 1;
   if (firstDate !== null && secondDate === null) return -1;
-  return (
-    (firstDate?.getTime() ?? 0) - (secondDate?.getTime() ?? 0) ||
-    compareName(first, second)
-  );
+  const distance = (firstDate?.getTime() ?? 0) - (secondDate?.getTime() ?? 0);
+  return (back ? -distance : distance) || compareName(first, second);
 }
 
 function compareUpdated(first: EventCandidate, second: EventCandidate): number {
@@ -138,6 +144,7 @@ function afterCursor(
   event: EventCandidate,
   cursor: EventListCursor,
   sort: EventListQuery["sort"],
+  back: boolean,
 ): boolean {
   if (sort === "name") {
     const name = event.displayName.toLocaleLowerCase();
@@ -151,13 +158,14 @@ function afterCursor(
       (updated === cursorUpdated && event.id > cursor.id)
     );
   }
-  const position =
-    schedulePosition(event)?.getTime() ?? Number.POSITIVE_INFINITY;
+  const position = schedulePosition(event)?.getTime() ?? null;
   const cursorPosition =
-    cursor.startsAt === null
-      ? Number.POSITIVE_INFINITY
-      : new Date(cursor.startsAt).getTime();
-  if (position !== cursorPosition) return position > cursorPosition;
+    cursor.startsAt === null ? null : new Date(cursor.startsAt).getTime();
+  if (position !== cursorPosition) {
+    // Undated events come last in either direction.
+    if (position === null || cursorPosition === null) return position === null;
+    return back ? position < cursorPosition : position > cursorPosition;
+  }
   const name = event.displayName.toLocaleLowerCase();
   return name > cursor.name || (name === cursor.name && event.id > cursor.id);
 }
@@ -246,15 +254,18 @@ export class CloudBaseEventReadRepository implements EventReadRepository {
         (input.scope === "all" ||
           (input.scope === "mine" ? event.own : !event.own)),
     );
+    const back = input.filter === "past";
     events.sort(
       input.sort === "name"
         ? compareName
         : input.sort === "updated"
           ? compareUpdated
-          : compareDate,
+          : (first, second) => compareDate(first, second, back),
     );
     if (cursor !== undefined)
-      events = events.filter((event) => afterCursor(event, cursor, input.sort));
+      events = events.filter((event) =>
+        afterCursor(event, cursor, input.sort, back),
+      );
     const page = events.slice(0, input.limit);
     const ids = page.map((event) => event.id);
     const [objects, eventRows] = await Promise.all([

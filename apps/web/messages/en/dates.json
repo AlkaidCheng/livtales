@@ -11,6 +11,7 @@
   },
   "hint": "{date} ({relative})",
   "range": "{start} to {end}",
+  "span": "{start} – {end}",
   "duration": {
     "minutes": "{minutes} min",
     "hours": "{hours} h",
