@@ -88,8 +88,8 @@ again.
 
 More holds what acts on the app rather than on records: Trash, Theme,
 Customize sidebar, Keyboard shortcuts, and Help. Theme opens a panel beside
-the rail with the mode (System, Light, Dark), the palette, density, and
-motion choices, and a reset. Keyboard shortcuts opens Settings at Keyboard
+the rail with the mode (System, Light, Dark), the palette and add button
+tiles, density, and motion choices, and a reset. Keyboard shortcuts opens Settings at Keyboard
 over the page and shows only on a device with a keyboard; Help has no
 surface yet and
 says so in a passing notice. The
@@ -710,15 +710,37 @@ unreadable storage falls back to System; failed writes leave the current page
 usable but cannot guarantee persistence. Sandbox file storage depends on the
 browser and file location.
 
-The Theme panel previews Ink & Paper, Celadon, and Modern Neutral in the
-current light/dark mode; outside a session the account screens' footer
-offers the mode alone. Choosing a palette does not change that mode. Comfortable/Compact
+The palette is three tiles side by side, Ink & Paper, Celadon, and Modern
+Neutral, each a miniature of the app in that palette and the current
+light/dark mode (its ground, a top bar, a tab in its accent and one beside
+it, and two rows); the chosen tile carries the accent's outline. The tiles
+are radios, so Tab reaches the chosen one and the arrow keys choose. Outside
+a session the account screens' footer offers the mode alone. Choosing a
+palette does not change that mode.
+
+Button, under Palette, chooses the phone add button's seal: four shape
+tiles, Circle, Square, Diamond, and Heart, each drawn in its style and named
+with it for assistive technology ("Heart, Plump"), chosen like the palettes.
+A small styles control in each tile's top corner opens a pop-up titled with
+the shape that shows its styles as large previews: Round and Scalloped,
+Soft and Ticket, Rounded and Gem, Plump and Geometric. Choosing one applies
+it with its shape and closes the pop-up, back on the control; Escape, the
+close control, or a press outside closes it alone. Each shape keeps its own
+style, so returning to a shape brings back the style last chosen for it.
+Anyone who has not chosen sees the round Circle. The seal takes the
+palette's accent in both modes (a gradient from `--seal-top` to
+`--seal-bottom` on a faint paper grain, a light `--seal-line` just inside
+the edge, and the plus in `--seal-ink`), and keeps a tap target of at least
+56px in every shape. Comfortable/Compact
 density changes Event-card and record-row spacing without shrinking controls.
 Motion follows the device by default; Reduced minimizes transitions and
 movement even when the device allows them. Device-level reduced motion always
 remains effective. These settings apply immediately and require no save.
 
-Each setting stores only one validated string under its own `chronelle.*` key.
+Each setting stores only one validated string under its own `chronelle.*` key;
+the add button keeps its shape under `chronelle.seal` and each shape's style
+under `chronelle.sealCircle`, `chronelle.sealSquare`, `chronelle.sealDiamond`,
+and `chronelle.sealHeart`, and each default is stored as no key at all.
 Reset display settings removes those overrides without clearing other browser
 data. Cross-tab changes apply even while the dialog is closed. Escape or Done
 closes the dialog and restores focus; underlying forms remain mounted. This
@@ -803,8 +825,9 @@ the account, this one included, and returns to sign-in. Under Preferences,
 Language & time holds menus for the language, the time format (its caption
 is the current moment in that format), and the first day of the week, then
 the time zone's picker, all kept on the account and applied at once; Appearance repeats the Theme panel's
-mode, density, and motion as choices side by side and its palette as a
-menu, which stay on the browser, carries the Install app row (see Install
+mode, density, and motion as choices side by side and its palette and
+Button tiles under their labels at the row's full width, which stay on the
+browser, carries the Install app row (see Install
 as an app), and ends with Reset display settings; Keyboard, on a
 keyboard device, holds the shortcut table described under Search. Settings
 holds only the account and the app's preferences: a space's members are

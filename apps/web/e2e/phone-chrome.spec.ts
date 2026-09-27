@@ -298,6 +298,22 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   const theme = page.getByRole("dialog", { name: "Theme", exact: true });
   await expect(theme).toBeVisible();
   await expect(theme).toBeInViewport();
+  // The sheet holds the palette and add button tiles; a shape's styles
+  // close alone, leaving the sheet open.
+  await expect(
+    theme.getByRole("group", { name: "Palette", exact: true }),
+  ).toBeVisible();
+  const shapes = theme.getByRole("group", { name: "Button", exact: true });
+  await expect(shapes.getByRole("radio")).toHaveCount(4);
+  await shapes.getByRole("button", { name: "Square styles" }).click();
+  const squareStyles = page.getByRole("dialog", { name: "Square" });
+  await expect(squareStyles).toBeInViewport();
+  await page.keyboard.press("Escape");
+  await expect(squareStyles).toHaveCount(0);
+  await expect(theme).toBeVisible();
+  await expect(
+    shapes.getByRole("button", { name: "Square styles" }),
+  ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(theme).toHaveCount(0);
   await expect(accountBlock(page)).toBeFocused();

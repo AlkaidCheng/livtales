@@ -3,9 +3,9 @@
 import { useTranslations } from "next-intl";
 import { useId } from "react";
 
+import { PaletteTiles, SealTiles } from "../../components/appearance-tiles";
 import { useInstallControl } from "../../components/install-app";
-import { MenuSelect } from "../../components/menu-select";
-import { displayChoices, palettes } from "../../lib/display-preferences";
+import { displayChoices } from "../../lib/display-preferences";
 import {
   resetDisplayPreferences,
   useDisplayPreference,
@@ -13,17 +13,16 @@ import {
 import { type SettingControl, SettingRow } from "./setting-row";
 
 /**
- * Appearance, a row each: the Theme panel's mode, palette, density, and
- * motion, repeated here so Settings holds every preference, and the install
- * control, which like them concerns this device. The display choices'
- * reset sits at the foot.
+ * Appearance, a row each: the Theme panel's mode, palette and add button
+ * tiles, density, and motion, repeated here so Settings holds every
+ * preference, and the install control, which like them concerns this
+ * device. The display choices' reset sits at the foot.
  */
 export function AppearanceSection() {
   const t = useTranslations("theme");
   const settings = useTranslations("settings");
   const install = useTranslations("install");
   const appearance = useDisplayPreference("appearance");
-  const palette = useDisplayPreference("palette");
   const density = useDisplayPreference("density");
   const motion = useDisplayPreference("motion");
   const installer = useInstallControl();
@@ -44,19 +43,11 @@ export function AppearanceSection() {
           />
         )}
       </SettingRow>
-      <SettingRow label={t("palette")}>
-        {(control) => (
-          <MenuSelect
-            {...control}
-            label={t("palette")}
-            onChange={palette.setValue}
-            options={palettes.map((choice) => ({
-              value: choice.id,
-              label: t(`palettes.${choice.id}`),
-            }))}
-            value={palette.value}
-          />
-        )}
+      <SettingRow kind="choices" label={t("palette")} stacked>
+        {(control) => <PaletteTiles {...control} />}
+      </SettingRow>
+      <SettingRow kind="choices" label={t("button")} stacked>
+        {(control) => <SealTiles {...control} />}
       </SettingRow>
       <SettingRow kind="choices" label={t("density")}>
         {(control) => (

@@ -22,21 +22,25 @@ export interface SettingControl {
  * of `choices` points at the label with `aria-labelledby`; an `action` (a
  * button or a link) names itself, and the label is a heading of its own.
  * The caption describes the control either way. A row given `onSubmit` is
- * a form.
+ * a form. A `stacked` row sets its control under the label at the row's
+ * full width, for tiles too wide to sit beside it.
  */
 export function SettingRow({
   label,
   caption,
   kind = "field",
+  stacked = false,
   onSubmit,
   children,
 }: {
   readonly label: ReactNode;
   readonly caption?: ReactNode;
   readonly kind?: "field" | "choices" | "action";
+  readonly stacked?: boolean;
   readonly onSubmit?: FormEventHandler<HTMLFormElement> | undefined;
   readonly children: (control: SettingControl) => ReactNode;
 }) {
+  const className = stacked ? "setting-row setting-row-stacked" : "setting-row";
   const id = useId();
   const controlId = `${id}-control`;
   const labelId = `${id}-label`;
@@ -73,9 +77,9 @@ export function SettingRow({
     </>
   );
   return onSubmit === undefined ? (
-    <div className="setting-row">{body}</div>
+    <div className={className}>{body}</div>
   ) : (
-    <form className="setting-row" onSubmit={onSubmit}>
+    <form className={className} onSubmit={onSubmit}>
       {body}
     </form>
   );

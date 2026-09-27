@@ -416,5 +416,25 @@ test("opens Settings over an event's view and returns to it as it was left @webk
       expect(caption.y).toBeGreaterThanOrEqual(zone.y + zone.height - 1);
       expect(zone.x + zone.width).toBeLessThanOrEqual(area.x + area.width);
     }
+    // Appearance sets the palette and add button tiles under their labels,
+    // each row of tiles within the section.
+    if (name === "Appearance") {
+      const area = await content.boundingBox();
+      for (const group of ["Palette", "Button"]) {
+        const tiles = settings.getByRole("group", { name: group, exact: true });
+        await tiles.scrollIntoViewIfNeeded();
+        const label = await settings
+          .getByText(group, { exact: true })
+          .boundingBox();
+        const box = await tiles.boundingBox();
+        if (!label || !box || !area)
+          throw new Error(`The ${group} row is not laid out.`);
+        expect(box.y).toBeGreaterThanOrEqual(label.y + label.height - 1);
+        expect(box.x + box.width).toBeLessThanOrEqual(area.x + area.width);
+      }
+      await expect(
+        settings.getByRole("radio", { name: "Circle, Round", exact: true }),
+      ).toBeChecked();
+    }
   }
 });

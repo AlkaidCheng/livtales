@@ -32,3 +32,292 @@
     outline-offset: -3px;
   }
 }
+
+/* Appearance's tiles: the palettes and the add button's shapes as small
+   previews side by side, the chosen one outlined in the accent. Each tile
+   is a label over its radio. */
+.appearance-tiles {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.appearance-tile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  font-size: 0.74rem;
+  gap: 6px;
+  line-height: 1.3;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 6px 6px 8px;
+  position: relative;
+  text-align: center;
+}
+
+.appearance-tile:hover {
+  color: var(--ink);
+}
+
+.appearance-tile:has(> .appearance-tile-input:checked) {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.appearance-tile:has(> .appearance-tile-input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.appearance-tile-input {
+  cursor: pointer;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  position: absolute;
+  z-index: 1;
+}
+
+/* A palette's miniature, in that palette's own tokens. */
+.palette-miniature {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: block;
+  height: 68px;
+  overflow: hidden;
+  position: relative;
+}
+
+.palette-miniature i {
+  display: block;
+  position: absolute;
+}
+
+.palette-miniature-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  height: 12px;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+.palette-miniature-tab {
+  background: var(--line);
+  border-radius: 2px;
+  height: 3px;
+  left: 36px;
+  top: 18px;
+  width: 16px;
+}
+
+.palette-miniature-tab.is-current {
+  background: var(--accent);
+  left: 8px;
+  width: 22px;
+}
+
+.palette-miniature-row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  height: 13px;
+  left: 8px;
+  right: 8px;
+  top: 28px;
+}
+
+.palette-miniature-row.is-second {
+  top: 46px;
+}
+
+.palette-miniature-row::after {
+  background: var(--ink);
+  border-radius: 2px;
+  content: "";
+  height: 3px;
+  left: 6px;
+  opacity: 0.7;
+  position: absolute;
+  top: 4px;
+  width: 42%;
+}
+
+/* The shapes' tiles, each with its styles control in the top corner: a
+   small mark with a larger hit area than it shows. */
+.seal-tiles {
+  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.seal-tile {
+  container-type: inline-size;
+  display: grid;
+  min-width: 0;
+  position: relative;
+}
+
+.seal-tile-choice {
+  align-content: start;
+  justify-items: center;
+  min-height: 76px;
+  padding: 10px 4px 8px;
+}
+
+/* A narrow tile, as in the Theme panel, sets the seal clear of the
+   styles control above it. */
+@container (max-width: 80px) {
+  .seal-tile-choice {
+    padding-top: 18px;
+  }
+}
+
+.seal-tile-styles {
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  color: var(--faint);
+  cursor: pointer;
+  display: grid;
+  height: 18px;
+  padding: 0;
+  place-items: center;
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 18px;
+  z-index: 2;
+}
+
+.seal-tile-styles::before {
+  content: "";
+  inset: -8px;
+  position: absolute;
+}
+
+.seal-tile-styles svg {
+  fill: none;
+  height: 11px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 11px;
+}
+
+.seal-tile-styles:hover {
+  background: var(--surface-subtle);
+  color: var(--accent);
+}
+
+.seal-tile-styles:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.seal-tile-choice:has(> .appearance-tile-input:checked) + .seal-tile-styles {
+  color: var(--accent);
+}
+
+/* A shape's styles, in a pop-up in the middle of the screen. */
+.seal-styles {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-raised);
+  color: var(--ink);
+  gap: 12px;
+  height: fit-content;
+  inset: 0;
+  margin: auto;
+  max-width: none;
+  padding: 12px 16px 16px;
+  width: min(360px, calc(100% - 40px));
+}
+
+.seal-styles[open] {
+  display: grid;
+}
+
+.seal-styles::backdrop {
+  background: var(--scrim);
+}
+
+.seal-styles-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.seal-styles-title {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 650;
+  margin: 0;
+}
+
+.seal-styles .dialog-close:not([hidden]) {
+  font-size: 1.2rem;
+  height: 32px;
+  width: 32px;
+}
+
+.seal-styles-grid {
+  border: 0;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  margin: 0;
+  min-inline-size: 0;
+  padding: 0;
+}
+
+.seal-style {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  font-size: 0.8rem;
+  gap: 8px;
+  justify-items: center;
+  padding: 16px 8px 10px;
+}
+
+.seal-style:hover {
+  color: var(--ink);
+}
+
+.seal-style[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--accent);
+  font-weight: 650;
+}
+
+.seal-style:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  .appearance-tile:has(> .appearance-tile-input:checked),
+  .seal-style[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+    outline-offset: -3px;
+  }
+}

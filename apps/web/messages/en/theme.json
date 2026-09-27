@@ -21,5 +21,24 @@
     "paper": "Ink & Paper",
     "celadon": "Celadon",
     "neutral": "Modern Neutral"
-  }
+  },
+  "button": "Button",
+  "seals": {
+    "circle": "Circle",
+    "square": "Square",
+    "diamond": "Diamond",
+    "heart": "Heart"
+  },
+  "sealStyles": {
+    "round": "Round",
+    "scalloped": "Scalloped",
+    "soft": "Soft",
+    "ticket": "Ticket",
+    "rounded": "Rounded",
+    "gem": "Gem",
+    "plump": "Plump",
+    "geometric": "Geometric"
+  },
+  "sealChoice": "{shape}, {style}",
+  "sealStylesOf": "{shape} styles"
 }
