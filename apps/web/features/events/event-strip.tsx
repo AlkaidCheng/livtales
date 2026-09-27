@@ -173,7 +173,16 @@ export function EventStrip({
         if (chip) chip.hidden = false;
         next.add(key);
       }
-      const basis = [element.clientWidth, ...tabKeys, ...labels, currentKey]
+      // The view's controls and its count take room the fold never
+      // changes, so a change in either is a new measure that may unfold.
+      const basis = [
+        element.clientWidth,
+        controlsSlot.current?.getBoundingClientRect().width ?? 0,
+        count?.value ?? "",
+        ...tabKeys,
+        ...labels,
+        currentKey,
+      ]
         .map(String)
         .join("\n");
       const settled = measuredFor.current === basis;

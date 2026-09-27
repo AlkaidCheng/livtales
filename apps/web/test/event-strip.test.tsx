@@ -168,9 +168,12 @@ describe("the strip's long press", () => {
 describe("the strip's fold", () => {
   // jsdom lays nothing out: a tab is 60px wide unless hidden, the chip is
   // as wide as its count reads in a proportional face ("+11" narrower than
-  // "+10"), and a part of the strip is as wide as what it holds.
+  // "+10"), a view's control is as wide as its data-width says, and a part
+  // of the strip is as wide as what it holds.
   function widthOf(element: Element): number {
     if (element instanceof HTMLElement && element.hidden) return 0;
+    if (element.hasAttribute("data-width"))
+      return Number(element.getAttribute("data-width"));
     if (element.hasAttribute("data-tab-key")) return 60;
     if (element.hasAttribute("data-strip-chip")) {
       const count = Number(/\+(\d+)/.exec(element.textContent ?? "")?.[1]);
@@ -198,6 +201,7 @@ describe("the strip's fold", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("settles where one more fold narrows the chip enough to unfold it again", () => {
@@ -236,5 +240,66 @@ describe("the strip's fold", () => {
       screen.getByRole("button", { name: "11 more tabs" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "calendar" })).toBeVisible();
+  });
+
+  it("unfolds again once the view's controls take less room", () => {
+    const watchers: ResizeObserverCallback[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          watchers.push(callback);
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains("event-strip") ? 300 : 0;
+      },
+    );
+    let slot: HTMLElement | null = null;
+    const views = ["overview", "todos", "calendar", "timeline"] as const;
+    render(
+      <EventStrip
+        pages={[]}
+        selectedPageId={undefined}
+        showingPages={false}
+        onSelectPage={() => undefined}
+        canAddPage={false}
+        onAddPage={() => undefined}
+        views={views.map((id) => ({ id, label: id }))}
+        activeView="calendar"
+        onSelectView={() => undefined}
+        onControlsSlot={(element) => {
+          slot = element;
+        }}
+      />,
+      { wrapper },
+    );
+    const resized = () =>
+      act(() => {
+        watchers.at(-1)?.([], {} as ResizeObserver);
+      });
+    expect(screen.queryByRole("button", { name: /more tabs/u })).toBeNull();
+
+    // Wide controls arrive: three tabs fold, never the current one.
+    const controls = document.createElement("span");
+    controls.setAttribute("data-width", "150");
+    (slot as HTMLElement | null)?.append(controls);
+    resized();
+    expect(
+      screen.getByRole("button", { name: "3 more tabs" }),
+    ).toBeInTheDocument();
+
+    // The controls narrow: at the same width and with the same tabs, the
+    // strip unfolds rather than keeping the fold it measured before.
+    controls.setAttribute("data-width", "20");
+    resized();
+    expect(screen.queryByRole("button", { name: /more tabs/u })).toBeNull();
+    for (const id of views)
+      expect(screen.getByRole("tab", { name: id })).toBeVisible();
   });
 });
