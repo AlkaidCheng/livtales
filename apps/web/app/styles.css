@@ -5785,19 +5785,15 @@ ul.resource-list {
     font-size: clamp(2.2rem, 10vw, 3rem);
   }
 
-  /* The breadcrumb and the actions share the first row; the title, the
-     date line with the access tag, and the description follow. */
+  /* The actions end the first row. The person page's link up to People
+     starts it and the title follows under both; an event's page, whose
+     place the app bar names, starts it with the title, and the date line
+     with the access tag and the description run under both. */
   .event-hero {
     align-items: center;
     column-gap: 12px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .event-hero > .event-crumbs {
-    grid-column: 1;
-    grid-row: 1;
-    margin-bottom: 0;
   }
 
   .event-title-row {
@@ -5817,6 +5813,23 @@ ul.resource-list {
     grid-column: 2;
     grid-row: 1;
     justify-content: flex-end;
+  }
+
+  .event-workspace .event-title-row > div:first-child {
+    display: contents;
+  }
+
+  .event-workspace .event-title-row > div:first-child > * {
+    grid-column: 1 / -1;
+  }
+
+  .event-workspace .event-title-row > div:first-child > h1 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .event-workspace .event-actions {
+    align-self: start;
   }
 
   /* The event page's tag stands in for its line; a person's page keeps the line. */
@@ -9549,8 +9562,9 @@ html:has(.event-create-dialog[open]) {
   stroke-width: 1.6;
 }
 
-/* The phone's app bar: the workspace at the left (its mark and name), the
-   account's avatar at the right, each opening a sheet from the bottom. */
+/* The phone's app bar: the menu, then the place: the workspace (its mark
+   and name, opening the switcher as a sheet from the bottom) and, on an
+   event's page, a slash and the link back to Events. */
 .phone-bar {
   align-items: center;
   background: var(--canvas);
@@ -9558,7 +9572,6 @@ html:has(.event-create-dialog[open]) {
   display: flex;
   gap: 8px;
   height: calc(52px + env(safe-area-inset-top, 0px));
-  justify-content: space-between;
   left: 0;
   padding: env(safe-area-inset-top, 0px) 10px 0 8px;
   position: fixed;
@@ -9577,6 +9590,7 @@ html:has(.event-create-dialog[open]) {
   flex: none;
   height: 36px;
   place-items: center;
+  position: relative;
   width: 36px;
 }
 
@@ -9597,7 +9611,7 @@ html:has(.event-create-dialog[open]) {
   color: inherit;
   cursor: pointer;
   display: flex;
-  flex: 1;
+  flex: 0 1 auto;
   font: inherit;
   gap: 8px;
   justify-content: flex-start;
@@ -9609,9 +9623,30 @@ html:has(.event-create-dialog[open]) {
 .phone-menu[aria-expanded="true"],
 .phone-workspace:hover,
 .phone-workspace[aria-expanded="true"],
-.phone-account:hover,
-.phone-account[aria-expanded="true"] {
+.phone-crumb:hover {
   background: var(--surface-subtle);
+}
+
+/* The slash sits close to the space's name; the link keeps the name's
+   size in a lighter weight. */
+.phone-crumb-separator {
+  color: var(--faint);
+  flex: none;
+  margin: 0 -8px;
+}
+
+.phone-crumb {
+  border-radius: 9px;
+  color: var(--muted);
+  flex: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 6px 8px;
+  text-decoration: none;
+}
+
+.phone-crumb:hover {
+  color: var(--ink);
 }
 
 .phone-workspace .workspace-mark {
@@ -9626,28 +9661,6 @@ html:has(.event-create-dialog[open]) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* The rail's account block is a full-width row; here it is the avatar alone. */
-.phone-account {
-  background: none;
-  border: 0;
-  border-radius: 999px;
-  color: inherit;
-  cursor: pointer;
-  display: grid;
-  flex: none;
-  gap: 0;
-  grid-template-columns: auto;
-  padding: 4px;
-  place-items: center;
-  width: auto;
-}
-
-.phone-account .profile-mark {
-  font-size: 0.72rem;
-  height: 30px;
-  width: 30px;
 }
 
 /* A sheet from the bottom of the screen: rounded above, the safe area
@@ -9756,6 +9769,22 @@ html:has(.event-create-dialog[open]) {
   min-height: 44px;
 }
 
+/* The drawer ends with the rail's account block, sized for a finger. */
+.phone-drawer .sidebar-footer {
+  padding-top: 12px;
+}
+
+.phone-drawer .account-trigger {
+  min-height: 52px;
+  padding: 8px;
+}
+
+.phone-drawer .account-trigger .profile-mark {
+  font-size: 0.74rem;
+  height: 34px;
+  width: 34px;
+}
+
 /* Customizing in the drawer: the heading offers Done in place of the pencil. */
 .rail-heading-dot {
   margin: 0 4px;
@@ -9777,6 +9806,11 @@ html:has(.event-create-dialog[open]) {
   .workspace-page,
   .event-workspace {
     padding-top: calc(66px + env(safe-area-inset-top, 0px));
+  }
+
+  /* The app bar names an event's place, so the page has no breadcrumb. */
+  .event-crumbs {
+    display: none;
   }
 
   .quiet-tools .inline-search {
@@ -10589,6 +10623,14 @@ html:has(.event-create-dialog[open]) {
   right: -2px;
   top: -2px;
   width: 10px;
+}
+
+/* The phone's menu control carries the dot while the account block is in
+   the drawer. */
+.phone-menu .profile-dot {
+  border-color: var(--canvas);
+  right: 3px;
+  top: 4px;
 }
 
 .menu-count {
