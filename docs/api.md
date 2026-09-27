@@ -722,6 +722,74 @@ The Tasks (`todos`) and Expenses projections carry `sections` in order beside `i
 Deploy migration 0062 before this API and reapply the runtime role grants,
 which cover the new table.
 
+## Personal views
+
+| Method  | Path                               | Behavior                                                          |
+| ------- | ---------------------------------- | ----------------------------------------------------------------- |
+| `GET`   | `/events/:id/layout?include=yours` | The Event's layout with the account's own view of it as `yours`   |
+| `PATCH` | `/events/:id/view`                 | Save a change to the account's view of the Event; answers `yours` |
+| `GET`   | `/account/pages/:page`             | `{ page, choices }`: what the account left the page with          |
+| `PATCH` | `/account/pages/:page`             | Merge `{ choices }` into it by name; answers `{ page, choices }`  |
+
+Each account keeps its own view of every Event it opens, and of the Events,
+Tasks, and People pages (`:page` is `events`, `tasks`, or `people`), on the
+account rather than in the browser. A setting resolves to the account's own
+choice, else the account's copy of the Event's defaults taken at its first
+save, else the app's default, which is never stored. Only differences from
+the defaults are kept.
+
+`yours` has `stored` (false until the first save), `place` (where the Event
+was left: `{ view }` or `{ page }`, null for its Overview), `tabs` (the tab
+strip's `order`, `hidden`, and `removed` keys, as `eventTabs` on the account
+had them; `hidden` also holds page ids), `pages` (every page of the Event in
+the account's order), `layouts` (each page component's view for the
+account, null for its kind's default), and `choices` (what each tab, by view
+key, and each page component, by id, was left with: up to 40 names in
+16 KB, the web app giving each its meaning). The view is read against the
+Event's current layout: before the first save it is the Event's page order
+and each component's `view`; after it, pages and components the Event no
+longer has are left out (with their hidden entries and choices, and a
+`place` on such a page reads as null), and a page the Event gained sits right
+after the nearest page before it on the Event that the account's order
+already has, or last when there is none. A component the Event gained takes
+the Event's view. View keys the web app does not know are kept as given.
+Without `include` the layout response is unchanged; any other `include` is
+HTTP 400.
+
+`PATCH /events/:id/view` takes any of `place`, `tabs`, `pages`, `layouts`,
+and `choices`. The first save keeps a copy of the Event's page order and
+component layouts, which later changes to the Event's defaults never reach.
+`place`, `tabs`, and `pages` replace what is kept (a `place` records the
+Event as opened now); `layouts` sets the named components; each `choices`
+entry replaces that component's choices, and `null` or `{}` returns it to
+its defaults. Page and component ids the Event does not have are ignored.
+Every save also stores the view as it reads now, so pages and components
+added since keep their current place. Two saves that race keep what each
+changed: every field is written on its own, and a field a save only brings
+up to date is written while it still holds what the save read. Each account
+keeps its 200 most recently opened Events and its 1,000 most recently
+changed component choices; older ones are dropped. The response is `yours`
+after the save.
+
+Reading and saving need the access that reads the Event's layout: View,
+through membership or a share, with the request following the Event's
+workspace as on every route that names it. Otherwise the answer is HTTP 404
+`resource_unavailable`; a record that is not an Event is HTTP 400.
+Views carry no version and no audit event: they are the account's state,
+not a record. `PATCH /account/pages/:page` sets each named choice, `null`
+removing it; the merged choices keep up to 40 names in 16 KB as PostgreSQL
+writes them (HTTP 400 `invalid_request` otherwise, nothing changed), and
+removing the last one deletes the page's row. An account reads and writes
+only its own views. Both backends store through the same rows:
+`PostgresPersonalViewRepository` in one transaction, or
+`chronelle_user_event_view_read`, `chronelle_user_event_view_save`,
+`chronelle_user_page_choices_read`, and `chronelle_user_page_choices_update`
+(migration 0079), which the readiness check requires. Apply migration 0079
+and reapply the runtime role grants before this API. The tab arrangements
+kept in `eventTabs` on the account are copied into each account's views of
+live Events by the migration; `eventTabs` and its merge in `PATCH /auth/me`
+remain until a later release.
+
 ## Search
 
 | Method | Path      | Behavior                                   |

@@ -41,7 +41,9 @@ the common `objects` table holds identity and lifecycle fields.
   grant lifecycle, and PostgreSQL-backed access lookup.
 - `packages/object-model` owns canonical Event, Task, Expense, Reminder, and
   Person lifecycle behavior, relationships, document workflows, event-plan
-  projections, and authorized object search.
+  projections, authorized object search, and each account's own view of an
+  Event and of the collection pages (read against the Event's current layout
+  in shared code, stored per field by either backend).
 - `packages/schemas` owns contracts shared across process boundaries.
 - `packages/storage` owns the provider-neutral private storage port and the
   local filesystem development adapter.

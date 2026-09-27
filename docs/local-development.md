@@ -350,6 +350,16 @@ triggers that refuse a record created in or restored into a deleted one; it
 also keeps session resolution out of deleted workspaces. Run
 `pnpm db:migrate` and restart the API; the runtime role script needs no rerun.
 
+Migration `0079_add_personal_views.sql` adds `user_event_views`,
+`user_component_choices`, and `user_page_choices`, which keep each account's
+own view of an Event and the choices of the Events, Tasks, and People pages,
+and the functions that read and save them on the rpc path. It copies the tabs
+each account kept in `users.event_tabs` for a live Event into its view of that
+Event, with the Event's current page order and component layouts. After
+`pnpm db:migrate`, rerun the runtime role script (see
+[Deployment](deployment.md)) if the API connects as the runtime role, then
+restart the API.
+
 Migration `0021_add_object_search_function.sql` adds `chronelle_object_search`,
 the read-only function the CloudBase search adapter calls. It changes no
 tables and needs no baseline.

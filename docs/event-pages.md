@@ -155,6 +155,12 @@ unrecognized kinds, unrecognized views, and extra fields are rejected.
 }
 ```
 
+With `?include=yours` the response also carries `yours`, the account's own
+view of the Event: where it was left, its tab strip, its page order, each
+page component's layout for the account, and each component's choices. Page
+order and component views in the layout are the Event's defaults, which an
+account copies at its first save; see [Personal views](api.md#personal-views).
+
 `PATCH /api/events/:id/layout` requires Edit and replaces the layout:
 
 ```json
