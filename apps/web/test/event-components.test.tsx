@@ -377,7 +377,7 @@ describe("insertable event components", () => {
   it("preserves preset and name on stale writes without overwriting the current layout", async () => {
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
-    await user.click(await screen.findByRole("button", { name: "Add page" }));
+    await user.click(await screen.findByRole("button", { name: "Add a page" }));
     const dialog = within(screen.getByRole("dialog"));
     await user.click(dialog.getByRole("radio", { name: "Gathering" }));
     const concurrent = [page("Another planner", ["calendar"])];
@@ -401,7 +401,7 @@ describe("insertable event components", () => {
   it("guards page creation during composition and an in-flight save", async () => {
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
-    await user.click(await screen.findByRole("button", { name: "Add page" }));
+    await user.click(await screen.findByRole("button", { name: "Add a page" }));
     const element = screen.getByRole("dialog");
     const dialog = within(element);
     await user.click(dialog.getByRole("radio", { name: "Gathering" }));
@@ -433,7 +433,7 @@ describe("insertable event components", () => {
   it("rejects a preset write when the server has revoked editing permission", async () => {
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
-    await user.click(await screen.findByRole("button", { name: "Add page" }));
+    await user.click(await screen.findByRole("button", { name: "Add a page" }));
     const dialog = within(screen.getByRole("dialog"));
     await user.click(dialog.getByRole("radio", { name: "Gathering" }));
     vi.mocked(fetch).mockImplementation((input, options) =>
@@ -450,7 +450,7 @@ describe("insertable event components", () => {
     const view = render(<PagesHarness eventId={eventId} canEdit />, {
       wrapper: Providers,
     });
-    await user.click(await screen.findByRole("button", { name: "Add page" }));
+    await user.click(await screen.findByRole("button", { name: "Add a page" }));
     await user.click(screen.getByRole("radio", { name: "Gathering" }));
     view.rerender(<PagesHarness eventId={eventId} canEdit={false} />);
     expect(screen.queryByRole("dialog")).toBeNull();
@@ -612,8 +612,16 @@ describe("insertable event components", () => {
       );
       await screen.findByRole("region", { name: "Event pages" });
       const commands = screen.getByLabelText("Available page actions");
-      for (const name of ["Add page", "Add component"]) {
-        const available = screen.queryByRole("button", { name });
+      // Before the first page, the empty Pages view's Add a page is the
+      // visible control the Add page command stands for.
+      const controls = {
+        "Add page": ["Add page", "Add a page"],
+        "Add component": ["Add component"],
+      };
+      for (const [name, labels] of Object.entries(controls)) {
+        const available = labels.some(
+          (label) => screen.queryByRole("button", { name: label }) !== null,
+        );
         if (available) expect(commands).toHaveTextContent(name);
         else expect(commands).not.toHaveTextContent(name);
       }

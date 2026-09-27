@@ -6,12 +6,13 @@ import {
 } from "@playwright/test";
 import { setKeyboardPreferences } from "./keyboard-settings";
 import { expectHorizontalReflow } from "./page-navigation";
+import { openAddPage } from "./event-view";
 
 export async function exerciseComponentShortcuts(
   page: Page,
   testInfo: TestInfo,
 ) {
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   await page.getByLabel("Page name").fill("Shortcut plans");
   await page
     .getByRole("dialog")

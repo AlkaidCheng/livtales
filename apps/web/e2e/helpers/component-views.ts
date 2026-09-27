@@ -7,6 +7,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import { setDue } from "./date-rows";
 import { today } from "./today";
 import { openTaskEditor } from "./task-add";
+import { openAddPage } from "./event-view";
 
 /** Opens a panel's Layout menu and chooses a template by its name. */
 export async function chooseLayout(panel: Locator, name: string) {
@@ -24,7 +25,7 @@ export async function chooseLayout(panel: Locator, name: string) {
  * does not.
  */
 export async function exerciseComponentViews(page: Page) {
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   const addPage = page.getByRole("dialog", { name: "Add a page" });
   await addPage.getByLabel("Page name").fill("Preparation");
   await addPage.getByRole("button", { name: "Add page", exact: true }).click();

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openEventPage } from "../../e2e/helpers/event-view";
+import { openAddPage, openEventPage } from "../../e2e/helpers/event-view";
 
 const sandboxUrl = new URL(
   "../../../../.livtales/sandbox/livtales.html",
@@ -15,21 +15,23 @@ test("composes named pages with canonical tasks and preserves the layout offline
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(sandboxUrl);
   await page.getByRole("link", { name: /Autumn gathering/ }).click();
+  // The event opens on its Overview; its first page starts from the
+  // gallery.
   await expect(
-    page.getByRole("button", { name: "Add a page", exact: true }),
-  ).toBeVisible();
+    page.getByRole("tab", { name: "Overview", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await page.screenshot({
     path: testInfo.outputPath("empty-event-pages.png"),
     fullPage: true,
   });
   await page
-    .getByRole("button", { name: "Add page", exact: true })
+    .getByRole("button", { name: "Add a view", exact: true })
     .scrollIntoViewIfNeeded();
   const bounds = await page.locator(".event-hero").evaluate((element) => {
     const box = element.getBoundingClientRect();
     return { top: box.top + scrollY, width: box.width, height: box.height };
   });
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   const dialog = page.getByRole("dialog", { name: "Add a page" });
   await expect(dialog.getByLabel("Page name")).toBeFocused();
   expect(
@@ -58,7 +60,7 @@ test("composes named pages with canonical tasks and preserves the layout offline
     path: testInfo.outputPath("event-page-todos.png"),
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   await page.getByLabel("Page name").fill("On the day");
   await page
     .getByRole("dialog")

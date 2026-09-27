@@ -1,4 +1,5 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
+import { openAddPage } from "./event-view";
 import { expectHorizontalReflow } from "./page-navigation";
 
 export async function exerciseComponentCatalog(page: Page, testInfo: TestInfo) {
@@ -7,7 +8,7 @@ export async function exerciseComponentCatalog(page: Page, testInfo: TestInfo) {
   const add = page.getByRole("button", { name: "Add component", exact: true });
   const search = picker.getByRole("searchbox", { name: "Find a component" });
   for (const name of ["Preparation", destination]) {
-    await page.getByRole("button", { name: "Add page", exact: true }).click();
+    await openAddPage(page);
     const dialog = page.getByRole("dialog", { name: "Add a page" });
     await dialog.getByLabel("Page name").fill(name);
     await dialog.getByRole("button", { name: "Add page", exact: true }).click();

@@ -30,7 +30,7 @@ test("creates and retrieves one canonical Event at responsive widths", async ({
   await page.getByRole("button", { name: "New event" }).click();
   await page.getByLabel("Event name").fill(eventName);
   await page.getByRole("button", { name: "Create event" }).click();
-  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+$/u);
+  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+\?view=overview$/u);
   await expect(page.getByRole("heading", { name: eventName })).toBeVisible();
   const eventUrl = page.url();
 
@@ -82,9 +82,12 @@ test("creates and retrieves one canonical Event at responsive widths", async ({
     ),
   ).toBe(true);
 
+  // The result opens the event where the account left it: Sharing.
   await result.click();
-  await expect(page).toHaveURL(eventUrl);
-  await expect(page.getByRole("heading", { name: eventName })).toBeVisible();
+  await expect(page).toHaveURL(`${new URL(eventUrl).pathname}?view=sharing`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: eventName }),
+  ).toBeVisible();
 });
 
 test("loads additional search results with keyboard navigation and resets filters", async ({

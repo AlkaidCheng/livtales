@@ -934,7 +934,14 @@ not yet reviewed the two Chinese catalogs; wording may change.
   storage; no object data, search text, or permissions are persisted there.
   Storage restrictions do not prevent using either layout.
 - Event views have bookmarkable URLs, such as `/events/OBJECT_ID?view=calendar`.
-  Reload and browser Back/Forward preserve the selected view. A phone keeps
+  Reload and browser Back/Forward preserve the selected view. An event
+  opened at an address that names neither a view nor a page returns to
+  where the account left it in this browser (a view, or a page while it
+  still exists), else to its Overview, and the address is replaced to name
+  that place. The browser keeps only the event's id and the view key or
+  page id, under the account's id, for the 50 most recent events; blocked
+  or full storage keeps nothing, and the event then opens on its Overview.
+  The Pages view without a page reads `?view=pages`. A phone keeps
   the strip, folded past its width into the chip, with no separate view
   select. A view reached by its address shows even while hidden from or
   removed off the strip. Close the Event inspector before using background
@@ -945,7 +952,14 @@ not yet reviewed the two Chinese catalogs; wording may change.
   navigation state, not an Event or layout mutation, and conveys no access.
 - The event strip holds the pages first, a plus to add one (the Add page
   dialog), a bar, then the views the account keeps on the event, and a plus
-  that opens the gallery. The strip never wraps: the tabs that do not fit
+  that opens the gallery. An event without pages starts at its views, with
+  no page plus or bar; its first page starts from the gallery's New page,
+  from Manage tabs, or from the Add page command. A new event's strip holds
+  the Overview and To-dos; the other views wait in the gallery, and Sharing
+  and Removed links start hidden (Share in the header still opens Sharing).
+  A strip the account has arranged keeps its views, and a view the app
+  gains later starts in the gallery. A viewer whose share is narrowed to
+  some views sees all of them. The strip never wraps: the tabs that do not fit
   fold, from the end, into one chip ("+N more") that lists them; the current
   tab never folds. The page heading retains its full name. Above the title,
   a quiet breadcrumb names the event's place: its space as plain text (the
@@ -963,7 +977,9 @@ not yet reviewed the two Chinese catalogs; wording may change.
   and Sharing for an account that may share. A card is a switch: pressing it puts the view on
   the strip, at the end, or takes it off the event again; the dialog stays
   open. To-dos and Sharing are always on. Taking a view off changes no
-  records; it comes back with everything in it.
+  records; it comes back with everything in it. For an account that may
+  edit the event, New page at the footer's start closes the gallery and
+  opens the Add page dialog.
 - Manage tabs (the event's More menu; on a touch screen, a tab or the fold
   chip held for half a second, a lift before that being the tap and a move
   the scroll) lists the pages and the views in two lists, each capped in

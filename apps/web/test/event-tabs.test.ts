@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   arrangeEventTabs,
+  defaultViews,
   eventTabsPreferenceOf,
   fixedViews,
   galleryViews,
@@ -23,11 +24,56 @@ describe("the event tab arrangement", () => {
     for (const view of fixedViews) expect(stripViews).toContain(view);
   });
 
-  it("shows the known views in default order with nothing hidden or removed until arranged", () => {
+  it("starts a new event on the Overview and To-dos, with the other views in the gallery and fixed ones hidden", () => {
+    expect([...defaultViews]).toEqual(["overview", "todos"]);
     expect(arrangeEventTabs({}, known)).toEqual({
+      order: ["overview", "todos", "sharing"],
+      hidden: new Set(["sharing"]),
+      removed: new Set(["calendar", "files"]),
+    });
+  });
+
+  it("shows every known view in default order without the defaults, as for a narrowed viewer", () => {
+    expect(arrangeEventTabs({}, known, { defaults: false })).toEqual({
       order: known,
       hidden: new Set(),
       removed: new Set(),
+    });
+  });
+
+  it("keeps an arranged strip's views, and starts a view it never placed off the strip", () => {
+    const arranged = {
+      order: ["overview", "todos", "calendar", "sharing"],
+      hidden: ["sharing"],
+    };
+    expect(arrangeEventTabs(arranged, [...known, "notes"])).toEqual({
+      order: ["overview", "todos", "calendar", "sharing"],
+      hidden: new Set(["sharing"]),
+      removed: new Set(["files", "notes"]),
+    });
+  });
+
+  it("keeps a view added from the gallery through the next arrangement", () => {
+    const started = arrangeEventTabs({}, known);
+    const kept = eventTabsPreferenceOf(
+      {
+        ...started,
+        order: [...started.order, "calendar"],
+        removed: new Set(["files"]),
+      },
+      {},
+      known,
+      [],
+    );
+    expect(kept).toEqual({
+      order: ["overview", "todos", "sharing", "calendar"],
+      hidden: ["sharing"],
+      removed: ["files"],
+    });
+    expect(arrangeEventTabs(kept, known)).toEqual({
+      order: ["overview", "todos", "sharing", "calendar"],
+      hidden: new Set(["sharing"]),
+      removed: new Set(["files"]),
     });
   });
 
@@ -40,6 +86,7 @@ describe("the event tab arrangement", () => {
           removed: ["calendar", "overview", "notes"],
         },
         known,
+        { defaults: false },
       ),
     ).toEqual({
       order: ["files", "todos", "overview", "sharing"],
@@ -54,7 +101,7 @@ describe("the event tab arrangement", () => {
       hidden: [page1, page2, "notes"],
       removed: ["calendar", "notes"],
     };
-    const arranged = arrangeEventTabs(previous, known);
+    const arranged = arrangeEventTabs(previous, known, { defaults: false });
     expect(eventTabsPreferenceOf(arranged, previous, known, [page1])).toEqual({
       order: ["files", "todos", "overview", "sharing", "notes"],
       hidden: [page1, "notes"],

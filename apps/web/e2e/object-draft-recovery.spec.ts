@@ -88,10 +88,12 @@ for (const kind of ["task", "expense", "reminder"] as const) {
       await name.press("ControlOrMeta+Enter");
       await committed.promise;
       const todosUrl = page.url();
-      for (let index = 0; index < 3; index++) await page.goBack();
+      // The event opened on its Overview in place of its bare address, and
+      // the view followed: two entries past the collection.
+      for (let index = 0; index < 2; index++) await page.goBack();
       await expect(page).toHaveURL(collectionUrl);
       await expect(page.getByRole("dialog")).toHaveCount(0);
-      for (let index = 0; index < 3; index++) await page.goForward();
+      for (let index = 0; index < 2; index++) await page.goForward();
       await expect(page).toHaveURL(todosUrl);
       await openPlanningEditor(page, kind);
       const saving = page.getByRole("dialog", {

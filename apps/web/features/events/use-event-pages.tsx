@@ -42,7 +42,12 @@ export interface LayoutUndoControls {
  * the add dialogs, arranging, and the active page's options menu. The strip
  * and the canvas both read from it.
  */
-export function useEventPagesState(eventId: string, canEdit: boolean) {
+export function useEventPagesState(
+  eventId: string,
+  canEdit: boolean,
+  /** Shows the pages before an Add page command opens its dialog. */
+  onShowPages?: () => void,
+) {
   const t = useTranslations("event");
   const layout = useEventLayout(eventId);
   useForgetInaccessibleEventDrafts(
@@ -137,6 +142,8 @@ export function useEventPagesState(eventId: string, canEdit: boolean) {
     selectedPage !== undefined &&
     selectedPage.components.length < 20 &&
     total < 100;
+  // The strip shows its Add page button once the event has a page; before
+  // that the command opens the dialog itself.
   const commands: ContextCommand[] =
     canAddPage && !saving
       ? [
@@ -144,7 +151,14 @@ export function useEventPagesState(eventId: string, canEdit: boolean) {
             id: "add-page",
             label: t("addPage"),
             description: t("addPageDescription"),
-            target: addPageButton,
+            ...(pages.length > 0
+              ? { target: addPageButton }
+              : {
+                  run: () => {
+                    onShowPages?.();
+                    setAdding({ pageId: null });
+                  },
+                }),
           },
         ]
       : [];

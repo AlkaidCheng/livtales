@@ -3,6 +3,7 @@
 import type { EventResponse } from "@livtales/schemas";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -85,6 +86,20 @@ function requestPath(input: URL | RequestInfo): string {
     return input;
   }
   return input instanceof URL ? input.pathname : new URL(input.url).pathname;
+}
+
+/**
+ * Opens one of the event's views by its address, as a link does: a new
+ * event's strip holds the Overview and To-dos alone, and a view reached by
+ * its address shows on the strip while it is current.
+ */
+function openView(view: string) {
+  act(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    window.history.pushState(null, "", url);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
 }
 
 /** A small text file the client can hash; jsdom's File has no arrayBuffer. */
@@ -679,7 +694,7 @@ describe("EventWorkspace", () => {
       await screen.findByRole("alert", {}, { timeout: 3000 }),
     ).toHaveTextContent("Overview unavailable");
     expect(screen.getByLabelText("Name")).toHaveValue("Unsaved plan");
-    await user.click(screen.getByRole("tab", { name: "Calendar" }));
+    openView("calendar");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByLabelText("Name")).toHaveValue("Unsaved plan");
   });
@@ -725,7 +740,7 @@ describe("EventWorkspace", () => {
     fireEvent.change(screen.getByLabelText("Name"), {
       target: { value: "My event draft" },
     });
-    await user.click(screen.getByRole("tab", { name: "Calendar" }));
+    openView("calendar");
     expect(
       await screen.findByRole("alert", {}, { timeout: 3000 }),
     ).toHaveTextContent("This view is temporarily unavailable.");
@@ -858,7 +873,7 @@ describe("EventWorkspace", () => {
       "true",
     );
     expect(screen.getByRole("tabpanel")).toHaveAccessibleName("To-dos");
-    await user.click(screen.getByRole("tab", { name: "Calendar" }));
+    openView("calendar");
     await user.click(
       await screen.findByRole("button", { name: "Add schedule item" }),
     );
@@ -878,9 +893,9 @@ describe("EventWorkspace", () => {
     ).toBeVisible();
     expect(screen.getByText("01")).toBeVisible();
 
-    await user.click(screen.getByRole("tab", { name: "Timeline" }));
+    openView("timeline");
     expect(
-      screen.getByRole("heading", { name: "Guest arrival" }),
+      await screen.findByRole("heading", { name: "Guest arrival" }),
     ).toBeVisible();
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -1006,12 +1021,12 @@ describe("EventWorkspace", () => {
     ).toBeDisabled();
     expect(screen.queryByLabelText("Task")).toBeNull();
 
-    await user.click(screen.getByRole("tab", { name: "Calendar" }));
+    openView("calendar");
     expect(
       screen.queryByRole("button", { name: "Add schedule item" }),
     ).toBeNull();
 
-    await user.click(screen.getByRole("tab", { name: "Files" }));
+    openView("files");
     expect(await screen.findByText("run-of-show.pdf")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Download run-of-show.pdf" }),
@@ -1116,7 +1131,8 @@ describe("EventWorkspace", () => {
       </Providers>,
     );
 
-    await user.click(await screen.findByRole("tab", { name: "Files" }));
+    await screen.findByRole("tab", { name: "Overview" });
+    openView("files");
     expect(await screen.findByText("run-of-show.pdf")).toBeVisible();
     expect(screen.getByText("Attach a file")).toBeVisible();
     // The targets are one quiet menu in the heading, the event chosen first.
@@ -1237,7 +1253,8 @@ describe("EventWorkspace", () => {
         <EventWorkspace eventId={eventId} />
       </Providers>,
     );
-    await user.click(await screen.findByRole("tab", { name: "Files" }));
+    await screen.findByRole("tab", { name: "Overview" });
+    openView("files");
     expect(await screen.findByText("run-of-show.pdf")).toBeVisible();
     // Attachments outside the caller's scope are counted the way the
     // Overview counts private related items.
@@ -1333,7 +1350,8 @@ describe("EventWorkspace", () => {
         <EventWorkspace eventId={eventId} />
       </Providers>,
     );
-    await user.click(await screen.findByRole("tab", { name: "Files" }));
+    await screen.findByRole("tab", { name: "Overview" });
+    openView("files");
     expect(await screen.findByText("Attach a file")).toBeVisible();
     await user.upload(
       screen.getByLabelText("Choose a private file"),
@@ -1431,7 +1449,9 @@ describe("EventWorkspace", () => {
       </Providers>,
     );
 
-    await user.click(await screen.findByRole("tab", { name: "Sharing" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Share event" }),
+    );
     // A single record is shared for viewing or editing; owning is a space's.
     expect(screen.getByRole("option", { name: "Viewer" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Editor" })).toBeVisible();
@@ -1649,7 +1669,9 @@ describe("EventWorkspace", () => {
         <EventWorkspace eventId={eventId} />
       </Providers>,
     );
-    await user.click(await screen.findByRole("tab", { name: "Sharing" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Share event" }),
+    );
     const friendList = within(
       await screen.findByRole("list", { name: "Friends" }),
     );
@@ -1756,7 +1778,26 @@ describe("EventWorkspace", () => {
         hourCycle: null,
         weekStart: null,
         rail: {},
-        eventTabs: { [eventId]: { removed: ["files"] } },
+        // A strip the account arranged: every view but Files, which it
+        // took off the event.
+        eventTabs: {
+          [eventId]: {
+            order: [
+              "overview",
+              "todos",
+              "calendar",
+              "timeline",
+              "itinerary",
+              "expenses",
+              "reminders",
+              "people",
+              "notes",
+              "sharing",
+              "removed-links",
+            ],
+            removed: ["files"],
+          },
+        },
       },
       workspace: { id: workspaceId, displayName: "Personal" },
       availableWorkspaces: [

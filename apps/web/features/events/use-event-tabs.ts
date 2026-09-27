@@ -61,7 +61,11 @@ export function useEventTabs(
     admitted === null ? canShare || view !== "sharing" : admitted.has(view),
   );
   const stored = pending ?? session.data?.user.eventTabs[eventId] ?? {};
-  const arranged = arrangeEventTabs(stored, known);
+  // A narrowed viewer sees every view shared with them; the defaults are
+  // for an account that may arrange the event's whole strip.
+  const arranged = arrangeEventTabs(stored, known, {
+    defaults: admitted === null,
+  });
 
   function keep(next: TabArrangement) {
     const tabs = eventTabsPreferenceOf(next, stored, known, pageIds);

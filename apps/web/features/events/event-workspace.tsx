@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ErrorNotice, LoadingState } from "../../components/feedback";
 import { AccessLine } from "../../components/access-line";
@@ -44,7 +44,15 @@ import { HistoryButton } from "../history/history-button";
 import { useOpenLifecycle } from "../recovery/lifecycle-provider";
 import { RemovedLinksPanel } from "../recovery/removed-links-panel";
 import { eventViewLabel } from "../../lib/event-views";
-import { useEventView } from "../../lib/use-event-view";
+import {
+  landOnEventPlace,
+  useEventAddress,
+  useEventView,
+} from "../../lib/use-event-view";
+import {
+  rememberEventPlace,
+  rememberedEventPlace,
+} from "../../lib/event-place";
 import { EventOverview } from "./event-overview";
 import { EventPages } from "./event-pages";
 import { EventStrip } from "./event-strip";
@@ -64,7 +72,9 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   const queries = useEventWorkspaceQueries(eventId, activeTab);
   usePageCommandHistory(queries.event.data);
   const canEdit = queries.access.data?.actions.includes("edit") ?? false;
-  const pagesState = useEventPagesState(eventId, canEdit);
+  const pagesState = useEventPagesState(eventId, canEdit, () =>
+    setActiveTab("pages"),
+  );
   const { layout } = pagesState;
   const accessLost =
     (queries.access.data !== undefined && !canEdit) ||
@@ -78,7 +88,8 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   );
   const [copied, setCopied] = useState("");
   const [moving, setMoving] = useState(false);
-  const session = useSessionQuery().data;
+  const sessionQuery = useSessionQuery();
+  const session = sessionQuery.data;
   // A tab's view is chosen for the session; page components save theirs.
   const [tabView, setTabView] = useState<{
     tab: string;
@@ -104,6 +115,45 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
     canShare,
     narrowing,
   );
+  // An event opened without a view or page returns to where the account
+  // left it in this browser (a page only while it still exists), else to
+  // its Overview; the address then names that place. Without an account
+  // to read the place for, the event opens on its Overview.
+  const address = useEventAddress(eventId);
+  const bare = address === "bare";
+  const accountId = session?.user.id;
+  const sessionSettled = !sessionQuery.isPending;
+  const selectedPageId = pagesState.selectedPage?.id;
+  useLayoutEffect(() => {
+    if (!bare || !sessionSettled) return;
+    const place =
+      accountId === undefined ? null : rememberedEventPlace(accountId, eventId);
+    if (place !== null && "page" in place) {
+      if (layout.isPending) return;
+      landOnEventPlace(
+        pagesState.pages.some((page) => page.id === place.page)
+          ? place
+          : { view: "overview" },
+      );
+      return;
+    }
+    landOnEventPlace(place ?? { view: "overview" });
+  }, [
+    bare,
+    sessionSettled,
+    accountId,
+    eventId,
+    layout.isPending,
+    pagesState.pages,
+  ]);
+  useEffect(() => {
+    if (address !== "placed" || accountId === undefined || activeTab === null)
+      return;
+    if (activeTab !== "pages")
+      rememberEventPlace(accountId, eventId, { view: activeTab });
+    else if (selectedPageId !== undefined)
+      rememberEventPlace(accountId, eventId, { page: selectedPageId });
+  }, [address, accountId, eventId, activeTab, selectedPageId]);
   const essentialQueries = [queries.event, queries.access];
   const failedQuery =
     essentialQueries.find(
@@ -112,7 +162,11 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
         (query.data === undefined || !isTemporaryReadError(query.error)),
     ) ?? essentialQueries.find((query) => query.isError);
 
-  if (activeTab === null || essentialQueries.some((query) => query.isPending)) {
+  if (
+    activeTab === null ||
+    bare ||
+    essentialQueries.some((query) => query.isPending)
+  ) {
     return (
       <main className="centered-page workspace-loading">
         <LoadingState label={t("connecting")} />
@@ -191,6 +245,10 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
         )
       : [];
   const schedule = formatEventSchedule(event);
+  const startNewPage = () => {
+    setActiveTab("pages");
+    pagesState.setAdding({ pageId: null });
+  };
   const commands: ContextCommand[] = [
     ...pagesState.commands,
     {
@@ -377,11 +435,10 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
           pagesState.selectPage(pageId);
           setActiveTab("pages");
         }}
-        canAddPage={pagesState.canAddPage}
-        onAddPage={() => {
-          setActiveTab("pages");
-          pagesState.setAdding({ pageId: null });
-        }}
+        // An event without pages starts at its views; its first page comes
+        // from the gallery, Manage tabs, or the Add page command.
+        canAddPage={pagesState.canAddPage && pagesState.pages.length > 0}
+        onAddPage={startNewPage}
         addPageRef={pagesState.addPageButton}
         pageMenu={pagesState.pageMenu}
         pageDrop={pagesState.pageDrop}
@@ -477,6 +534,14 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
           eventName={event.displayName}
           tabs={eventTabs}
           onClose={() => setTabsDialog(null)}
+          onNewPage={
+            pagesState.canAddPage
+              ? () => {
+                  setTabsDialog(null);
+                  startNewPage();
+                }
+              : undefined
+          }
         />
       ) : null}
       {tabsDialog === "manage" ? (
@@ -488,8 +553,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
           onClose={() => setTabsDialog(null)}
           onNewPage={() => {
             setTabsDialog(null);
-            setActiveTab("pages");
-            pagesState.setAdding({ pageId: null });
+            startNewPage();
           }}
           onAddView={() => setTabsDialog("gallery")}
         />

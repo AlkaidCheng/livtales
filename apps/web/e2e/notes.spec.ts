@@ -39,8 +39,9 @@ test("keeps notes with an event: the gallery card, the editor, opening in place,
   await eventLink.click();
   await openEventView(page, "To-dos");
 
-  // The gallery offers Notes as a card, on the strip like every view
-  // until taken off; the card is a switch, so it reads pressed.
+  // The gallery offers Notes as a card; a new event's strip holds the
+  // Overview and To-dos, so the card, a switch, reads unpressed until it
+  // puts Notes on the strip.
   await page.getByRole("button", { name: "Add a view", exact: true }).click();
   const gallery = page.getByRole("dialog", {
     name: "Add to Kyoto in November",
@@ -49,6 +50,8 @@ test("keeps notes with an event: the gallery card, the editor, opening in place,
   await expect(notesCard).toContainText(
     "Free text kept with the event: plans, addresses, what to remember.",
   );
+  await expect(notesCard).toHaveAttribute("aria-pressed", "false");
+  await notesCard.click();
   await expect(notesCard).toHaveAttribute("aria-pressed", "true");
   await gallery.getByRole("button", { name: "Done", exact: true }).click();
   await openEventView(page, "Notes");

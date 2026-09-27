@@ -57,12 +57,14 @@ for (const outcome of ["success", "lost response"] as const)
     await committed.promise;
 
     const calendarUrl = page.url();
-    for (let step = 0; step < 3; step++) await page.goBack();
+    // The event opened on its Overview in place of its bare address, and
+    // the view followed: two entries past the collection.
+    for (let step = 0; step < 2; step++) await page.goBack();
     await expect(page).toHaveURL(collectionUrl);
     await expect(
       page.getByRole("button", { name: "New event", exact: true }),
     ).toBeVisible();
-    for (let step = 0; step < 3; step++) await page.goForward();
+    for (let step = 0; step < 2; step++) await page.goForward();
     await expect(page).toHaveURL(calendarUrl);
     // The save on its way is the dialog's: the add row opens the composer
     // empty, and More reaches the dialog, which shows the save.

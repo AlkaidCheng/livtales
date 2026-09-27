@@ -1682,7 +1682,14 @@ export class SandboxStore {
           "External requests are disabled in the design sandbox.",
         );
       const method = options.method ?? "GET";
-      if (method !== "GET" && role === "viewer")
+      // The Viewer preview stands for access to the sample records; the
+      // account's own preferences stay its to change, as they do for a
+      // viewer of a real event.
+      if (
+        method !== "GET" &&
+        role === "viewer" &&
+        url.pathname !== "/api/auth/me"
+      )
         throw new SandboxError(
           403,
           "forbidden",

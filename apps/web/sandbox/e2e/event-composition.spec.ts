@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { dragComponent } from "../../e2e/helpers/drag-component";
 import { choosePageOption } from "../../e2e/helpers/quiet-chrome";
+import { openAddPage } from "../../e2e/helpers/event-view";
 
 const sandboxUrl = new URL(
   "../../../../.livtales/sandbox/livtales.html",
@@ -18,7 +19,7 @@ test("composes offline with search, drag or touch controls, and persistent cross
   await page.goto(sandboxUrl);
   await page.getByRole("link", { name: /Autumn gathering/ }).click();
   for (const name of ["Day", "Work"]) {
-    await page.getByRole("button", { name: "Add page", exact: true }).click();
+    await openAddPage(page);
     await page.getByLabel("Page name").fill(name);
     await page
       .getByRole("dialog")

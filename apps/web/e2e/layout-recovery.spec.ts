@@ -57,7 +57,8 @@ test("recovers event layouts without altering canonical planning data", async ({
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/);
-  await page.goto(`/events/${event.id}`);
+  // A first visit opens on the Overview; the journey starts on the pages.
+  await page.goto(`/events/${event.id}?view=pages`);
   const options = pageOptions(page);
   await choosePageOption(page, "Page options");
   const dialog = page.getByRole("dialog", { name: "Manage event pages" });

@@ -9,6 +9,7 @@ import {
   setMomentChip,
   submitComposer,
 } from "./helpers/record-composers";
+import { openAddPage } from "./helpers/event-view";
 
 test("composes planning and private-file components with canonical updates and viewer access", async ({
   page,
@@ -51,7 +52,7 @@ test("composes planning and private-file components with canonical updates and v
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/);
   await page.goto(`/events/${event.id}`);
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   await page.getByLabel("Page name").fill("Travel");
   await page
     .getByRole("dialog")

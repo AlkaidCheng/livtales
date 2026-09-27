@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import { openCollection } from "./helpers/quiet-chrome";
+import { openAddPage } from "./helpers/event-view";
 
 const control = (scope: Locator | Page, surface: "editor" | "dialog") =>
   scope.getByRole("button", { name: `About this ${surface}`, exact: true });
@@ -57,7 +58,7 @@ test("keeps exposition behind the help control of a dialog and off the pages", a
   await expect(page.getByRole("button", { name: /^About this/ })).toHaveCount(
     0,
   );
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   const addPage = page.getByRole("dialog", { name: "Add a page" });
   await expect(addPage.getByText(/Pages organize this event/)).toHaveCount(0);
   await control(addPage, "dialog").click();
