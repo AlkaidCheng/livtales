@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { localeCookie, localeStorageKey } from "../i18n/locales";
@@ -10,10 +10,6 @@ import {
   displayChoices,
   displayStorageKey,
 } from "../lib/display-preferences";
-import {
-  EventCollectionProvider,
-  useEventCollectionState,
-} from "../lib/event-collection-state";
 import {
   sessionCookieName,
   sessionPresenceCookieName,
@@ -59,13 +55,5 @@ describe("names browsers already store", () => {
       "chronelle.sealHeart",
     ]);
     expect(displayBootstrap).toContain('getItem("chronelle."+name)');
-  });
-
-  it("keeps the Event collection layout key", () => {
-    const { result } = renderHook(() => useEventCollectionState(), {
-      wrapper: EventCollectionProvider,
-    });
-    act(() => result.current.changeLayout("list"));
-    expect(window.localStorage.getItem("chronelle.event-layout")).toBe("list");
   });
 });

@@ -3,7 +3,7 @@
 import type { EventListQuery } from "@livtales/schemas";
 import { useState } from "react";
 
-import { useAuthSession } from "./auth-session";
+import { type StoredChoices, usePageChoices } from "./view-choices";
 
 /** The list a fold belongs to: the period the Events list shows. */
 export type EventFoldList = EventListQuery["filter"];
@@ -11,59 +11,36 @@ export type EventFoldList = EventListQuery["filter"];
 /** Headings folded or opened by hand, by key: true folded, false open. */
 type FoldChoices = Readonly<Record<string, boolean>>;
 
-type StoredFolds = Readonly<Partial<Record<EventFoldList, FoldChoices>>>;
+/** Each list's folds, kept among the Events page's choices as "folds.<list>". */
+type StoredFolds = Readonly<Record<`folds.${EventFoldList}`, FoldChoices>>;
 
-const foldLists = [
-  "all",
-  "upcoming",
-  "unscheduled",
-  "past",
-] as const satisfies readonly EventFoldList[];
+const noFolds: StoredFolds = {
+  "folds.all": {},
+  "folds.upcoming": {},
+  "folds.unscheduled": {},
+  "folds.past": {},
+};
 
-/** The browser storage of one account's folds, every list's under one key. */
-export function eventFoldStorageKey(account: string): string {
-  return `livtales.event-folds.${account}`;
-}
-
-/** The stored choices of each list, keeping only well-formed entries. */
-function parseFolds(value: unknown): StoredFolds {
-  if (typeof value !== "object" || value === null) return {};
-  const folds: Partial<Record<EventFoldList, FoldChoices>> = {};
-  for (const list of foldLists) {
-    const choices: unknown = (value as Record<string, unknown>)[list];
-    if (typeof choices !== "object" || choices === null) continue;
-    folds[list] = Object.fromEntries(
-      Object.entries(choices).filter(
-        (entry): entry is [string, boolean] => typeof entry[1] === "boolean",
-      ),
-    );
-  }
-  return folds;
-}
-
-function readFolds(account: string | null): StoredFolds {
-  if (account === null) return {};
-  try {
-    const stored = window.localStorage.getItem(eventFoldStorageKey(account));
-    return typeof stored === "string" ? parseFolds(JSON.parse(stored)) : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeFolds(account: string, folds: StoredFolds): void {
-  try {
-    const key = eventFoldStorageKey(account);
-    if (
-      Object.values(folds).every(
-        (choices) => Object.keys(choices ?? {}).length === 0,
-      )
-    )
-      window.localStorage.removeItem(key);
-    else window.localStorage.setItem(key, JSON.stringify(folds));
-  } catch {
-    // Folds last for this visit when browser storage is unavailable.
-  }
+/** The kept folds of each list, keeping only well-formed entries. */
+function readFolds(stored: StoredChoices): StoredFolds {
+  return Object.fromEntries(
+    Object.keys(noFolds).map((name) => {
+      const choices = stored[name];
+      return [
+        name,
+        typeof choices === "object" &&
+        choices !== null &&
+        !Array.isArray(choices)
+          ? Object.fromEntries(
+              Object.entries(choices).filter(
+                (entry): entry is [string, boolean] =>
+                  typeof entry[1] === "boolean",
+              ),
+            )
+          : {},
+      ];
+    }),
+  ) as StoredFolds;
 }
 
 /**
@@ -90,25 +67,18 @@ export interface EventFolds {
 }
 
 /**
- * The folded headings of one Events list, kept in this browser for the
- * account: the headings it folded or opened, else the default. While a
- * name is typed every heading starts open and a fold lasts for that name
- * alone, so no match is hidden. Only a choice that differs from the
- * default is stored.
+ * The folded headings of one Events list, kept on the account among the
+ * Events page's choices: the headings it folded or opened, else the
+ * default. While a name is typed every heading starts open and a fold
+ * lasts for that name alone, so no match is hidden. Only a choice that
+ * differs from the default is kept.
  */
 export function useEventFolds(
   list: EventFoldList,
   thisYear: string | null,
   query: string,
 ): EventFolds {
-  const { credential } = useAuthSession();
-  const account = credential?.homeWorkspaceId ?? null;
-  const [stored, setStored] = useState(() => ({
-    account,
-    folds: readFolds(account),
-  }));
-  if (stored.account !== account)
-    setStored({ account, folds: readFolds(account) });
+  const kept = usePageChoices("events", noFolds, readFolds);
   const [search, setSearch] = useState<{
     readonly query: string;
     readonly choices: FoldChoices;
@@ -118,24 +88,29 @@ export function useEventFolds(
     ? search.query === query
       ? search.choices
       : {}
-    : (stored.folds[list] ?? {});
+    : kept.choices[`folds.${list}`];
   const byDefault = (key: string) =>
     !searching && foldedByDefault(list, key, thisYear);
-  const isFolded = (key: string) => choices[key] ?? byDefault(key);
+  /** The folds with `key` turned over, keeping only what differs from the default. */
+  const turned = (folds: FoldChoices, key: string): FoldChoices => {
+    const folded = !(folds[key] ?? byDefault(key));
+    const next: Record<string, boolean> = { ...folds };
+    if (folded === byDefault(key)) delete next[key];
+    else next[key] = folded;
+    return next;
+  };
   return {
-    isFolded,
+    isFolded: (key) => choices[key] ?? byDefault(key),
     toggle: (key) => {
-      const folded = !isFolded(key);
-      const next: Record<string, boolean> = { ...choices };
-      if (folded === byDefault(key)) delete next[key];
-      else next[key] = folded;
-      if (searching) {
-        setSearch({ query, choices: next });
-        return;
-      }
-      const folds = { ...stored.folds, [list]: next };
-      setStored({ account, folds });
-      if (account !== null) writeFolds(account, folds);
+      if (searching)
+        setSearch((current) => ({
+          query,
+          choices: turned(current.query === query ? current.choices : {}, key),
+        }));
+      else
+        kept.change((current) => ({
+          [`folds.${list}`]: turned(current[`folds.${list}`], key),
+        }));
     },
   };
 }

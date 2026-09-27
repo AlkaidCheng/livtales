@@ -1,6 +1,29 @@
 "use client";
 
+import type {
+  AccountPage,
+  PageChoicesResponse,
+  PageChoicesUpdate,
+  ViewChoices,
+} from "@livtales/schemas";
+import {
+  type QueryClient,
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useErrorMessage } from "../components/feedback";
+import { useNotices } from "../components/notices";
+import { useApiClient } from "./api-context";
+import { useAuthSession } from "./auth-session";
+import {
+  type ChoiceValue,
+  choicesChange,
+  mergeChoices,
+  sameChoice,
+} from "./personal-views";
 
 /** One view's kept choices: plain values by name, as JSON stores them. */
 export type StoredChoices = Readonly<Record<string, unknown>>;
@@ -123,4 +146,100 @@ export function useViewChoices<T extends StoredChoices>(
     [key],
   );
   return [choices, change] as const;
+}
+
+/** A page's choices: plain values by name, as the account keeps them. */
+type Choices = Readonly<Record<string, ChoiceValue>>;
+
+/** A set of choices of a known shape, each a value the account can keep. */
+type ChoicesOf<T> = { readonly [Name in keyof T]?: ChoiceValue };
+
+const pageChoicesKey = (page: AccountPage) =>
+  ["account", "pages", page] as const;
+const pageChoicesUpdateKey = (page: AccountPage) =>
+  ["page-choices-update", page] as const;
+
+/** The page's choices as they show at this moment, changes still on their way included. */
+function shownPageChoices(cache: QueryClient, page: AccountPage): ViewChoices {
+  return cache
+    .getMutationCache()
+    .findAll({ mutationKey: pageChoicesUpdateKey(page), status: "pending" })
+    .map((mutation) => (mutation.state.variables as PageChoicesUpdate).choices)
+    .reduce(
+      mergeChoices,
+      cache.getQueryData<PageChoicesResponse>(pageChoicesKey(page))?.choices ??
+        {},
+    );
+}
+
+/**
+ * A collection page's choices, kept on the account so the page opens as
+ * it was left on every device. A change shows at once and is sent as it
+ * is made, only the choices that differ from the defaults being kept; a
+ * refusal takes it back and says so. `isPending` holds while the choices
+ * load, so the page does not show the defaults first; a failed load
+ * leaves the defaults. `change` takes the choices to change, or a way to
+ * make them from the choices as they show at that moment. `parse` should
+ * be defined once outside the component.
+ */
+export function usePageChoices<T extends ChoicesOf<T>>(
+  page: AccountPage,
+  defaults: T,
+  parse: (stored: StoredChoices) => T,
+): {
+  readonly choices: T;
+  readonly change: (changes: Partial<T> | ((current: T) => Partial<T>)) => void;
+  readonly isPending: boolean;
+} {
+  const client = useApiClient();
+  const cache = useQueryClient();
+  const { credential } = useAuthSession();
+  const { post } = useNotices();
+  const describe = useErrorMessage();
+  const query = useQuery({
+    queryKey: pageChoicesKey(page),
+    enabled: credential !== null,
+    queryFn: ({ signal }) => client.withSignal(signal).getPageChoices(page),
+  });
+  const pending = useMutationState({
+    filters: { mutationKey: pageChoicesUpdateKey(page), status: "pending" },
+    select: (mutation) =>
+      (mutation.state.variables as PageChoicesUpdate).choices,
+  });
+  const kept = query.data?.choices;
+  const choices = useMemo(
+    () => parse(pending.reduce(mergeChoices, kept ?? {})),
+    [kept, parse, pending],
+  );
+  const { mutate } = useMutation({
+    mutationKey: pageChoicesUpdateKey(page),
+    scope: { id: `page-choices:${page}` },
+    mutationFn: (input: PageChoicesUpdate) =>
+      client.updatePageChoices(page, input),
+    onSuccess: (saved) => {
+      const key = pageChoicesKey(page);
+      const fetching = cache.getQueryState(key)?.fetchStatus === "fetching";
+      cache.setQueryData(key, saved);
+      if (fetching)
+        void cache.invalidateQueries({ queryKey: key, exact: true });
+    },
+    onError: (error) => post({ message: describe(error), tone: "danger" }),
+  });
+  const change = useCallback(
+    (changes: Partial<T> | ((current: T) => Partial<T>)) => {
+      const shown = shownPageChoices(cache, page);
+      const made =
+        typeof changes === "function" ? changes(parse(shown)) : changes;
+      const sent = Object.fromEntries(
+        Object.entries(
+          choicesChange(made as Choices, defaults as Choices),
+        ).filter(
+          ([name, value]) => !sameChoice(value ?? undefined, shown[name]),
+        ),
+      );
+      if (Object.keys(sent).length > 0) mutate({ choices: sent });
+    },
+    [cache, defaults, mutate, page, parse],
+  );
+  return { choices, change, isPending: query.isPending };
 }

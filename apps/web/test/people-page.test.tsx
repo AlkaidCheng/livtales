@@ -20,24 +20,19 @@ vi.mock("next/navigation", () => ({
 }));
 
 let store: SandboxStore;
-let stored: Record<string, string>;
+
+/** The People page's choices the sample account keeps. */
+async function keptChoices(): Promise<unknown> {
+  const response = await store.fetch("/api/account/pages/people");
+  return ((await response.json()) as { choices: unknown }).choices;
+}
 
 beforeEach(() => {
-  stored = {};
   let saved: string | null = null;
   store = new SandboxStore({
     getItem: () => saved,
     setItem: (_key, value) => {
       saved = value;
-    },
-  });
-  vi.stubGlobal("localStorage", {
-    getItem: (key: string) => stored[key] ?? null,
-    setItem: (key: string, value: string) => {
-      stored[key] = value;
-    },
-    removeItem: (key: string) => {
-      delete stored[key];
     },
   });
   window.sessionStorage.setItem(
@@ -226,7 +221,7 @@ describe("PeoplePage", () => {
     ).toBeVisible();
     await user.keyboard("{Escape}");
 
-    // Namecards show the same people, and the device remembers the layout.
+    // Namecards show the same people, and the account keeps the layout.
     const layout = within(screen.getByRole("group", { name: "Layout" }));
     expect(layout.getByRole("button", { name: "List" })).toHaveAttribute(
       "aria-pressed",
@@ -235,7 +230,9 @@ describe("PeoplePage", () => {
     await user.click(layout.getByRole("button", { name: "Namecards" }));
     const cards = await screen.findByRole("list", { name: "People" });
     expect(cards).toHaveClass("person-grid");
-    expect(stored["chronelle.people-layout"]).toBe("cards");
+    await waitFor(async () =>
+      expect(await keptChoices()).toEqual({ layout: "cards" }),
+    );
     expect(within(cards).getByRole("listitem", { name: "Mira" })).toBeVisible();
     expect(
       within(cards).getByRole("button", { name: "Add a person" }),

@@ -12,6 +12,8 @@ import {
   useState,
 } from "react";
 
+import { type StoredChoices, usePageChoices } from "./view-choices";
+
 interface Criteria {
   readonly query: string;
   readonly scope: EventListQuery["scope"];
@@ -25,75 +27,109 @@ interface ReturnPoint {
   readonly scrollY: number;
 }
 
-interface CollectionState {
-  readonly criteria: Criteria;
-  readonly change: (patch: Partial<Criteria>) => void;
+/** The Events page's choices the account keeps: its layout, scope, period, and sort. */
+type EventPageChoices = Omit<Criteria, "query"> & {
   readonly layout: "grid" | "list";
-  readonly changeLayout: (layout: "grid" | "list") => void;
+};
+
+const defaultEventPageChoices: EventPageChoices = {
+  layout: "grid",
+  scope: "all",
+  filter: "all",
+  sort: "date",
+};
+
+function oneOf<T extends string>(
+  value: unknown,
+  choices: readonly T[],
+  fallback: T,
+): T {
+  return (choices as readonly unknown[]).includes(value)
+    ? (value as T)
+    : fallback;
+}
+
+function readEventPageChoices(stored: StoredChoices): EventPageChoices {
+  const defaults = defaultEventPageChoices;
+  return {
+    layout: oneOf(stored.layout, ["grid", "list"], defaults.layout),
+    scope: oneOf(stored.scope, ["all", "mine", "shared"], defaults.scope),
+    filter: oneOf(
+      stored.filter,
+      ["all", "upcoming", "unscheduled", "past"],
+      defaults.filter,
+    ),
+    sort: oneOf(stored.sort, ["date", "updated", "name"], defaults.sort),
+  };
+}
+
+interface CollectionSession {
+  readonly query: string;
+  readonly setQuery: (query: string) => void;
   readonly returnPoint: RefObject<ReturnPoint | null>;
 }
 
-const layoutStorageKey = "chronelle.event-layout";
+const CollectionContext = createContext<CollectionSession | null>(null);
 
-const CollectionContext = createContext<CollectionState | null>(null);
-
-/** Retains navigation preferences only for the current authenticated session. */
+/**
+ * Holds what the Events collection keeps for the authenticated session
+ * alone: the name typed, and the card to return to.
+ */
 export function EventCollectionProvider({
   children,
 }: {
   readonly children: ReactNode;
 }) {
-  const [criteria, setCriteria] = useState<Criteria>({
-    query: "",
-    scope: "all",
-    filter: "all",
-    sort: "date",
-  });
+  const [query, setQuery] = useState("");
   const returnPoint = useRef<ReturnPoint | null>(null);
-  const [layout, setLayout] = useState<"grid" | "list">("grid");
-  useEffect(() => {
-    try {
-      if (window.localStorage.getItem(layoutStorageKey) === "list")
-        setLayout("list");
-    } catch {
-      // Layout remains usable when browser storage is unavailable.
-    }
-  }, []);
   return (
-    <CollectionContext.Provider
-      value={{
-        criteria,
-        returnPoint,
-        layout,
-        changeLayout: (value) => {
-          returnPoint.current = null;
-          setLayout(value);
-          try {
-            window.localStorage.setItem(layoutStorageKey, value);
-          } catch {
-            // Persistence is optional; no event data is stored here.
-          }
-        },
-        change: (patch) => {
-          returnPoint.current = null;
-          setCriteria((previous) => ({ ...previous, ...patch }));
-        },
-      }}
-    >
+    <CollectionContext.Provider value={{ query, setQuery, returnPoint }}>
       {children}
     </CollectionContext.Provider>
   );
 }
 
-export function useEventCollectionState() {
+function useCollectionSession(): CollectionSession {
   const value = useContext(CollectionContext);
   if (!value) throw new Error("EventCollectionProvider is required.");
   return value;
 }
 
+/**
+ * The Events collection's criteria and layout. The name typed lasts for
+ * the session; the layout, scope, period, and sort are kept on the
+ * account, so the page opens as it was left on every device. `isPending`
+ * holds while they load.
+ */
+export function useEventCollectionState() {
+  const { query, setQuery, returnPoint } = useCollectionSession();
+  const page = usePageChoices(
+    "events",
+    defaultEventPageChoices,
+    readEventPageChoices,
+  );
+  const { layout, ...kept } = page.choices;
+  return {
+    criteria: { query, ...kept } satisfies Criteria,
+    change: (patch: Partial<Criteria>) => {
+      returnPoint.current = null;
+      const { query: typed, ...choices } = patch;
+      if (typed !== undefined) setQuery(typed);
+      if (Object.keys(choices).length > 0) page.change(choices);
+    },
+    layout,
+    changeLayout: (value: "grid" | "list") => {
+      returnPoint.current = null;
+      page.change({ layout: value });
+    },
+    returnPoint,
+    isPending: page.isPending,
+  };
+}
+
 /** Returns to an opened card after the collection has finished loading. */
 export function useEventCollectionReturn(ready: boolean) {
-  const { returnPoint } = useEventCollectionState();
+  const { returnPoint } = useCollectionSession();
   const [point] = useState(() => returnPoint.current);
   const container = useRef<HTMLElement | null>(null);
   const restored = useRef(false);

@@ -312,7 +312,8 @@ export function EventList() {
   // On a phone the add button stands in for the header's New event.
   const phone = useIsPhone();
   const leaving = useLeaveEvents();
-  const { criteria, change, layout, changeLayout } = useEventCollectionState();
+  const { criteria, change, layout, changeLayout, isPending } =
+    useEventCollectionState();
   const { query, scope, filter, sort } = criteria;
   const [debouncedQuery, setDebouncedQuery] = useState(query.trim());
   const [isComposing, setIsComposing] = useState(false);
@@ -321,12 +322,12 @@ export function EventList() {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [query, isComposing]);
-  const events = useEventsQuery({
-    query: debouncedQuery,
-    scope,
-    filter,
-    sort,
-  });
+  // The list waits for the choices the account keeps, so it is read once
+  // and never shown in the defaults first.
+  const events = useEventsQuery(
+    { query: debouncedQuery, scope, filter, sort },
+    !isPending,
+  );
   const changingQuery = isComposing || query.trim() !== debouncedQuery;
   const { container, remember } = useEventCollectionReturn(
     events.isSuccess && !events.isFetching && !changingQuery,
@@ -381,6 +382,12 @@ export function EventList() {
     chips.find((chip) => chip.scope === scope && chip.filter === filter)?.key ??
     null;
   const sorts = ["date", "updated", "name"] as const;
+  if (isPending)
+    return (
+      <main className="workspace-page">
+        <LoadingState label={t("loading")} />
+      </main>
+    );
   return (
     <main className="workspace-page" ref={container} tabIndex={-1}>
       <header className="quiet-heading events-heading events-column">

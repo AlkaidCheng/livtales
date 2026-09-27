@@ -294,7 +294,10 @@ export function useNoteWorkspaceOpened() {
   );
 }
 
-export function useEventsQuery(input: Omit<EventListQueryInput, "cursor">) {
+export function useEventsQuery(
+  input: Omit<EventListQueryInput, "cursor">,
+  enabled = true,
+) {
   const client = useApiClient();
   const { credential } = useAuthSession();
   const queryClient = useQueryClient();
@@ -305,7 +308,7 @@ export function useEventsQuery(input: Omit<EventListQueryInput, "cursor">) {
     credential?.workspaceId,
   ];
   const result = useInfiniteQuery({
-    enabled: credential !== null,
+    enabled: enabled && credential !== null,
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam, signal }) =>
       client.withSignal(signal).listEvents({

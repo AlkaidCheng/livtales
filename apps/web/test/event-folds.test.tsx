@@ -1,41 +1,62 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { LivTalesApiClient } from "@livtales/api-client";
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { Providers } from "../app/providers";
 import {
   type EventFoldList,
-  eventFoldStorageKey,
   foldedByDefault,
   useEventFolds,
 } from "../lib/event-folds";
+import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
 
-const session = vi.hoisted(() => ({
-  account: "019d6e7d-0000-7000-8000-000000000001" as string | null,
-}));
+let store: SandboxStore;
+let client: LivTalesApiClient;
 
-vi.mock("../lib/auth-session", () => ({
-  useAuthSession: () => ({
-    credential:
-      session.account === null
-        ? null
-        : { homeWorkspaceId: session.account, workspaceId: session.account },
-  }),
-}));
-
-const mei = "019d6e7d-0000-7000-8000-000000000001";
-const kai = "019d6e7d-0000-7000-8000-000000000002";
-
+/** The folds of one list, rendered under a session of the sample account. */
 function render(list: EventFoldList, query = "") {
   return renderHook(({ list, query }) => useEventFolds(list, "2026", query), {
     initialProps: { list, query },
+    wrapper: Providers,
   });
+}
+
+/** The Events page's choices the sample account keeps. */
+async function kept() {
+  return (await client.getPageChoices("events")).choices;
 }
 
 describe("the Events list's folds", () => {
   beforeEach(() => {
-    vi.stubGlobal("localStorage", window.sessionStorage);
-    session.account = mei;
+    let saved: string | null = null;
+    store = new SandboxStore({
+      getItem: () => saved,
+      setItem: (_key, value) => {
+        saved = value;
+      },
+    });
+    client = new LivTalesApiClient({
+      getCredential: () => ({
+        accessToken: "sample",
+        workspaceId: sandboxWorkspaceId,
+      }),
+      fetch: (input, options) => store.fetch(input, options),
+    });
+    window.sessionStorage.setItem(
+      "chronelle.session",
+      JSON.stringify({
+        accessToken: "sample",
+        workspaceId: sandboxWorkspaceId,
+      }),
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof globalThis.fetch>((input, options) =>
+        store.fetch(input, options),
+      ),
+    );
   });
 
   afterEach(() => {
@@ -56,42 +77,46 @@ describe("the Events list's folds", () => {
     expect(foldedByDefault("past", "2025", null)).toBe(false);
   });
 
-  it("keeps each list's folds for the account in this browser", () => {
+  it("keeps each list's folds on the account", async () => {
     const past = render("past");
     expect(past.result.current.isFolded("2025")).toBe(true);
+    // Two quick turns each start from the folds as they stand.
     act(() => past.result.current.toggle("2025"));
     act(() => past.result.current.toggle("2026-08"));
+    await waitFor(() =>
+      expect(past.result.current.isFolded("2026-08")).toBe(true),
+    );
     expect(past.result.current.isFolded("2025")).toBe(false);
-    expect(past.result.current.isFolded("2026-08")).toBe(true);
-    expect(eventFoldStorageKey(mei)).toBe(`livtales.event-folds.${mei}`);
-    expect(
-      JSON.parse(window.localStorage.getItem(eventFoldStorageKey(mei)) ?? ""),
-    ).toEqual({ past: { "2025": false, "2026-08": true } });
+    await waitFor(async () =>
+      expect(await kept()).toEqual({
+        "folds.past": { "2025": false, "2026-08": true },
+      }),
+    );
 
     // Upcoming keeps its own folds.
     past.rerender({ list: "upcoming", query: "" });
     expect(past.result.current.isFolded("2026-08")).toBe(false);
 
-    // A reload reads them back; another account starts from the defaults.
+    // Another session reads them back from the account.
     past.unmount();
     const reloaded = render("past");
+    await waitFor(() =>
+      expect(reloaded.result.current.isFolded("2026-08")).toBe(true),
+    );
     expect(reloaded.result.current.isFolded("2025")).toBe(false);
-    expect(reloaded.result.current.isFolded("2026-08")).toBe(true);
-    reloaded.unmount();
-    session.account = kai;
-    const other = render("past");
-    expect(other.result.current.isFolded("2025")).toBe(true);
-    expect(other.result.current.isFolded("2026-08")).toBe(false);
   });
 
-  it("stores only what differs from the default", () => {
+  it("keeps only what differs from the default", async () => {
     const past = render("past");
     act(() => past.result.current.toggle("2026-08"));
+    await waitFor(async () =>
+      expect(await kept()).toEqual({ "folds.past": { "2026-08": true } }),
+    );
     act(() => past.result.current.toggle("2026-08"));
-    expect(window.localStorage.getItem(eventFoldStorageKey(mei))).toBeNull();
+    await waitFor(async () => expect(await kept()).toEqual({}));
   });
 
-  it("opens every heading while a name is typed and forgets those folds with the name", () => {
+  it("opens every heading while a name is typed and forgets those folds with the name", async () => {
     const past = render("past");
     act(() => past.result.current.toggle("2026-08"));
     past.rerender({ list: "past", query: "kyoto" });
@@ -104,30 +129,8 @@ describe("the Events list's folds", () => {
     past.rerender({ list: "past", query: "" });
     expect(past.result.current.isFolded("2024")).toBe(true);
     expect(past.result.current.isFolded("2026-08")).toBe(true);
-    expect(
-      JSON.parse(window.localStorage.getItem(eventFoldStorageKey(mei)) ?? ""),
-    ).toEqual({ past: { "2026-08": true } });
-  });
-
-  it("folds for the visit alone when browser storage is blocked or holds nonsense", () => {
-    window.localStorage.setItem(eventFoldStorageKey(mei), "{not json");
-    const blocked = {
-      getItem: () => {
-        throw new Error("blocked");
-      },
-      setItem: () => {
-        throw new Error("blocked");
-      },
-      removeItem: () => {
-        throw new Error("blocked");
-      },
-    };
-    const garbled = render("past");
-    expect(garbled.result.current.isFolded("2025")).toBe(true);
-    garbled.unmount();
-    vi.stubGlobal("localStorage", blocked);
-    const past = render("past");
-    act(() => past.result.current.toggle("2025"));
-    expect(past.result.current.isFolded("2025")).toBe(false);
+    await waitFor(async () =>
+      expect(await kept()).toEqual({ "folds.past": { "2026-08": true } }),
+    );
   });
 });
