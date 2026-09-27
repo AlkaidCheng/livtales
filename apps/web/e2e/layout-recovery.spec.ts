@@ -63,10 +63,10 @@ test("recovers event layouts without altering canonical planning data", async ({
   await choosePageOption(page, "Page options");
   const dialog = page.getByRole("dialog", { name: "Manage event pages" });
   await dialog
-    .getByRole("button", { name: "Remove To-dos from Preparation" })
+    .getByRole("button", { name: "Remove Tasks from Preparation" })
     .click();
   await expect(
-    dialog.getByRole("heading", { name: "Remove To-dos?" }),
+    dialog.getByRole("heading", { name: "Remove Tasks?" }),
   ).toBeFocused();
   await expect(dialog).toContainText("No planning records will be deleted.");
   await dialog
@@ -96,7 +96,7 @@ test("recovers event layouts without altering canonical planning data", async ({
   await dialog
     .getByRole("button", { name: "Preview version 1", exact: true })
     .click();
-  await expect(dialog).toContainText("Preparation: To-dos, Calendar");
+  await expect(dialog).toContainText("Preparation: Tasks, Calendar");
   await page.screenshot({
     path: testInfo.outputPath("layout-restore-preview.png"),
     fullPage: true,

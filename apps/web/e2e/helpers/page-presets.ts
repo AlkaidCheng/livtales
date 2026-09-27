@@ -33,7 +33,7 @@ export async function exercisePagePresets(page: Page, testInfo: TestInfo) {
   ).toBeChecked();
   await expect(name).toHaveValue("Gathering");
   await expect(preview.getByRole("listitem")).toHaveText([
-    "To-dos",
+    "Tasks",
     "Calendar",
     "Expenses",
   ]);

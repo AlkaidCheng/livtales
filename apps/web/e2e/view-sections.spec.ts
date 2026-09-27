@@ -4,7 +4,7 @@ import { openEventView } from "./helpers/event-view";
 import { chooseRowAction } from "./helpers/row-menu";
 
 /**
- * Sections in an Event's To-dos and Expenses: Add section between groups
+ * Sections in an Event's Tasks and Expenses: Add section between groups
  * with a description, a task placed by a section's add row, Edit section
  * from its menu, Move down, a task dragged into another section by its
  * grip (on desktop; the phone moves it through the editor's Section
@@ -13,7 +13,7 @@ import { chooseRowAction } from "./helpers/row-menu";
  * out through its editor. The API lists the sections and each record's
  * section as the page shows them.
  */
-test("splits To-dos and Expenses into sections, places records by add row, editor, and drag, and leaves them loose on delete", async ({
+test("splits Tasks and Expenses into sections, places records by add row, editor, and drag, and leaves them loose on delete", async ({
   isMobile,
   page,
   request,
@@ -42,9 +42,9 @@ test("splits To-dos and Expenses into sections, places records by add row, edito
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Autumn fair/ }).click();
 
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const todos = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await expect(todos).toBeVisible();
   const quickAdd = async (name: string) => {

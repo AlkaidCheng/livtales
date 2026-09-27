@@ -143,7 +143,7 @@ their own space on their next request. A record that arrives in the meantime
 refuses the deletion, and the row counts it again.
 
 Move to space..., in an event's More menu, moves the event with everything
-in it (schedule items, to-dos and their subtasks, expenses, reminders, notes,
+in it (schedule items, tasks and their subtasks, expenses, reminders, notes,
 files, pages, sections, and its history, Trash included) to another space. It
 is offered to an Owner of the event's space, on an event that is its own
 scope and not in Trash. The dialog first lists the account's spaces with
@@ -154,7 +154,7 @@ chosen. With no such space the dialog says so and Continue stays off.
 Continue shows the review, titled "Move to {space}": what moves with it, by
 kind; the links the move removes, set apart as a warning (each link between a
 moving record and one that stays, named by the record that stays, and each
-to-do whose assignee's People card stays, by title and person); what stays
+task whose assignee's People card stays, by title and person); what stays
 behind (People cards scoped to the event, labels joining the new space's
 label of the same name or created there, links already removed or in Trash
 that are cleared too); and who can see it after (the new space's members by
@@ -307,7 +307,7 @@ applied by the server, so a page holds only what matches. Load more tasks
 extends the list page by page.
 
 The page offers the same List, By day, By week, Board, and Calendar layouts
-as the To-dos component, from the same rows: the completion check, the name and its
+as the Tasks component, from the same rows: the completion check, the name and its
 details (a button that opens the row in place as the composer), the status,
 and the row menu. The week and the calendar ask the server for the tasks
 due on the days shown (in the browser's time zone) and load all of them, so
@@ -325,7 +325,7 @@ due day with the parent named. A parent shows how many of its subtasks are
 done (2/3). Completing a parent leaves its subtasks as they are; a parent
 moved to Trash takes its live subtasks with it, and restoring the parent
 brings back the ones that went with it (a subtask trashed on its own stays,
-and cannot be restored before its parent). The To-dos component offers the
+and cannot be restored before its parent). The Tasks component offers the
 same actions and marks over the event's tasks.
 
 Labels are space-wide names a task may carry any number of. The task
@@ -461,7 +461,7 @@ with the text as the changed field, moved to Trash and recovered from it,
 and found by Search by its title only.
 
 The Sharing tab of an event, offered to its owners, is one box headed by
-the event's name, with a note that everything on the event (pages, to-dos,
+the event's name, with a note that everything on the event (pages, tasks,
 expenses, files) follows a share, and three groups. Friends lists the
 account's friends (by their card's name when the space has one), each
 with a mark, the role they already hold under the name, and a role beside
@@ -487,15 +487,15 @@ is accepted and lapses when it is declined or withdrawn. The People
 component offers owners Share with everyone here, the same control with the
 event's own people ticked. People with access lists the accounts that hold a
 grant, each with what the grant gives under the name ("Also this event's
-pages, to-dos, expenses, files, and earlier versions"), and the shares still
+pages, tasks, expenses, files, and earlier versions"), and the shares still
 waiting ("Access follows when they join"), each with Remove. A whole
 space is shared by making a friend a member (see Settings).
 
 A share can be narrowed to one view of the event, or to one section of
-To-dos or Expenses. Share ends the head row of To-dos, Calendar, Timeline,
+Tasks or Expenses. Share ends the head row of Tasks, Calendar, Timeline,
 Itinerary, Expenses, Reminders, and Notes for whoever may share the event,
 after Export (on a phone, its symbol alone like the other head-row
-controls). It opens a sheet under the control named "Share To-dos" (or the
+controls). It opens a sheet under the control named "Share Tasks" (or the
 view's name): a line saying that everyone here sees that view of the event,
 and its sections unless a section is shared on its own; the people who see
 it, each with an avatar, a role (Viewer or Editor) that changes in place,
@@ -511,7 +511,7 @@ records the share admits and nothing else, and a section shared on its own
 appears with its rows while the view's other rows stay out. Such a share
 gives view on the event itself whatever its role: the role applies to the
 records. People with access in the Sharing view names what a narrowed share
-opens under the person ("Shared: To-dos", "Shared section: Venue"), whole
+opens under the person ("Shared: Tasks", "Shared section: Venue"), whole
 shares first. The same person may hold several narrowed shares of one event
 at different roles; a whole share stands beside them. Deleting a section
 ends the shares narrowed to it.
@@ -825,7 +825,7 @@ More; on a phone the menu control, whose drawer closes as Settings opens).
 Each section has an address on the page underneath: a `settings` query
 parameter (`general`, `language`, `appearance`, `keyboard`, or `members`)
 added to the page's own, so `/events/<id>?view=todos&settings=language` is
-an event's To-dos with Settings open on Language & time. The entries that
+an event's Tasks with Settings open on Language & time. The entries that
 open Settings (Settings in the account menu, Keyboard shortcuts in More,
 Members in the space switcher) link to the current page with that
 parameter, so a new tab or a copied link opens the same; a plain click
@@ -941,7 +941,7 @@ codes without a translation.
 Every screen of the web app reads in the chosen language: the shell and
 rail, the command palette and its shortcut settings, the Events page, the
 event page with its strip, Overview, pages, and layout controls, every panel
-(To-dos, Calendar, Timeline, Itinerary, Expenses, Reminders, Files, People,
+(Tasks, Calendar, Timeline, Itinerary, Expenses, Reminders, Files, People,
 Notes, Sharing, Removed links), the Tasks and People collections, the person page, the event,
 schedule item, task, expense, reminder, and person editors with the Due and
 date-range pickers, the month list, the period navigation, the label and
@@ -978,7 +978,7 @@ closes to a timed task already
 following them and a week strip starting Monday, reads every choice back
 after a reload through the old Language & time address, and signs out
 everywhere. A second journey (desktop and mobile Chromium and WebKit) opens
-Settings over an event's filtered To-dos, changes section in place, and
+Settings over an event's filtered Tasks, changes section in place, and
 returns to the same view with the close control, Escape, and Back (Forward
 opens it again), checking that the page underneath was not remounted, that
 focus returns to the account block, and that an address-opened Settings
@@ -1040,7 +1040,7 @@ not yet reviewed the two Chinese catalogs; wording may change.
   that opens the gallery. An event without pages starts at its views, with
   no page plus or bar; its first page starts from the gallery's New page,
   from Manage tabs, or from the Add page command. A new event's strip holds
-  the Overview and To-dos; the other views wait in the gallery, and Sharing
+  the Overview and Tasks; the other views wait in the gallery, and Sharing
   and Removed links start hidden (Share in the header still opens Sharing).
   A strip the account has arranged keeps its views, and a view the app
   gains later starts in the gallery. A viewer whose share is narrowed to
@@ -1081,11 +1081,11 @@ not yet reviewed the two Chinese catalogs; wording may change.
   one checks that a mouse drag never swipes; they are not checks on
   physical phones, iOS Safari's edge gestures, or with a screen reader.
 - The gallery (Add a view, or Add view in Manage tabs) shows every
-  specialized view as a card with a mark, a name and one line: To-dos,
+  specialized view as a card with a mark, a name and one line: Tasks,
   Calendar, Timeline, Itinerary, Expenses, Reminders, Files, People, Notes,
   and Sharing for an account that may share. A card is a switch: pressing it puts the view on
   the strip, at the end, or takes it off the event again; the dialog stays
-  open. To-dos and Sharing are always on. Taking a view off changes no
+  open. Tasks and Sharing are always on. Taking a view off changes no
   records; it comes back with everything in it. For an account that may
   edit the event, New page at the footer's start closes the gallery and
   opens the Add page dialog.
@@ -1094,7 +1094,7 @@ not yet reviewed the two Chinese catalogs; wording may change.
   the scroll) lists the pages and the views in two lists, each capped in
   height and scrolling. A row drags to reorder, or its
   grip moves it with the arrow keys; the eye hides a tab but keeps it listed;
-  the cross takes a view off the event. Overview, To-dos, Sharing and Removed
+  the cross takes a view off the event. Overview, Tasks, Sharing and Removed
   links can be hidden but not removed; pages are removed through their own
   options (the dialog's help says so; the list itself carries no notes).
   New page opens the Add page dialog; Add view opens the gallery.
@@ -1103,7 +1103,7 @@ not yet reviewed the two Chinese catalogs; wording may change.
   are the account's own, kept per event with the account preferences and
   applied on every device. A hidden view is still reached from the Overview
   rows and from its address.
-- The Overview lists what the event holds as rows (Open to-dos, Scheduled
+- The Overview lists what the event holds as rows (Open tasks, Scheduled
   items, Expenses, Reminders, Files, People), each with its count and a way
   into that view, then Next up as one row; there is no introduction above
   them. Overview counts and Next up use the authorized Event detail response.
@@ -1123,7 +1123,7 @@ then add only the components it needs. Empty pages explain this next step;
 movement controls and instructions appear only in Arrange components mode. Viewers see
 read-only explanations without instructions to use unavailable controls.
 
-Add a page offers Blank (the default), Gathering (To-dos, Calendar as an
+Add a page offers Blank (the default), Gathering (Tasks, Calendar as an
 agenda, Expenses), and Multi-day (Calendar, Files). The preview shows the page name and
 ordered components before saving. Choosing a preset supplies a suggested name
 until the name is edited; switching presets preserves a custom name. Each
@@ -1181,7 +1181,7 @@ ID and saved layout; related objects are not recovered automatically. The link
 does not bypass the destination's authorization checks.
 
 Keyboard browser tests cover creating an undated Event, adding a page and a
-To-dos component, recording a task, recovering the Event, and reopening its
+Tasks component, recording a task, recovering the Event, and reopening its
 unchanged layout and task. Mobile engine tests include a 320px viewport.
 The offline sandbox covers composition and navigation, not real recovery.
 These checks do not establish physical-device or screen-reader acceptance.
@@ -1301,7 +1301,7 @@ through, the values in the display language and zone (people and labels by
 name, a status by its label), then how many more fields changed; the Created
 row lists the content the record started with. The list carries the summary,
 so no row asks the server before Compare. Layout history rows in Page options read Arranged (layout) and
-say what moved: "Moved Calendar above To-dos", "Added page Packing", "Removed
+say what moved: "Moved Calendar above Tasks", "Added page Packing", "Removed
 component Map".
 
 Calendar Edit opens the same inspector for the selected schedule item, including
@@ -1400,7 +1400,7 @@ rows end on Add schedule item and Add expense, which open their kinds'
 composers (below). Viewers see no such rows.
 
 A task row is a button: its name and meta line, named "Edit <name>", open
-the row in place as the composer, prefilled with the task, on the To-dos
+the row in place as the composer, prefilled with the task, on the Tasks
 list, its day groups, and the Tasks collection (the week and month grids
 keep the dialog through the row menu). The check, the assignee and labels
 at the row's end, and the row menu keep their own actions, and the menu's
@@ -1461,7 +1461,7 @@ expense) with the composer's fields. Each composer keeps its drafts apart
 from its dialog's, as the task's does: an add row's composer left with
 text is found open again, and a draft left in the dialog (or a save on
 its way there) is the dialog's, offered as Resume your draft when More
-reaches it again. The rows read as the To-dos rows do: the name over one
+reaches it again. The rows read as the Tasks rows do: the name over one
 meta line with its symbols (the dates and the place; the moment; the day
 paid, the amount at the row's end).
 Completion and reopening remain direct row actions through the check, a
@@ -1574,7 +1574,7 @@ happening now carrying the accent bar at the left; free time of fifteen
 minutes or more between two rows as one faint italic line ("30 min free",
 "2 h free"; shorter gaps are not shown); Due today, the tasks whose due
 falls on the day as check rows with the assignee and "2 of 3 subtasks done"
-or "due 18:00", ticking completing the task as in To-dos; Not yet timed,
+or "due 18:00", ticking completing the task as in Tasks; Not yet timed,
 the date-only items on that one day with a dash for a time; and Add
 schedule item, the Calendar's dialog. A day with nothing on it says
 "Nothing scheduled this day."
@@ -1598,13 +1598,13 @@ on one head line: its title in body type, a faint count where the component
 keeps one, and its Layout, Sort, Filter, and Export controls as quiet words
 at the right, each with its symbol; on a phone (under 600px) the symbols
 show alone, a touch larger, and the words stay as the buttons' names. A
-component that lists records (To-dos, Timeline, Itinerary,
+component that lists records (Tasks, Timeline, Itinerary,
 Expenses, Reminders, Files, Notes, and the Calendar in its list and by-day
 layouts) keeps to one 800px column, heading and rows alike, so a name and
 what sits at the row's end stay close; the week and month grids and the
 namecards take the page, as do the Events, Tasks, and People collections'
 lists and their search rows. Nothing sits under the heading, and no Add button sits beside it: a
-collection adds through the row at its end. To-dos' row opens the
+collection adds through the row at its end. The Tasks' row opens the
 composer, whose chips carry the task's fields and whose More opens the full
 editor with them; Calendar, Reminders, and Expenses end on the same kind of
 row (Add schedule item, Add reminder, Add expense) opening their kinds'
@@ -1657,7 +1657,7 @@ focus returns to the menu button, which is also where a dialog opened from the
 menu returns focus. A viewer's menu offers Copy link and History.
 
 Tasks and Reminders hold a manual order: a new record goes last, and the
-To-dos and Reminders components list by it, as does the Tasks page under its
+Tasks and Reminders components list by it, as does the Tasks page under its
 Manual sort. Under manual order a row can be dragged by pressing anywhere on
 it and moving a few pixels (on touch, by holding it first), so a click on the
 check, the name, or the menu keeps its meaning and the click that ends a drag
@@ -1682,10 +1682,10 @@ Tasks page rows do not drag and the steps are not offered.
 
 ### Sections
 
-An Event's To-dos (in the list layout) and Expenses (list and by day) can be
+An Event's Tasks (in the list layout) and Expenses (list and by day) can be
 split into sections. The rows outside any section come first, without a
 heading; then each section: its name in bold with its description muted
-under it, a faint figure at the right (the open count of a To-dos section,
+under it, a faint figure at the right (the open count of a Tasks section,
 the total by currency of an Expenses section), a quiet menu on hover or
 focus with Edit section, Move up, Move down, and Delete section, the
 section's rows, and the section's own add row, so a task or an expense added
@@ -1709,7 +1709,7 @@ keys do the same. A section is not versioned and not in Trash: restoring an
 older revision of a task leaves it where it is, and a deleted section is
 gone.
 
-Calendar, Reminders, and Expenses rows read as the To-dos rows do: the
+Calendar, Reminders, and Expenses rows read as the Tasks rows do: the
 name over one meta line with a symbol for the dates or the moment and one
 for the place, the amount at an expense row's end, a reminder's status as
 a label (Pending, Triggered, Dismissed), and the row menu on hover. Task
@@ -1722,7 +1722,7 @@ record's composer.
 A component's kind decides which records it holds; its layout decides how
 they are laid out, and the heading carries one Layout control, an icon with
 the current layout's name, that opens the templates a kind offers when it
-offers more than one. To-dos offers List, the table; By day, which groups
+offers more than one. Tasks offers List, the table; By day, which groups
 tasks under Overdue, one heading per due date (Today and Tomorrow named, with
 the weekday), and No due date, showing each timed task's due time and nothing
 for a task due on the date itself; By week, seven columns Monday to Sunday
@@ -1754,7 +1754,7 @@ the right, done ones struck through), three of them and then "+n more",
 which opens the rest in place. Calendar offers List; Agenda, the numbered
 running order of its items with the same Edit, History, and Actions on each;
 and By week, Board, and Calendar, a scheduled item sitting on every day it
-covers, the week's columns holding the same cards as To-dos (the time or the
+covers, the week's columns holding the same cards as Tasks (the time or the
 place under the name).
 Expenses and Reminders offer List, By day, By week, Board, and Calendar as
 well: a transaction sits on the day it happened and a reminder on the day it
@@ -1765,7 +1765,7 @@ column too (a pending or triggered reminder whose day has passed), with
 Reschedule moving them to today; the Calendar's and the Expenses' boards
 start at the earliest day with content, Today among their columns. The
 Itinerary offers Day and All days (below).
-The event's own tabs (To-dos, Calendar,
+The event's own tabs (Tasks, Calendar,
 and the rest) offer the same Layout control; a tab's choice lasts for the
 session, while a page component's is saved with the layout. Above a week or
 a calendar, open tasks whose due has passed sit in an Overdue strip and tasks
@@ -1777,7 +1777,7 @@ is not saved, and returns to today when the layout changes. The rows in a
 column or a cell are the list's rows with the same check and actions, and the
 filters apply to every layout.
 
-Beside Layout, the To-dos component carries Sort and Filter. Sort orders the
+Beside Layout, the Tasks component carries Sort and Filter. Sort orders the
 tasks by Manual (their kept order), By due, By name, or By updated, and the
 button reads the chosen order when it is not the default. Filter opens one
 menu: Open, All, or Done; Has a time and Overdue; the labels the event's
@@ -1793,7 +1793,7 @@ history, and undo covers it. Viewers see the saved layout without a control.
 
 ### Export
 
-Export ends the head row of To-dos, Calendar, Timeline, Itinerary, Expenses,
+Export ends the head row of Tasks, Calendar, Timeline, Itinerary, Expenses,
 Reminders, and Notes, a quiet word with the download mark beside Sort, Filter,
 and Layout, for editors and viewers alike. It opens two plain items. Export
 as PDF prints the view as it is shown, through the browser's print dialog
@@ -1807,7 +1807,7 @@ named "Event - View - date" (a character a file system refuses becomes a
 space), opening with a byte-order mark so a spreadsheet reads it as UTF-8,
 its column headings in the shown language, dates as YYYY-MM-DD and times on
 the 24-hour clock in the shown time zone. What is exported is what is shown:
-the To-dos file follows Sort and Filter, and names the assignee and the
+the Tasks file follows Sort and Filter, and names the assignee and the
 labels; the Calendar, Expenses, and Reminders files hold the list, by-day, or
 the shown week or month (with the undated rows the grid lists apart); the
 Itinerary file holds the shown day, or every day in All days, each day in

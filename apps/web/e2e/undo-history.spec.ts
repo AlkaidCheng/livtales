@@ -111,7 +111,7 @@ test("undoes and redoes edits by name, keeps layout undo apart, and previews his
   await choosePageOption(page, "Page options");
   const dialog = page.getByRole("dialog", { name: "Manage event pages" });
   await dialog
-    .getByRole("button", { name: "Remove To-dos from Preparation" })
+    .getByRole("button", { name: "Remove Tasks from Preparation" })
     .click();
   await dialog
     .getByRole("button", { name: "Remove from layout", exact: true })
@@ -132,7 +132,7 @@ test("undoes and redoes edits by name, keeps layout undo apart, and previews his
     .click();
   await expect(dialog.getByText("Arranged (layout)").first()).toBeVisible();
   await expect(
-    dialog.getByText("Removed component To-dos", { exact: true }),
+    dialog.getByText("Removed component Tasks", { exact: true }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
 

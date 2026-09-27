@@ -93,7 +93,7 @@ test("exports a view as it is shown: the CSV follows the filter and the PDF prin
   await menu.getByRole("menuitem", { name: "Export data (CSV)" }).click();
   const todos = await todosDownload;
   expect(todos.suggestedFilename()).toMatch(
-    /^Kyoto in November - To-dos - \d{4}-\d{2}-\d{2}\.csv$/u,
+    /^Kyoto in November - Tasks - \d{4}-\d{2}-\d{2}\.csv$/u,
   );
   const todosLines = await linesOf(todos);
   expect(todosLines[0]).toBe(

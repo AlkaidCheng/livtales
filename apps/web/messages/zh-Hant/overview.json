@@ -3,7 +3,7 @@
   "transactions": "{count} 筆交易",
   "privateTitle": "私密的相關項目",
   "privateNote": "{count} 個相關項目在你的權限範圍之外。",
-  "openTodos": "未完成的待辦",
+  "openTodos": "未完成的任務",
   "scheduled": "已安排的項目",
   "expenses": "支出",
   "reminders": "提醒",

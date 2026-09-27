@@ -244,10 +244,10 @@ test("opens Settings over an event's view and returns to it as it was left @webk
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/u);
 
-  // The event's To-dos, narrowed by a filter, with a mark on its heading
+  // The event's Tasks, narrowed by a filter, with a mark on its heading
   // that a remount of the page would lose.
   await page.goto(`/events/${event.id}`);
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const eventUrl = page.url();
   expect(eventUrl).toMatch(/\?view=todos$/u);
   await page.getByRole("button", { name: /^Filter/ }).click();
@@ -266,7 +266,7 @@ test("opens Settings over an event's view and returns to it as it was left @webk
   await heading.evaluate((element) => {
     element.dataset.probe = "kept";
   });
-  const todos = page.getByRole("tab", { name: "To-dos", exact: true });
+  const todos = page.getByRole("tab", { name: "Tasks", exact: true });
   async function expectLeftAsItWas() {
     await expect(settingsDialog(page)).toHaveCount(0);
     await expect(page).toHaveURL(eventUrl);
@@ -319,7 +319,7 @@ test("opens Settings over an event's view and returns to it as it was left @webk
     path: testInfo.outputPath("settings-language.png"),
   });
 
-  // The close control returns to the event's To-dos as they were left,
+  // The close control returns to the event's Tasks as they were left,
   // with focus back on the account block (the menu control on a phone,
   // whose drawer closed as Settings opened).
   await settings

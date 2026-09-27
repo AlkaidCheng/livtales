@@ -45,16 +45,16 @@ export async function exerciseQuickAddOnTasksPage(page: Page) {
 }
 
 /**
- * Inside an open Event, adds tasks from the add rows of the To-dos tab
+ * Inside an open Event, adds tasks from the add rows of the Tasks tab
  * (the list, the No due date group, and today's group, which starts the
  * composer with the day as the due date) and reminders from the quick rows
  * of the Reminders tab (the list at the next 9:00, a day group at 9:00 that
  * day). Returns what was added.
  */
 export async function exerciseQuickAddInEvent(page: Page) {
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const todos = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   // A task due today, so the by-day view has a day group to add to.
   await openTaskEditor(page, todos);

@@ -92,12 +92,12 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
     errors.push(error.message);
   });
 
-  // Ana shares To-dos with Ben from the view's head row.
+  // Ana shares Tasks with Ben from the view's head row.
   await signIn(page, "Ana", anaEmail);
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await page.getByRole("button", { name: "Share", exact: true }).click();
-  const sheet = page.getByRole("dialog", { name: "Share To-dos" });
+  const sheet = page.getByRole("dialog", { name: "Share Tasks" });
   await expect(sheet).toContainText("Only you see this so far.");
   await sheet.getByRole("button", { name: "Add people", exact: true }).click();
   await sheet
@@ -115,7 +115,7 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
   ).toBeFocused();
 
   // Ben opens the event from his own list, where Ana's share appears:
-  // To-dos alone, its rows, no pages.
+  // Tasks alone, its rows, no pages.
   await signOut(page, "Ana");
   await signIn(page, "Ben", benEmail);
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
@@ -123,10 +123,10 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
     page.getByRole("heading", { level: 1, name: "Kyoto in November" }),
   ).toBeVisible();
   const tabs = page.getByRole("tablist", { name: "Event views", exact: true });
-  await expect(tabs.getByRole("tab")).toHaveText(["To-dos"]);
+  await expect(tabs.getByRole("tab")).toHaveText(["Tasks"]);
   await expect(page.getByText("Book the hall")).toBeVisible();
   await expect(page.getByText("Order the cake")).toBeVisible();
-  // The To-dos table names its section head row by the section.
+  // The Tasks table names its section head row by the section.
   await expect(page.getByRole("row", { name: /^Venue/ })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Share", exact: true }),
@@ -144,17 +144,17 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
   await signOut(page, "Ben");
   await signIn(page, "Ana", anaEmail);
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await page.getByRole("button", { name: "Share", exact: true }).click();
   await page
-    .getByRole("dialog", { name: "Share To-dos" })
+    .getByRole("dialog", { name: "Share Tasks" })
     .getByRole("button", { name: "Remove Ben" })
     .click();
-  await expect(
-    page.getByRole("dialog", { name: "Share To-dos" }),
-  ).toContainText("Only you see this so far.");
+  await expect(page.getByRole("dialog", { name: "Share Tasks" })).toContainText(
+    "Only you see this so far.",
+  );
   await page
-    .getByRole("dialog", { name: "Share To-dos" })
+    .getByRole("dialog", { name: "Share Tasks" })
     .getByRole("button", { name: "Done", exact: true })
     .click();
   await page.getByRole("button", { name: "Actions for Venue" }).click();
@@ -188,7 +188,7 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
   await signOut(page, "Ana");
   await signIn(page, "Ben", benEmail);
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
-  await expect(tabs.getByRole("tab")).toHaveText(["To-dos"]);
+  await expect(tabs.getByRole("tab")).toHaveText(["Tasks"]);
   await expect(page.getByText("Book the hall")).toBeVisible();
   await expect(page.getByText("Order the cake")).toHaveCount(0);
   expect(errors).toEqual([]);

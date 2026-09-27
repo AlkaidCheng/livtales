@@ -29,7 +29,7 @@ test("adds tasks from the add row's composer: a name alone, then chips for the d
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Garden evening/ }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
 
   // The add row opens the composer empty with the name focused; a name
   // and Enter add a task and keep the composer open for the next.

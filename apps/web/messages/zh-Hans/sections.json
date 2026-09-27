@@ -16,7 +16,7 @@
   "moveSection": "调整分组 {name} 的位置",
   "field": "分组",
   "none": "未分组",
-  "open": "{count} 项待办",
+  "open": "{count} 项未完成",
   "total": "合计 {total}",
   "said": {
     "added": "已添加分组 {name}。",

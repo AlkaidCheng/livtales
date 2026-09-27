@@ -15,7 +15,7 @@ test("retains a failed task draft and saves only after an explicit retry @webkit
   await page.getByRole("button", { name: "New event", exact: true }).click();
   await page.getByLabel("Event name", { exact: true }).fill("Planning review");
   await page.getByRole("button", { name: "Create event", exact: true }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await openTaskEditor(page);
   const form = page
     .locator("form")

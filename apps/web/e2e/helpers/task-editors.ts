@@ -8,9 +8,9 @@ import { openEventView } from "./event-view";
 
 export async function exerciseTaskEditors(page: Page, testInfo: TestInfo) {
   const viewport = page.viewportSize();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const panel = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await expect(panel).toBeVisible();
   const before = await panel.boundingBox();

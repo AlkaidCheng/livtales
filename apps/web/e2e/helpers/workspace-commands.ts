@@ -27,7 +27,7 @@ export async function exerciseWorkspaceCommands(
   const results = dialog.getByRole("listbox", {
     name: "Commands",
   });
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await openTaskEditor(page);
   const draft = page.getByLabel("Task", { exact: true });
   await draft.fill("Unsaved command draft");

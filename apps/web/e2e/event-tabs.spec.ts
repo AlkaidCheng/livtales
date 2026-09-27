@@ -40,7 +40,7 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
   await expect(page).toHaveURL(/\/events$/u);
 
   // Opened for the first time, the event lands on its Overview, and the
-  // address names it. The strip holds the Overview and To-dos alone:
+  // address names it. The strip holds the Overview and Tasks alone:
   // Sharing and Removed links start hidden, and an event without pages
   // shows no page controls.
   await page.goto(`/events/${event.id}`);
@@ -50,7 +50,7 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
   await expect(
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  expect(await viewTabs(page)).toEqual(["Overview", "To-dos"]);
+  expect(await viewTabs(page)).toEqual(["Overview", "Tasks"]);
   await expect(
     page.getByRole("button", { name: "Add page", exact: true }),
   ).toHaveCount(0);
@@ -95,9 +95,10 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
     "aria-pressed",
     "false",
   );
-  await expect(
-    gallery.getByRole("button", { name: /^To-dos/ }),
-  ).toHaveAttribute("aria-disabled", "true");
+  await expect(gallery.getByRole("button", { name: /^Tasks/ })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
   await page.screenshot({ path: testInfo.outputPath("gallery.png") });
   await gallery.getByRole("button", { name: "Done", exact: true }).click();
   await expect(gallery).toHaveCount(0);
@@ -106,7 +107,7 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
   ).toBeFocused();
   expect(await viewTabs(page)).toEqual([
     "Overview",
-    "To-dos",
+    "Tasks",
     "Calendar",
     "Itinerary",
     "Expenses",
@@ -147,7 +148,7 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
     .getByRole("button", { name: "Move Calendar", exact: true })
     .focus();
   // Each move lands before the next: the views' list reads Overview,
-  // To-dos, the hidden Sharing and Removed links, then Calendar.
+  // Tasks, the hidden Sharing and Removed links, then Calendar.
   const calendarRow = async () =>
     (
       await manage
@@ -169,7 +170,7 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
   await expect(manage).toHaveCount(0);
   const arranged = [
     "Overview",
-    "To-dos",
+    "Tasks",
     "Itinerary",
     "Reminders",
     "Calendar",
@@ -221,7 +222,7 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
     // The phone keeps the strip, folded past its width into the chip; a
     // hidden view is not on it while another is shown.
     await expect(page.locator(".mobile-view-select")).toHaveCount(0);
-    await openEventView(page, "To-dos");
+    await openEventView(page, "Tasks");
     await expect(
       page.getByRole("tab", { name: "Expenses", exact: true }),
     ).toHaveCount(0);
@@ -234,7 +235,7 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
   const chip = page.getByRole("button", { name: /more tabs?$/ });
   await expect(chip).toBeVisible();
   const shown = await stripTabs(page);
-  expect(shown).toContain("To-dos");
+  expect(shown).toContain("Tasks");
   expect(shown.length).toBeLessThan(8);
   await chip.click();
   const folded = page.getByRole("menu", { name: /more tabs?$/ });
@@ -330,11 +331,11 @@ test("keeps a strip arranged before the minimal defaults, and starts a view it n
   await expect(page).toHaveURL(/\/events$/u);
   await page.goto(`/events/${event.id}?view=todos`);
   await expect(
-    page.getByRole("tab", { name: "To-dos", exact: true }),
+    page.getByRole("tab", { name: "Tasks", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   expect(await viewTabs(page)).toEqual([
     "Overview",
-    "To-dos",
+    "Tasks",
     "Calendar",
     "Timeline",
     "Itinerary",
@@ -379,10 +380,10 @@ test("opens an event where the account left it in this browser, else on its Over
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/u);
 
-  // A view: To-dos is where the supper was left, and a bare address
+  // A view: Tasks is where the supper was left, and a bare address
   // returns there, naming it.
   await page.goto(`/events/${supper.id}`);
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await page.goto(`/events/${walk.id}`);
   await expect(page).toHaveURL(
     new RegExp(`/events/${walk.id}\\?view=overview$`, "u"),
@@ -392,7 +393,7 @@ test("opens an event where the account left it in this browser, else on its Over
     new RegExp(`/events/${supper.id}\\?view=todos$`, "u"),
   );
   await expect(
-    page.getByRole("tab", { name: "To-dos", exact: true }),
+    page.getByRole("tab", { name: "Tasks", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
 
   // A page: the walk is left on its first page, and returns there while

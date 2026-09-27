@@ -131,7 +131,7 @@ test("composes offline with search, drag or touch controls, and persistent cross
   await expect(blocks).toHaveCount(2);
   await expect(blocks.first()).toHaveAttribute(
     "aria-label",
-    "To-dos component 1",
+    "Tasks component 1",
   );
   await expect(
     page.getByText("Confirm the garden venue", { exact: true }),

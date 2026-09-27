@@ -116,7 +116,7 @@ export async function exerciseWorkspaceUtilities(
   await expect(theme).toHaveCount(0);
   await expect(moreTrigger(page)).toBeFocused();
 
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await page.getByRole("button", { name: /^Filter/ }).click();
   await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
   await page.keyboard.press("Escape");
@@ -236,7 +236,7 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await expect(account).toBeFocused();
   await closeDrawer(page);
 
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await page.getByRole("button", { name: /^Filter/ }).click();
   await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
   await page.keyboard.press("Escape");

@@ -70,7 +70,7 @@ async function putOnStrip(page: Page, name: string): Promise<void> {
  * Opens one of the event's views: through its tab when the strip shows it,
  * else from the chip that lists the tabs folded away when the width runs
  * out, else by putting it on the strip first, since a new event's strip
- * starts with the Overview and To-dos alone.
+ * starts with the Overview and Tasks alone.
  */
 export async function openEventView(page: Page, name: string): Promise<void> {
   const tab = page.getByRole("tab", { name, exact: true });

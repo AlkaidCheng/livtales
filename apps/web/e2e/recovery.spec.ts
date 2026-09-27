@@ -22,7 +22,7 @@ test("recovers canonical objects and independent context links", async ({
   await page.getByRole("button", { name: "Create event" }).click();
   await expect(page).toHaveURL(/\/events\/[0-9a-f-]+\?view=overview$/u);
   const eventUrl = page.url();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await openTaskEditor(page);
   await page.getByLabel("Task", { exact: true }).fill("Reserve room");
   const created = page.waitForResponse(
@@ -129,7 +129,7 @@ test("recovers canonical objects and independent context links", async ({
     "Link recovered. Neither canonical object was changed.",
   );
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await expect(row).toBeVisible();
   await chooseRowAction(page, row, "Move to Trash");
   await moveToTrash(page, page.getByRole("dialog"));
@@ -177,7 +177,7 @@ test("recovers canonical objects and independent context links", async ({
     page.getByRole("button", { name: "Preview recovery for Reserve room" }),
   ).not.toBeVisible();
   await page.goto(eventUrl);
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await expect(row).toBeVisible();
   await page
     .getByRole("button", { name: "Actions for Recovery workshop" })
@@ -196,7 +196,7 @@ test("recovers canonical objects and independent context links", async ({
   await expect(dialog.getByRole("status")).toBeVisible();
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await page.goto(eventUrl);
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await expect(row).toBeVisible();
   expect(
     await page.evaluate(

@@ -24,15 +24,15 @@ async function orderOf(rows: Locator, wanted: readonly string[]) {
 }
 
 /**
- * On an Event's To-dos, adds three tasks, reorders them by dragging and
+ * On an Event's Tasks, adds three tasks, reorders them by dragging and
  * from the row menu, moves one to tomorrow from the Due choices in the
  * by-day view, and, on the Tasks page, drags a row in the table. Every
  * move is one versioned write of the moved task.
  */
 export async function exerciseRowOrder(page: Page) {
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const panel = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await expect(panel).toBeVisible();
   for (const name of names) {

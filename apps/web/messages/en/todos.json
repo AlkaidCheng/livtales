@@ -1,5 +1,5 @@
 {
-  "title": "To-dos",
+  "title": "Tasks",
   "open": "{count, plural, one {# open} other {# open}}",
   "openOf": "{shown} of {total} open",
   "addTask": "Add task",

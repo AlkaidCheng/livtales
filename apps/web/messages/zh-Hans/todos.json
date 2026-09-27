@@ -1,5 +1,5 @@
 {
-  "title": "待办",
+  "title": "任务",
   "open": "{count} 项未完成",
   "openOf": "{total} 项未完成中的 {shown} 项",
   "addTask": "添加任务",

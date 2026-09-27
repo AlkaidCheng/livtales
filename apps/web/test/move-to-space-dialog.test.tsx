@@ -312,7 +312,7 @@ describe("MoveToSpaceDialog", () => {
       await screen.findByRole("heading", { name: "Move to Our wedding" }),
     ).toBeVisible();
     const moves = screen.getByRole("region", { name: "Moves with it" });
-    expect(moves).toHaveTextContent("9 to-dos");
+    expect(moves).toHaveTextContent("9 tasks");
     expect(moves).toHaveTextContent("2 subtasks");
     expect(moves).toHaveTextContent("Its pages, sections, and history");
     expect(moves).not.toHaveTextContent("reminder");

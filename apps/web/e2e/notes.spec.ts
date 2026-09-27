@@ -37,10 +37,10 @@ test("keeps notes with an event: the gallery card, the editor, opening in place,
   const eventLink = page.getByRole("link", { name: /Kyoto in November/u });
   await expect(eventLink).toHaveAttribute("href", `/events/${event.id}`);
   await eventLink.click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
 
   // The gallery offers Notes as a card; a new event's strip holds the
-  // Overview and To-dos, so the card, a switch, reads unpressed until it
+  // Overview and Tasks, so the card, a switch, reads unpressed until it
   // puts Notes on the strip.
   await page.getByRole("button", { name: "Add a view", exact: true }).click();
   const gallery = page.getByRole("dialog", {

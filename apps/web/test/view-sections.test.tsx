@@ -182,7 +182,7 @@ const createTask = async (displayName: string, sectionId?: string) =>
     })
   ).resource;
 
-/** The To-dos panel's task names in the order shown. */
+/** The Tasks panel's task names in the order shown. */
 const taskNames = (panel: HTMLElement) =>
   Array.from(panel.querySelectorAll("tr[data-row-id]")).map(
     (row) => row.querySelector("strong")?.textContent,
@@ -195,11 +195,11 @@ const sectionNames = (panel: HTMLElement) =>
   );
 
 async function todosPanel() {
-  const heading = await screen.findByRole("heading", { name: "To-dos" });
-  return within(heading).getByText("To-dos").closest("section") as HTMLElement;
+  const heading = await screen.findByRole("heading", { name: "Tasks" });
+  return within(heading).getByText("Tasks").closest("section") as HTMLElement;
 }
 
-describe("sections in To-dos", () => {
+describe("sections in Tasks", () => {
   it("adds a section between groups, places a task by its add row, edits and moves it from its menu, and deletes it leaving the tasks loose", async () => {
     await openTodos(["todos"]);
     await createTask("Order the cake");

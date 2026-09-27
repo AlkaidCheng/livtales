@@ -19,7 +19,7 @@ export async function chooseLayout(panel: Locator, name: string) {
 }
 
 /**
- * Adds a To-dos component with two tasks due on one far day and one due
+ * Adds a Tasks component with two tasks due on one far day and one due
  * today, walks it through the by-day, by-week, and calendar layouts, and
  * checks each chosen layout survives a reload while moving the period
  * does not.
@@ -34,10 +34,10 @@ export async function exerciseComponentViews(page: Page) {
     .getByRole("button", { name: "Add component", exact: true })
     .click();
   const picker = page.getByRole("dialog", { name: "Add a component" });
-  await picker.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await picker.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await expect(picker).toHaveCount(0);
   const todos = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await openTaskEditor(page, todos);
   const editor = page.getByRole("dialog", { name: "Add task", exact: true });
@@ -93,7 +93,7 @@ export async function exerciseComponentViews(page: Page) {
 
   await page.reload();
   const reopened = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await expect(reopened.getByRole("region", { name: /Mar 5/ })).toBeVisible();
   await expect(

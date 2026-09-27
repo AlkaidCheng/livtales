@@ -695,7 +695,7 @@ typed client exposes `listTasks(input)`.
 | `PATCH`  | `/sections/:id`                    | Rename, describe, or move (`name?`, `description?`, `afterSectionId?`) |
 | `DELETE` | `/sections/:id`                    | Delete; its records stay in the view without a section                 |
 
-A section is a named group in an Event's To-dos or Expenses view (`view` is
+A section is a named group in an Event's Tasks or Expenses view (`view` is
 `todos` or `expenses`): a vocabulary of the Event the way labels are of the
 workspace, not a canonical object, so it has no version, no Trash, and no
 history. Its `name` is 1 to 120 characters and its `description` up to 2,000,
@@ -718,7 +718,7 @@ is refused with `sectionId must name a section of this view of the record's
 Event.` (HTTP 400). A section is not restorable content: restoring an older
 revision leaves the record where it is, and moving a record between sections
 writes its `sectionId` (and, for a Task, its `rank`) in one update. The
-To-dos and Expenses projections carry `sections` in order beside `items`.
+The Tasks (`todos`) and Expenses projections carry `sections` in order beside `items`.
 Deploy migration 0062 before this API and reapply the runtime role grants,
 which cover the new table.
 
@@ -908,7 +908,7 @@ generic private-item notice without exposing identities or business fields.
 
 Focused endpoints select only their relevant `includes` target types and do not
 load attachments. Calendar and itinerary omit Events without a start date or time;
-timeline omits undated Events and Tasks. To-dos retain undated Tasks after dated
+timeline omits undated Events and Tasks. The Tasks projection retains undated Tasks after dated
 ones; a Task due on a date sorts at the start of that day (UTC), ahead of Tasks
 due at an instant that day, and the timeline lists it with `occursOn`. Equal
 timestamps are ordered by canonical ID (descending for Expenses).
@@ -1126,14 +1126,14 @@ that authorization check.
 
 `scope` narrows a share of an Event to one of its views: `{ view }` with
 `view` one of `todos`, `calendar`, `itinerary`, `expenses`, `reminders`, and
-`notes`, or `{ view, sectionId }` for one section of To-dos or Expenses. A
+`notes`, or `{ view, sectionId }` for one section of Tasks or Expenses. A
 narrowed share opens the Event itself with view alone (so the page opens,
 whatever the role) and gives its role on the records the view shows (tasks
-for To-dos, schedule items for Calendar and Itinerary, expenses, reminders,
+for Tasks, schedule items for Calendar and Itinerary, expenses, reminders,
 notes) or on the section's records; the other views' records are absent
 from the Event's projections and unavailable one by one, never refused with
 an error. One grant stands per resource, account, and scope, so the same
-account may hold To-dos at viewer and Expenses at editor beside a whole
+account may hold Tasks at viewer and Expenses at editor beside a whole
 share; a whole share sees everything. A scope on a resource that is not an
 Event, or a section that is not of that view of that Event, is
 `invalid_share` (HTTP 400). Deleting a section ends the grants narrowed to
@@ -1329,7 +1329,7 @@ scoped, other }`, the records by `{ id, objectType, displayName }`;
 - `unassignedTasks`: each live to-do assigned to a live People card, as
   `{ taskId, displayName, person }`; People cards never move, so the move
   clears the assignee;
-- `labels`: the to-dos' label names, each with `existing` when the target
+- `labels`: the tasks' label names, each with `existing` when the target
   has a label of that name (compared without case); a missing one is
   created there;
 - `peopleKept`: People cards scoped to the Event, which stay in the old
@@ -1353,7 +1353,7 @@ commandId? }` and returns `{ event, move }`: the Event in its new space and
 what the move did (`commandId`, `from` and `to` as `{ id, displayName }`,
 `moves`, the counts `droppedLinks`, `unassignedTasks`, `clearedLinks`,
 `labelsJoined`, `labelsCreated`, `grantsDropped`, `peopleKept`, and
-`movedAt`). Ids and versions stay; the to-dos whose assignee or labels
+`movedAt`). Ids and versions stay; the tasks whose assignee or labels
 change, and the People cards that become their own scope, take a version
 step with a revision. A repeat by the same account with the same `commandId`
 returns the first result, from either space; the same `commandId` with

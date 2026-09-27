@@ -90,7 +90,7 @@ function requestPath(input: URL | RequestInfo): string {
 
 /**
  * Opens one of the event's views by its address, as a link does: a new
- * event's strip holds the Overview and To-dos alone, and a view reached by
+ * event's strip holds the Overview and Tasks alone, and a view reached by
  * its address shows on the strip while it is current.
  */
 function openView(view: string) {
@@ -264,7 +264,7 @@ describe("EventWorkspace", () => {
     const user = userEvent.setup();
     render(<EventWorkspace eventId={eventId} />, { wrapper: Providers });
     expect(
-      await screen.findByRole("tab", { name: "To-dos", selected: true }),
+      await screen.findByRole("tab", { name: "Tasks", selected: true }),
     ).toBeVisible();
     const more = () =>
       screen.getByRole("button", {
@@ -868,11 +868,11 @@ describe("EventWorkspace", () => {
     expect(overviewTab).toHaveFocus();
     expect(overviewTab).toHaveAttribute("aria-selected", "true");
     await user.keyboard("{ArrowRight}");
-    expect(screen.getByRole("tab", { name: "To-dos" })).toHaveAttribute(
+    expect(screen.getByRole("tab", { name: "Tasks" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    expect(screen.getByRole("tabpanel")).toHaveAccessibleName("To-dos");
+    expect(screen.getByRole("tabpanel")).toHaveAccessibleName("Tasks");
     openView("calendar");
     await user.click(
       await screen.findByRole("button", { name: "Add schedule item" }),
@@ -1014,7 +1014,7 @@ describe("EventWorkspace", () => {
       screen.getByText("1 related item is outside your permission scope."),
     ).toBeVisible();
 
-    await user.click(screen.getByRole("tab", { name: "To-dos" }));
+    await user.click(screen.getByRole("tab", { name: "Tasks" }));
     expect(screen.getByText("Confirm guest list")).toBeVisible();
     expect(
       screen.getByRole("button", { name: "Complete Confirm guest list" }),
@@ -1855,12 +1855,12 @@ describe("EventWorkspace", () => {
     render(<EventWorkspace eventId={eventId} />, { wrapper: Providers });
     const tabNames = () =>
       screen.getAllByRole("tab").map((tab) => tab.textContent);
-    await screen.findByRole("tab", { name: "To-dos", selected: true });
+    await screen.findByRole("tab", { name: "Tasks", selected: true });
     // The stored preference leaves Files off the strip.
     await waitFor(() => expect(tabNames()).not.toContain("Files"));
     expect(tabNames()).toEqual([
       "Overview",
-      "To-dos",
+      "Tasks",
       "Calendar",
       "Timeline",
       "Itinerary",
@@ -1881,7 +1881,7 @@ describe("EventWorkspace", () => {
     const card = (name: RegExp) =>
       within(gallery).getByRole("button", { name });
     expect(card(/^Files/)).toHaveAttribute("aria-pressed", "false");
-    expect(card(/^To-dos/)).toHaveAttribute("aria-disabled", "true");
+    expect(card(/^Tasks/)).toHaveAttribute("aria-disabled", "true");
     await user.click(card(/^Files/));
     await user.click(card(/^Timeline/));
     expect(gallery).toBeVisible();
@@ -1894,7 +1894,7 @@ describe("EventWorkspace", () => {
     ]);
     expect(tabNames()).toEqual([
       "Overview",
-      "To-dos",
+      "Tasks",
       "Calendar",
       "Itinerary",
       "Expenses",
@@ -1938,7 +1938,7 @@ describe("EventWorkspace", () => {
     await waitFor(() =>
       expect(tabNames()).toEqual([
         "Overview",
-        "To-dos",
+        "Tasks",
         "Itinerary",
         "Reminders",
         "Calendar",

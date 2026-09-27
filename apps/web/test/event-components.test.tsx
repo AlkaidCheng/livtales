@@ -266,7 +266,7 @@ describe("insertable event components", () => {
     expect(name).toHaveValue("Gathering");
     expect(
       dialog.getByRole("region", { name: "Page preview" }),
-    ).toHaveTextContent("To-dosCalendarExpenses");
+    ).toHaveTextContent("TasksCalendarExpenses");
     await user.clear(name);
     await user.type(name, "Our plans");
     await user.click(dialog.getByRole("radio", { name: "Multi-day" }));
@@ -334,7 +334,7 @@ describe("insertable event components", () => {
     await user.click(
       await recovery.findByRole("button", { name: "Preview version 2" }),
     );
-    expect(recovery.getByText(/To-dos, Calendar, Expenses/)).toBeVisible();
+    expect(recovery.getByText(/Tasks, Calendar, Expenses/)).toBeVisible();
     expect(await client.getEventDetail(eventId)).toEqual(before);
   });
 
@@ -510,7 +510,7 @@ describe("insertable event components", () => {
         effectAllowed: "",
         dropEffect: "",
       };
-      fireEvent.dragStart(screen.getByRole("button", { name: "Drag To-dos" }), {
+      fireEvent.dragStart(screen.getByRole("button", { name: "Drag Tasks" }), {
         dataTransfer,
       });
       expect(screen.getByText("Drop at end of Plan")).toBeVisible();
@@ -661,7 +661,7 @@ describe("insertable event components", () => {
         screen.queryByRole("group", { name: /layout controls/ }),
       ).toBeNull();
       await user.click(screen.getByRole("button", { name: "Add component" }));
-      await user.click(screen.getByRole("button", { name: "Add To-dos" }));
+      await user.click(screen.getByRole("button", { name: "Add Tasks" }));
       await arrange(user);
       expect(
         screen.getByRole("button", { name: "Done arranging" }),
@@ -748,7 +748,7 @@ describe("insertable event components", () => {
       screen.getByRole("dialog", { name: "Manage event pages" }),
     );
     await user.click(
-      dialog.getByRole("button", { name: "Remove To-dos from Plan" }),
+      dialog.getByRole("button", { name: "Remove Tasks from Plan" }),
     );
     expect((await client.getEventLayout(eventId)).pages).toEqual(pages);
     await user.click(
@@ -791,9 +791,7 @@ describe("insertable event components", () => {
     await user.click(
       await dialog.findByRole("button", { name: "Preview version 1" }),
     );
-    expect(
-      dialog.getByText("To-dos, Calendar", { exact: false }),
-    ).toBeVisible();
+    expect(dialog.getByText("Tasks, Calendar", { exact: false })).toBeVisible();
     await user.click(dialog.getByRole("button", { name: "Restore layout" }));
     await waitFor(() =>
       expect(
@@ -891,7 +889,7 @@ describe("insertable event components", () => {
     expect(screen.queryByRole("button", { name: /^Layout: / })).toBeNull();
   });
 
-  it("shows To-dos and Calendar by week and by month around today without saving the period", async () => {
+  it("shows Tasks and Calendar by week and by month around today without saving the period", async () => {
     await client.updateEventLayout(eventId, {
       expectedVersion: 0,
       pages: [page("Plan", ["todos", "calendar"])],
@@ -934,9 +932,9 @@ describe("insertable event components", () => {
       );
     const version = async () => (await client.getEventLayout(eventId)).version;
 
-    // To-dos by week: today's column holds today's task, undated tasks sit
+    // Tasks by week: today's column holds today's task, undated tasks sit
     // under the strip, and moving the period is session state only.
-    const todos = panel("To-dos");
+    const todos = panel("Tasks");
     await user.click(todos.getByRole("button", { name: "Filter" }));
     await user.click(todos.getByRole("menuitemradio", { name: "All" }));
     await user.keyboard("{Escape}");
@@ -983,7 +981,7 @@ describe("insertable event components", () => {
       }),
     ).toBeVisible();
 
-    // To-dos as a calendar: today's cell holds its task as a row with the
+    // Tasks as a calendar: today's cell holds its task as a row with the
     // same check; the grid ends with the week of the month's last day.
     await choose(todos, "Calendar");
     const todayCell = todos.getByRole("cell", {
@@ -1147,7 +1145,7 @@ describe("insertable event components", () => {
     ).toEqual(["month", "by-day"]);
   });
 
-  it("filters the To-dos by the labels and people its tasks carry, for the session", async () => {
+  it("filters the Tasks by the labels and people its tasks carry, for the session", async () => {
     await client.updateEventLayout(eventId, {
       expectedVersion: 0,
       pages: [page("Plan", ["todos"])],
@@ -1247,7 +1245,7 @@ describe("insertable event components", () => {
     );
   });
 
-  it("lists To-dos and Reminders in manual order and moves them from the row menu", async () => {
+  it("lists Tasks and Reminders in manual order and moves them from the row menu", async () => {
     await client.updateEventLayout(eventId, {
       expectedVersion: 0,
       pages: [page("Plan", ["todos", "reminders"])],
@@ -1292,8 +1290,8 @@ describe("insertable event components", () => {
     });
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
-    const todos = within(await screen.findByRole("heading", { name: "To-dos" }))
-      .getByText("To-dos")
+    const todos = within(await screen.findByRole("heading", { name: "Tasks" }))
+      .getByText("Tasks")
       .closest("section") as HTMLElement;
     await within(todos).findByText("Call the band");
     // The task rows only: the header, the add row, and the Add section
@@ -1376,7 +1374,7 @@ describe("insertable event components", () => {
     await user.click(
       await dialog.findByRole("button", { name: "Preview version 1" }),
     );
-    expect(dialog.getByText("To-dos", { exact: false })).toBeVisible();
+    expect(dialog.getByText("Tasks", { exact: false })).toBeVisible();
     expect(dialog.queryByRole("button", { name: "Restore layout" })).toBeNull();
     expect(
       dialog.queryByRole("button", { name: "Undo layout change" }),
@@ -1430,9 +1428,7 @@ describe("insertable event components", () => {
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
     await waitFor(() =>
-      expect(screen.getAllByRole("heading", { name: "To-dos" })).toHaveLength(
-        2,
-      ),
+      expect(screen.getAllByRole("heading", { name: "Tasks" })).toHaveLength(2),
     );
     const requests = () =>
       vi.mocked(fetch).mock.calls.map(([input]) => String(input));
@@ -1441,7 +1437,7 @@ describe("insertable event components", () => {
     );
     expect(requests().some((path) => path.endsWith("/calendar"))).toBe(false);
     const [first, second] = screen
-      .getAllByRole("heading", { name: "To-dos" })
+      .getAllByRole("heading", { name: "Tasks" })
       .map((heading) => {
         const panel = heading.closest("section");
         assert(panel);
@@ -1477,7 +1473,7 @@ describe("insertable event components", () => {
     expect(
       await screen.findByRole("heading", { name: "Calendar" }),
     ).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "To-dos" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Tasks" })).toBeNull();
     expect(
       requests().filter((path) => path.endsWith("/calendar")),
     ).toHaveLength(1);
@@ -1509,9 +1505,7 @@ describe("insertable event components", () => {
     );
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
-    expect(
-      await screen.findByRole("heading", { name: "To-dos" }),
-    ).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Tasks" })).toBeVisible();
     expect(
       await screen.findByRole("alert", {}, { timeout: 3000 }),
     ).toHaveTextContent("Schedule unavailable");
@@ -1520,7 +1514,7 @@ describe("insertable event components", () => {
     expect(
       await screen.findByRole("heading", { name: "Calendar" }),
     ).toBeVisible();
-    expect(screen.getByRole("heading", { name: "To-dos" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Tasks" })).toBeVisible();
   });
 
   it("offers every component kind as a card and keeps the dialog open on a stale save", async () => {
@@ -1607,9 +1601,9 @@ describe("insertable event components", () => {
     const dialog = within(screen.getByRole("dialog"));
     const search = dialog.getByRole("searchbox", { name: "Find a component" });
     expect(search).toHaveAccessibleDescription("Add to On the day.");
-    expect(
-      dialog.getByRole("button", { name: "Add To-dos" }),
-    ).toHaveTextContent("On another page");
+    expect(dialog.getByRole("button", { name: "Add Tasks" })).toHaveTextContent(
+      "On another page",
+    );
     expect(
       dialog.getByRole("button", { name: "Add Calendar" }),
     ).not.toHaveTextContent(/On /);
@@ -1621,12 +1615,10 @@ describe("insertable event components", () => {
     expect(dialog.getAllByRole("button", { name: /^Add / })).toHaveLength(9);
     await user.type(search, "checklist");
     await user.keyboard("{ArrowDown}");
-    expect(dialog.getByRole("button", { name: "Add To-dos" })).toHaveFocus();
+    expect(dialog.getByRole("button", { name: "Add Tasks" })).toHaveFocus();
     expect(fetch).not.toHaveBeenCalled();
-    await user.click(dialog.getByRole("button", { name: "Add To-dos" }));
-    expect(
-      await screen.findByText("To-dos added to On the day."),
-    ).toBeVisible();
+    await user.click(dialog.getByRole("button", { name: "Add Tasks" }));
+    expect(await screen.findByText("Tasks added to On the day.")).toBeVisible();
     const saved = await client.getEventLayout(eventId);
     expect(saved.version).toBe(2);
     expect(saved.pages[0]).toEqual(pages[0]);
@@ -1635,9 +1627,9 @@ describe("insertable event components", () => {
     ]);
     expect(await client.getEventDetail(eventId)).toEqual(before);
     await user.click(screen.getByRole("button", { name: "Add component" }));
-    expect(
-      screen.getByRole("button", { name: "Add To-dos" }),
-    ).toHaveTextContent("On this page");
+    expect(screen.getByRole("button", { name: "Add Tasks" })).toHaveTextContent(
+      "On this page",
+    );
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect((await client.getEventLayout(eventId)).version).toBe(2);
   });
@@ -1669,9 +1661,9 @@ describe("insertable event components", () => {
       if (options?.method === "PATCH") await promise;
       return store.fetch(input, options);
     });
-    await user.click(dialog.getByRole("button", { name: "Add To-dos" }));
+    await user.click(dialog.getByRole("button", { name: "Add Tasks" }));
     expect(search).toBeDisabled();
-    expect(dialog.getByRole("button", { name: "Add To-dos" })).toBeDisabled();
+    expect(dialog.getByRole("button", { name: "Add Tasks" })).toBeDisabled();
     expect(dialog.getByRole("button", { name: "Add Calendar" })).toBeDisabled();
     expect(dialog.getByRole("button", { name: "Cancel" })).toBeDisabled();
     fireEvent(element, new Event("cancel", { cancelable: true }));
@@ -1713,20 +1705,20 @@ describe("insertable event components", () => {
     await screen.findByRole("region", { name: "Event pages" });
     await arrange(user);
     const down = await screen.findByRole("button", {
-      name: "Move To-dos down",
+      name: "Move Tasks down",
     });
     await user.click(down);
     await waitFor(() => expect(down).toBeDisabled());
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Drag To-dos" })).toHaveFocus(),
+      expect(screen.getByRole("button", { name: "Drag Tasks" })).toHaveFocus(),
     );
     expect(
       screen
         .getAllByRole("region", { name: /component \d/ })
         .map((item) => item.getAttribute("aria-label")),
-    ).toEqual(["Calendar component 1", "To-dos component 2"]);
+    ).toEqual(["Calendar component 1", "Tasks component 2"]);
     await user.selectOptions(
-      screen.getByRole("combobox", { name: "Move To-dos to page" }),
+      screen.getByRole("combobox", { name: "Move Tasks to page" }),
       pages[1]?.id ?? "",
     );
     await waitFor(() =>
@@ -1780,18 +1772,18 @@ describe("insertable event components", () => {
         .map((item) => item.getAttribute("aria-label"));
     expect(undo).toBeDisabled();
     expect(redo).toBeDisabled();
-    await user.click(screen.getByRole("button", { name: "Move To-dos down" }));
+    await user.click(screen.getByRole("button", { name: "Move Tasks down" }));
     await waitFor(() => expect(undo).toBeEnabled());
-    expect(order()).toEqual(["Calendar component 1", "To-dos component 2"]);
+    expect(order()).toEqual(["Calendar component 1", "Tasks component 2"]);
     await user.click(undo);
     await waitFor(() =>
-      expect(order()).toEqual(["To-dos component 1", "Calendar component 2"]),
+      expect(order()).toEqual(["Tasks component 1", "Calendar component 2"]),
     );
     await waitFor(() => expect(redo).toBeEnabled());
     expect(undo).toBeDisabled();
     await user.click(redo);
     await waitFor(() =>
-      expect(order()).toEqual(["Calendar component 1", "To-dos component 2"]),
+      expect(order()).toEqual(["Calendar component 1", "Tasks component 2"]),
     );
     expect((await client.getEventLayout(eventId)).version).toBe(4);
     await user.click(
@@ -1817,20 +1809,20 @@ describe("insertable event components", () => {
       expectedVersion: 1,
       pages: concurrent,
     });
-    await user.click(screen.getByRole("button", { name: "Move To-dos down" }));
+    await user.click(screen.getByRole("button", { name: "Move Tasks down" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "A newer version is available",
     );
     expect(
       screen.getAllByRole("region", { name: /component \d/ })[0],
-    ).toHaveAttribute("aria-label", "To-dos component 1");
+    ).toHaveAttribute("aria-label", "Tasks component 1");
     expect((await client.getEventLayout(eventId)).pages).toEqual(concurrent);
     await user.click(screen.getByRole("button", { name: "Refresh latest" }));
     await screen.findByRole("button", { name: "Updated Work" });
-    await user.click(screen.getByRole("button", { name: "Move To-dos down" }));
+    await user.click(screen.getByRole("button", { name: "Move Tasks down" }));
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: "Move To-dos down" }),
+        screen.getByRole("button", { name: "Move Tasks down" }),
       ).toBeDisabled(),
     );
     expect((await client.getEventLayout(eventId)).version).toBe(3);
@@ -1877,9 +1869,9 @@ describe("insertable event components", () => {
     };
     fireEvent.drop(target, { dataTransfer });
     expect((await client.getEventLayout(eventId)).version).toBe(1);
-    const handle = screen.getByRole("button", { name: "Drag To-dos" });
+    const handle = screen.getByRole("button", { name: "Drag Tasks" });
     fireEvent.dragStart(handle, { dataTransfer });
-    fireEvent.drop(screen.getByRole("region", { name: "To-dos component 1" }), {
+    fireEvent.drop(screen.getByRole("region", { name: "Tasks component 1" }), {
       dataTransfer,
     });
     expect((await client.getEventLayout(eventId)).version).toBe(1);
@@ -1887,7 +1879,7 @@ describe("insertable event components", () => {
     fireEvent.dragEnd(handle, { dataTransfer });
     fireEvent.drop(target, { dataTransfer });
     expect((await client.getEventLayout(eventId)).version).toBe(1);
-    fireEvent.dragStart(screen.getByRole("button", { name: "Drag To-dos" }), {
+    fireEvent.dragStart(screen.getByRole("button", { name: "Drag Tasks" }), {
       dataTransfer,
     });
     await client.updateEventLayout(eventId, { expectedVersion: 1, pages });
@@ -1930,7 +1922,7 @@ describe("insertable event components", () => {
     ]) {
       expect(screen.queryByRole("button", { name: label })).toBeNull();
     }
-    // The task is due today, so To-dos and the Itinerary both list it.
+    // The task is due today, so Tasks and the Itinerary both list it.
     for (const check of screen.getAllByRole("button", {
       name: "Complete Confirm the garden venue",
     }))

@@ -53,7 +53,7 @@
     "moves": "Moves with it",
     "count": {
       "scheduleItems": "{count, plural, one {# schedule item} other {# schedule items}}",
-      "todos": "{count, plural, one {# to-do} other {# to-dos}}",
+      "todos": "{count, plural, one {# task} other {# tasks}}",
       "subtasks": "{count, plural, one {# subtask} other {# subtasks}}",
       "expenses": "{count, plural, one {# expense} other {# expenses}}",
       "reminders": "{count, plural, one {# reminder} other {# reminders}}",

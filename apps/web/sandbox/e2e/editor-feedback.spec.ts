@@ -23,7 +23,7 @@ test("explains empty Viewer panels and reports saved tasks offline", async ({
   await page.getByLabel("Preview role").selectOption("viewer");
   // A viewer's empty component is its title alone, with no way to add.
   for (const [view, title] of [
-    ["To-dos", "No tasks yet"],
+    ["Tasks", "No tasks yet"],
     ["Calendar", "Nothing scheduled"],
     ["Expenses", "No expenses recorded"],
     ["Reminders", "No reminders"],
@@ -43,7 +43,7 @@ test("explains empty Viewer panels and reports saved tasks offline", async ({
     fullPage: true,
   });
   await page.getByLabel("Preview role").selectOption("owner");
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await page
     .getByRole("button", { name: /^Add a task/ })
     .first()

@@ -50,7 +50,7 @@ function renderStrip() {
       onAddPage={() => undefined}
       views={[
         { id: "overview", label: "Overview" },
-        { id: "todos", label: "To-dos" },
+        { id: "todos", label: "Tasks" },
       ]}
       activeView="overview"
       onSelectView={onSelectView}
@@ -84,7 +84,7 @@ afterEach(() => {
 describe("the strip's long press", () => {
   it("opens Manage tabs from a touch held on a tab and swallows the click that follows", () => {
     const { onSelectView, onManageTabs } = renderStrip();
-    const tab = screen.getByRole("tab", { name: "To-dos" });
+    const tab = screen.getByRole("tab", { name: "Tasks" });
     fireEvent.pointerDown(tab, touch());
     act(() => {
       vi.advanceTimersByTime(longPressDelayMs - 1);
@@ -108,7 +108,7 @@ describe("the strip's long press", () => {
 
   it("treats a lift before the delay as a tap and a move as a scroll", () => {
     const { onSelectView, onSelectPage, onManageTabs } = renderStrip();
-    const tab = screen.getByRole("tab", { name: "To-dos" });
+    const tab = screen.getByRole("tab", { name: "Tasks" });
     fireEvent.pointerDown(tab, touch());
     act(() => {
       vi.advanceTimersByTime(200);
@@ -133,7 +133,7 @@ describe("the strip's long press", () => {
 
   it("keeps holding when another pointer leaves the strip", () => {
     const { onManageTabs } = renderStrip();
-    const tab = screen.getByRole("tab", { name: "To-dos" });
+    const tab = screen.getByRole("tab", { name: "Tasks" });
     fireEvent.pointerDown(tab, touch());
     // The mouse pointer, reported at its last position, leaves the strip
     // while the finger holds: only the finger's own events count.
@@ -155,7 +155,7 @@ describe("the strip's long press", () => {
 
   it("leaves a mouse press alone", () => {
     const { onManageTabs } = renderStrip();
-    const tab = screen.getByRole("tab", { name: "To-dos" });
+    const tab = screen.getByRole("tab", { name: "Tasks" });
     fireEvent.pointerDown(tab, { ...touch(), pointerType: "mouse" });
     act(() => {
       vi.advanceTimersByTime(longPressDelayMs);

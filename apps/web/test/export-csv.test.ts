@@ -32,8 +32,8 @@ describe("csvFile", () => {
 describe("exportFileName", () => {
   it("joins the parts with a dash and drops what a file system refuses", () => {
     expect(
-      exportFileName(["Kyoto: in / November?", "To-dos", "2026-09-19"]),
-    ).toBe("Kyoto in November - To-dos - 2026-09-19");
+      exportFileName(["Kyoto: in / November?", "Tasks", "2026-09-19"]),
+    ).toBe("Kyoto in November - Tasks - 2026-09-19");
   });
 
   it("leaves out an empty part", () => {

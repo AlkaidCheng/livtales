@@ -144,7 +144,7 @@ it("words the rail and the Events page in Simplified Chinese", async () => {
   ).toBeVisible();
 });
 
-it("counts the To-dos in Simplified Chinese", async () => {
+it("counts the Tasks in Simplified Chinese", async () => {
   const response = await store.fetch("/api/tasks?filter=open");
   const { items, contexts } = (await response.json()) as {
     items: readonly TaskResponse[];
@@ -157,7 +157,7 @@ it("counts the To-dos in Simplified Chinese", async () => {
     "zh-Hans",
     <TasksPanel canEdit eventId={eventId} tasks={tasks} />,
   );
-  expect(screen.getByRole("heading", { name: "\u5f85\u529e" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "\u4efb\u52a1" })).toBeVisible();
   expect(
     screen.getByText(`${tasks.length} \u9879\u672a\u5b8c\u6210`),
   ).toBeVisible();

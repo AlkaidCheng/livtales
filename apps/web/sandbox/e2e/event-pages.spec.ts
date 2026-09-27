@@ -49,9 +49,9 @@ test("composes named pages with canonical tasks and preserves the layout offline
   await page
     .getByRole("button", { name: "Add component", exact: true })
     .click();
-  await page.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await page.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "To-dos", exact: true }),
+    page.getByRole("heading", { name: "Tasks", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText("Confirm the garden venue", { exact: true }),
@@ -72,7 +72,7 @@ test("composes named pages with canonical tasks and preserves the layout offline
   await page
     .getByRole("button", { name: "Add component", exact: true })
     .click();
-  await page.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await page.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await page
     .getByRole("button", {
       name: "Complete Confirm the garden venue",
