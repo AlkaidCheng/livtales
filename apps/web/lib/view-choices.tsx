@@ -1,5 +1,6 @@
 "use client";
 
+import type { LivTalesApiClient } from "@livtales/api-client";
 import type {
   AccountPage,
   PageChoicesResponse,
@@ -26,6 +27,7 @@ import { useNotices } from "../components/notices";
 import { useApiClient } from "./api-context";
 import { useAuthSession } from "./auth-session";
 import { useChangeEventView, useEventViewState } from "./event-layout-queries";
+import { mayHoldKeptViews, moveKeptPageChoices } from "./kept-views";
 import {
   type ChoiceValue,
   changedChoices,
@@ -33,6 +35,7 @@ import {
   mergeChoices,
   sameChoice,
 } from "./personal-views";
+import { sessionAccountId } from "./queries";
 
 /** A view's kept choices as read: plain values by name. */
 export type StoredChoices = Readonly<Record<string, unknown>>;
@@ -125,10 +128,32 @@ export function useViewChoices<T extends ChoicesOf<T>>(
   return [choices, change] as const;
 }
 
-const pageChoicesKey = (page: AccountPage) =>
+export const pageChoicesKey = (page: AccountPage) =>
   ["account", "pages", page] as const;
 const pageChoicesUpdateKey = (page: AccountPage) =>
   ["page-choices-update", page] as const;
+
+/**
+ * A collection page's choices as the account left them. What this
+ * browser still keeps for the page (see `keptViewStores`) is saved to the
+ * account on the first read.
+ */
+export async function loadPageChoices(
+  client: LivTalesApiClient,
+  cache: QueryClient,
+  page: AccountPage,
+  foldAccount: string | undefined,
+  signal?: AbortSignal,
+): Promise<PageChoicesResponse> {
+  const kept = await (
+    signal === undefined ? client : client.withSignal(signal)
+  ).getPageChoices(page);
+  if (foldAccount === undefined || !mayHoldKeptViews(foldAccount)) return kept;
+  const accountId = await sessionAccountId(client, cache);
+  return accountId === undefined
+    ? kept
+    : moveKeptPageChoices(client, { accountId, foldAccount }, kept);
+}
 
 /** The page's choices as they show at this moment, changes still on their way included. */
 function shownPageChoices(cache: QueryClient, page: AccountPage): ViewChoices {
@@ -167,10 +192,12 @@ export function usePageChoices<T extends ChoicesOf<T>>(
   const { credential } = useAuthSession();
   const { post } = useNotices();
   const describe = useErrorMessage();
+  const foldAccount = credential?.homeWorkspaceId;
   const query = useQuery({
     queryKey: pageChoicesKey(page),
     enabled: credential !== null,
-    queryFn: ({ signal }) => client.withSignal(signal).getPageChoices(page),
+    queryFn: ({ signal }) =>
+      loadPageChoices(client, cache, page, foldAccount, signal),
   });
   const pending = useMutationState({
     filters: { mutationKey: pageChoicesUpdateKey(page), status: "pending" },

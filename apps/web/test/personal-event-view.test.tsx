@@ -24,12 +24,16 @@ import {
 import { Providers } from "../app/providers";
 import { EventWorkspace } from "../features/events/event-workspace";
 import { placeSettleMs } from "../features/events/use-event-place";
+import { keptViewStores } from "../lib/kept-views";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   usePathname: () => "/events",
 }));
+
+/** The sample account, as the sandbox session names it. */
+const accountId = "00000000-0000-4000-8000-000000000002";
 
 let store: SandboxStore;
 let client: LivTalesApiClient;
@@ -42,6 +46,7 @@ let role: "owner" | "viewer";
 let saves: { readonly change: unknown; readonly keepalive: boolean }[];
 
 beforeEach(async () => {
+  vi.stubGlobal("localStorage", window.sessionStorage);
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -188,6 +193,17 @@ describe("the account's own view of an event", () => {
     window.history.replaceState(null, "", `/events/${eventId}`);
     renderEvent();
     await waitFor(() => expect(address().get("view")).toBe("overview"));
+  });
+
+  it("moves the place this browser kept to the account and opens there", async () => {
+    window.localStorage.setItem(
+      keptViewStores.places,
+      JSON.stringify([[`${accountId}:${eventId}`, { page: day.id }]]),
+    );
+    renderEvent();
+    await waitFor(() => expect(address().get("page")).toBe(day.id));
+    expect((await yours()).place).toEqual({ page: day.id });
+    expect(window.localStorage.getItem(keptViewStores.places)).toBeNull();
   });
 
   it("shows the new event's strip for a view kept with a place alone", async () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import type { LivTalesApiClient } from "@livtales/api-client";
 import type {
   EventLayoutResponse,
   EventLayoutRestore,
@@ -22,6 +23,7 @@ import { useErrorMessage } from "../components/feedback";
 import { useNotices } from "../components/notices";
 import { useApiClient, useLeavingApiClient } from "./api-context";
 import { useAuthSession } from "./auth-session";
+import { mayHoldKeptViews, moveKeptEventView } from "./kept-views";
 import {
   advanceLayoutUndo,
   emptyLayoutUndo,
@@ -29,11 +31,11 @@ import {
   type LayoutUndoState,
 } from "./layout-undo";
 import { applyEventViewUpdate, resolveEventView } from "./personal-views";
-import { queryKeys } from "./queries";
+import { queryKeys, sessionAccountId } from "./queries";
 
 const layoutUpdateKey = (eventId: string) =>
   ["event-layout-update", eventId] as const;
-const eventLayoutKey = (eventId: string) =>
+export const eventLayoutKey = (eventId: string) =>
   [...queryKeys.event(eventId), "layout"] as const;
 const historyKey = (eventId: string) =>
   [...eventLayoutKey(eventId), "history"] as const;
@@ -142,15 +144,35 @@ export function useRestoreEventLayout(eventId: string) {
   });
 }
 
-/** The event's layout with the account's own view of it. */
+/**
+ * The event's layout with the account's own view of it. What this browser
+ * still keeps for the event (see `keptViewStores`) is saved to the account
+ * on the first read.
+ */
+async function loadEventLayout(
+  client: LivTalesApiClient,
+  cache: QueryClient,
+  eventId: string,
+  signal?: AbortSignal,
+): Promise<EventLayoutWithViewResponse> {
+  const layout = await (
+    signal === undefined ? client : client.withSignal(signal)
+  ).getEventLayoutWithView(eventId);
+  if (!mayHoldKeptViews()) return layout;
+  const accountId = await sessionAccountId(client, cache);
+  if (accountId === undefined) return layout;
+  const yours = await moveKeptEventView(client, accountId, layout);
+  return yours === layout.yours ? layout : keepView(layout, yours);
+}
+
 export function useEventLayout(eventId: string) {
   const client = useApiClient();
+  const cache = useQueryClient();
   const { credential } = useAuthSession();
   return useQuery({
     queryKey: eventLayoutKey(eventId),
     enabled: credential !== null,
-    queryFn: ({ signal }) =>
-      client.withSignal(signal).getEventLayoutWithView(eventId),
+    queryFn: ({ signal }) => loadEventLayout(client, cache, eventId, signal),
   });
 }
 

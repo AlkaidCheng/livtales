@@ -50,6 +50,7 @@ import {
   useQueryClient,
   useInfiniteQuery,
   type InfiniteData,
+  type QueryClient,
 } from "@tanstack/react-query";
 
 import {
@@ -128,6 +129,25 @@ export function useDevelopmentSignIn() {
       startSession({ workspaceId: session.workspace.id });
     },
   });
+}
+
+/**
+ * The signed-in account's id, from the session already read or read now
+ * alongside the session query; undefined when the session cannot be read.
+ */
+export async function sessionAccountId(
+  client: LivTalesApiClient,
+  cache: QueryClient,
+): Promise<string | undefined> {
+  try {
+    const session = await cache.ensureQueryData({
+      queryKey: queryKeys.session,
+      queryFn: ({ signal }) => client.withSignal(signal).getSession(),
+    });
+    return session.user.id;
+  } catch {
+    return undefined;
+  }
 }
 
 export function useSessionQuery() {

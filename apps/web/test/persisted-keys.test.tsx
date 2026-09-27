@@ -10,6 +10,7 @@ import {
   displayChoices,
   displayStorageKey,
 } from "../lib/display-preferences";
+import { keptViewStores } from "../lib/kept-views";
 import {
   sessionCookieName,
   sessionPresenceCookieName,
@@ -55,5 +56,17 @@ describe("names browsers already store", () => {
       "chronelle.sealHeart",
     ]);
     expect(displayBootstrap).toContain('getItem("chronelle."+name)');
+  });
+
+  it("reads the view stores under the names they were kept by", () => {
+    expect(keptViewStores).toEqual({
+      places: "chronelle.event-places",
+      choices: "chronelle.view-choices",
+      eventLayout: "chronelle.event-layout",
+      peopleLayout: "chronelle.people-layout",
+      taskView: "chronelle.task-view",
+      folds: expect.any(Function),
+    });
+    expect(keptViewStores.folds("home")).toBe("livtales.event-folds.home");
   });
 });
