@@ -1968,6 +1968,28 @@ export class SandboxStore {
           (query.dueTo === undefined || day <= query.dueTo)
         );
       };
+      // The live Events that include a task, for the Event filter; the
+      // sample account may view every one.
+      const inEvent = (taskId: string) => {
+        if (query.event === undefined) return true;
+        const events = this.#state.relations
+          .filter(
+            (relation) =>
+              relation.targetObjectId === taskId &&
+              relation.relationType === "includes" &&
+              relation.deletedAt === null,
+          )
+          .map((relation) => relation.sourceObjectId)
+          .filter((eventId) =>
+            all.some(
+              (object) =>
+                object.id === eventId && object.objectType === "event",
+            ),
+          );
+        if (query.event === "none") return events.length === 0;
+        if (query.event === "any") return events.length > 0;
+        return events.includes(query.event);
+      };
       const matches = all
         .filter(
           (object): object is Extract<Resource, { objectType: "task" }> =>
@@ -1986,7 +2008,8 @@ export class SandboxStore {
               task.labelIds.includes(query.label)) &&
             (query.assignee === undefined ||
               task.assigneeId === query.assignee) &&
-            inDueRange(task),
+            inDueRange(task) &&
+            inEvent(task.id),
         )
         .sort((a, b) =>
           query.sort === "manual"

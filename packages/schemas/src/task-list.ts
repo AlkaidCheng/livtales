@@ -21,7 +21,8 @@ export const timeZoneSchema = z
  * by due (date-only tasks at the start of their day, undated last), name,
  * last update, or manual order (rank). `dueFrom` and `dueTo` keep the tasks due on a day of that
  * inclusive range, a timed task on the day of its instant in `timezone`;
- * undated tasks are left out of a range.
+ * undated tasks are left out of a range. `event` keeps the tasks by the
+ * Event that includes them, counting only Events the caller may view.
  */
 export const taskListQuerySchema = z
   .object({
@@ -40,6 +41,11 @@ export const taskListQuerySchema = z
     dueTo: calendarDateSchema.optional(),
     /** The time zone whose days `dueFrom` and `dueTo` name. */
     timezone: timeZoneSchema.default("UTC"),
+    /**
+     * Only tasks outside every Event the caller may view (`none`), inside
+     * one (`any`), or inside this Event (an Event ID).
+     */
+    event: z.union([z.enum(["none", "any"]), z.uuid()]).optional(),
   })
   .refine(
     (value) =>

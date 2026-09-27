@@ -154,8 +154,9 @@ describe.sequential("CloudBase task list contract", () => {
     // The Event scope is shared with the viewer; two tasks inherit it, three
     // own their scope (one of them done, one deleted). A private Event the
     // viewer cannot see includes the undated task, which the viewer holds
-    // through a direct grant.
+    // through a direct grant. An Event in Trash still includes the done task.
     const privateEventId = createId();
+    const trashedEventId = createId();
     const inEventTimed = createId();
     const inEventDated = createId();
     const standaloneUndated = createId();
@@ -195,6 +196,15 @@ describe.sequential("CloudBase task list contract", () => {
         permissionScopeId: privateEventId,
         displayName: "Board retreat",
         createdBy: ownerId,
+      },
+      {
+        id: trashedEventId,
+        workspaceId,
+        objectType: "event" as const,
+        permissionScopeId: trashedEventId,
+        displayName: "Cancelled gala",
+        createdBy: ownerId,
+        deletedAt: new Date("2030-01-01T00:00:00Z"),
       },
       ...[
         {
@@ -327,6 +337,14 @@ describe.sequential("CloudBase task list contract", () => {
         workspaceId,
         sourceObjectId: privateEventId,
         targetObjectId: standaloneUndated,
+        relationType: "includes" as const,
+        createdBy: ownerId,
+      },
+      {
+        id: createId(),
+        workspaceId,
+        sourceObjectId: trashedEventId,
+        targetObjectId: standaloneDone,
         relationType: "includes" as const,
         createdBy: ownerId,
       },
@@ -567,6 +585,53 @@ describe.sequential("CloudBase task list contract", () => {
       );
     }
 
+    // By the Event that includes them: an Event counts only while it is live
+    // and the caller may view it, so the viewer's task in the private Event
+    // and the task of the Event in Trash stand alone; subtasks share their
+    // parent's scope but no inclusion of their own.
+    const unknownEventId = createId();
+    for (const [principal, event, expected] of [
+      [owner, "none", [standaloneDone, subtaskOpen, subtaskDone]],
+      [owner, "any", [inEventDated, inEventTimed, standaloneUndated]],
+      [owner, eventId, [inEventDated, inEventTimed]],
+      [owner, privateEventId, [standaloneUndated]],
+      [owner, trashedEventId, []],
+      [owner, unknownEventId, []],
+      [viewer, "none", [subtaskOpen, standaloneUndated, subtaskDone]],
+      [viewer, "any", [inEventDated, inEventTimed]],
+      [viewer, eventId, [inEventDated, inEventTimed]],
+      [viewer, privateEventId, []],
+    ] as const) {
+      const query = { filter: "all", event, limit: 10 } as const;
+      const listed = await postgres.listTasks(principal, query);
+      expect(ids(listed)).toEqual(expected);
+      expect(ids(await cloudbase.listTasks(principal, query))).toEqual(
+        expected,
+      );
+    }
+    // Both backends page an Event's filter alike, each with its own cursor.
+    for (const sort of ["due", "manual"] as const) {
+      const walk = async (repository: TaskReadRepository) => {
+        const pages: string[][] = [];
+        let cursor: string | undefined;
+        do {
+          const page = await repository.listTasks(owner, {
+            filter: "all",
+            event: "any",
+            sort,
+            limit: 1,
+            cursor,
+          });
+          pages.push(ids(page));
+          cursor = page.nextCursor ?? undefined;
+        } while (cursor !== undefined && pages.length < 5);
+        return pages;
+      };
+      const postgresPages = await walk(postgres);
+      expect(postgresPages.map((page) => page.length)).toEqual([1, 1, 1]);
+      expect(await walk(cloudbase)).toEqual(postgresPages);
+    }
+
     // A cursor from another query, or another caller, is refused alike.
     const first = await postgres.listTasks(owner, { limit: 1 });
     for (const repository of [postgres, cloudbase]) {
@@ -578,6 +643,12 @@ describe.sequential("CloudBase task list contract", () => {
       ).rejects.toBeInstanceOf(InvalidObjectStateError);
       await expect(
         repository.listTasks(viewer, { cursor: first.nextCursor ?? "" }),
+      ).rejects.toBeInstanceOf(InvalidObjectStateError);
+      await expect(
+        repository.listTasks(owner, {
+          cursor: first.nextCursor ?? "",
+          event: "any",
+        }),
       ).rejects.toBeInstanceOf(InvalidObjectStateError);
     }
   });

@@ -46,6 +46,9 @@ interface TaskHydration {
   readonly parents: readonly Record<string, unknown>[];
 }
 
+/** How many tasks one hydration reads when their Events select the page. */
+const inclusionBatchSize = 200;
+
 const emptyTaskHydration: TaskHydration = {
   objects: [],
   tasks: [],
@@ -257,12 +260,14 @@ export class CloudBaseTaskReadRepository implements TaskReadRepository {
     const cursor = readCursor(input.cursor, context);
     const asOf = cursor === undefined ? this.#clock() : new Date(cursor.asOf);
     const now = this.#clock();
-    // Keep locale and IANA calendar-day semantics in this runtime. Without
-    // those filters, updated/manual order can use a bounded SQL keyset.
+    // Keep locale and IANA calendar-day semantics in this runtime, and the
+    // Events that include each task. Without those filters, updated/manual
+    // order can use a bounded SQL keyset.
     const bounded =
       input.query === "" &&
       input.dueFrom === undefined &&
       input.dueTo === undefined &&
+      input.event === undefined &&
       (input.sort === "updated" || input.sort === "manual");
     const raw = await this.#client.rpc("chronelle_task_list_candidates", {
       workspace_id: principal.workspaceId,
@@ -291,6 +296,16 @@ export class CloudBaseTaskReadRepository implements TaskReadRepository {
             .includes(input.query.toLocaleLowerCase())) &&
         matchesDueRange(task, input),
     );
+    if (input.event !== undefined) {
+      const { event } = input;
+      const included = await this.#includingEvents(principal, tasks, now);
+      tasks = tasks.filter((task) => {
+        const events = included.get(task.id);
+        if (event === "none") return events === undefined;
+        if (event === "any") return events !== undefined;
+        return events?.has(event) === true;
+      });
+    }
     tasks.sort(
       input.sort === "manual"
         ? compareRank
@@ -376,5 +391,37 @@ export class CloudBaseTaskReadRepository implements TaskReadRepository {
           ? pageCursor(candidates.at(-1) as TaskCandidate, context, asOfValue)
           : null,
     };
+  }
+
+  /**
+   * The Events that include each task, by task ID, counting only live
+   * Events the caller may view: the contexts the hydration names, read in
+   * bounded batches. A task no such Event includes is absent.
+   */
+  async #includingEvents(
+    principal: UserPrincipal,
+    tasks: readonly TaskCandidate[],
+    now: Date,
+  ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+    const included = new Map<string, Set<string>>();
+    for (let start = 0; start < tasks.length; start += inclusionBatchSize) {
+      const hydration = taskHydration(
+        await this.#client.rpc("chronelle_task_list_hydrate", {
+          workspace_id: principal.workspaceId,
+          user_id: principal.userId,
+          task_ids: tasks
+            .slice(start, start + inclusionBatchSize)
+            .map((task) => task.id),
+          access_at: now.toISOString(),
+        }),
+      );
+      for (const row of hydration.contexts) {
+        const taskId = cloudbaseText(row.target_object_id, "task");
+        const events = included.get(taskId) ?? new Set<string>();
+        events.add(cloudbaseText(row.source_object_id, "event"));
+        included.set(taskId, events);
+      }
+    }
+    return included;
   }
 }

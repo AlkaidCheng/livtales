@@ -669,10 +669,14 @@ Person; `dueFrom` and `dueTo` (calendar dates, either or both) keep the tasks
 due on a day of that inclusive range, where a timed task is due on the day of
 its instant in `timezone` (an IANA name, default `UTC`; an unknown name or a
 `dueTo` before `dueFrom` is HTTP 400) and an undated task is in no range;
-`limit` is 1-50 (default 20). Pages carry `nextCursor` and `asOf` like the
-Event collection, and a cursor is bound to its caller and query: reusing one
-with another `filter`, `sort`, `query`, `label`, `assignee`, due range,
-`timezone`, or user returns HTTP 400. Each page
+`event` keeps the tasks by the Event that includes them, counting only a live
+Event the caller may view (the Events `contexts` names): `none` keeps the
+tasks no such Event includes, `any` the tasks one includes, and an Event ID
+the tasks that Event includes (an unknown, trashed, or unviewable Event lists
+nothing); `limit` is 1-50 (default 20). Pages carry `nextCursor` and `asOf`
+like the Event collection, and a cursor is bound to its caller and query:
+reusing one with another `filter`, `sort`, `query`, `label`, `assignee`, due
+range, `timezone`, `event`, or user returns HTTP 400. Each page
 also carries `contexts`, a map from Task ID to `{ eventId, displayName }` for
 the Event that includes the Task, present only when the caller may view that
 Event (the earliest inclusion when several Events include one Task); a Task
