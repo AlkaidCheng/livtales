@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
-import { openCollection } from "./helpers/quiet-chrome";
+import { openCollection, openDrawer } from "./helpers/quiet-chrome";
 
 /** Signs the browser in as a development identity, leaving any session first. */
 async function signInAs(page: Page, name: string, email: string) {
@@ -11,13 +11,16 @@ async function signInAs(page: Page, name: string, email: string) {
   await expect(page).toHaveURL(/\/events$/u);
 }
 
+/** Signs out from the account block, which a phone keeps in its drawer. */
 async function signOut(page: Page) {
+  await openDrawer(page);
   await page.getByRole("button", { name: /^Ana|^Ben/ }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in/u);
 }
 
 async function openFriends(page: Page, name: string) {
+  await openDrawer(page);
   await page.getByRole("button", { name: new RegExp(`^${name}`) }).click();
   await page.getByRole("menuitem", { name: /^Friends/ }).click();
   await expect(page).toHaveURL(/\/friends$/u);
@@ -84,9 +87,10 @@ test("connects two accounts through a request and links a person to the friend @
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await signOut(page);
 
-  // Ben sees the request with the note, and a mark on the profile block.
+  // Ben sees the request with the note, and a mark on the profile block
+  // (a phone's menu control carries it while the block is in the drawer).
   await signInAs(page, "Ben", benEmail);
-  await expect(page.locator(".profile-dot")).toBeVisible();
+  await expect(page.locator(".profile-dot:visible")).toHaveCount(1);
   await openFriends(page, "Ben");
   const requests = page.getByRole("region", { name: /^Requests/ });
   await expect(requests).toContainText("Ana");

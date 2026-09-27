@@ -34,6 +34,13 @@ export async function workspaceNavigation(
   return navigation;
 }
 
+/** Opens the phone's drawer from the menu control when it is closed; nothing to do on a wider viewport. */
+export async function openDrawer(page: Page) {
+  if (!isPhone(page) || (await drawer(page).isVisible())) return;
+  await menuControl(page).click();
+  await expect(drawer(page)).toBeVisible();
+}
+
 /** Closes the phone's drawer when it is open; nothing to do on a wider viewport. */
 export async function closeDrawer(page: Page) {
   if (await drawer(page).isVisible()) {
@@ -89,19 +96,73 @@ export async function choosePageOptionWithKeyboard(page: Page, name: string) {
   await page.keyboard.press("Enter");
 }
 
+/** Opens the account menu from the account block, through the drawer on a phone. */
 export async function openAccountMenu(page: Page) {
   const menu = page.getByRole("menu", { name: "Account", exact: true });
-  if (!(await menu.isVisible())) await page.locator(".account-trigger").click();
+  if (!(await menu.isVisible())) {
+    await openDrawer(page);
+    await accountBlock(page).click();
+  }
   await expect(menu).toBeVisible();
   return menu;
 }
 
-/** The rail's foot: the account's name with the current workspace under it, which opens the account menu; the phone's avatar. */
+/**
+ * The account block, which opens the account menu: the avatar, the
+ * account's name, and the current workspace under it, at the foot of the
+ * rail or of the phone's drawer.
+ */
 export const accountBlock = (page: Page) => page.locator(".account-trigger");
+
+/**
+ * Puts focus on the account block from the keyboard. A phone opens its
+ * drawer from the menu control first, with the keyboard, so every engine
+ * has focus on the menu control, where the drawer returns it once it
+ * closes (a tap in mobile WebKit focuses no button).
+ */
+export async function focusAccountBlock(page: Page) {
+  if (isPhone(page) && !(await drawer(page).isVisible())) {
+    await menuControl(page).focus();
+    await page.keyboard.press("Enter");
+    await expect(drawer(page)).toBeVisible();
+  }
+  await accountBlock(page).focus();
+}
+
+/**
+ * The control focus returns to once Settings, opened from the account
+ * menu, closes: the rail's account block, or the phone's menu control,
+ * as the drawer closes behind the entry taken.
+ */
+export const accountReturn = (page: Page) =>
+  isPhone(page) ? menuControl(page) : accountBlock(page);
 
 /** The phone's app bar control that names the current workspace and opens the switcher as a sheet. */
 export const workspaceControl = (page: Page) =>
   page.locator(".phone-workspace");
+
+/**
+ * Expects an event's page to name its place as `space / Events`: the
+ * breadcrumb above the title, or on a phone the app bar, where the link
+ * back to Events follows the current space's control.
+ */
+export async function expectEventPlace(page: Page, space: string) {
+  if (isPhone(page)) {
+    await expect(workspaceControl(page)).toHaveAccessibleName(
+      `Space: ${space}`,
+    );
+    await expect(
+      page
+        .locator(".phone-bar")
+        .getByRole("link", { name: "All events", exact: true }),
+    ).toBeVisible();
+    return;
+  }
+  const name = space.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toHaveText(
+    new RegExp(`^${name}\\s*/\\s*Events$`, "u"),
+  );
+}
 
 /** The control that names the current workspace: the rail's account block, or the phone's workspace control. */
 export const workspaceBlock = (page: Page) =>
@@ -114,8 +175,10 @@ export const workspaceSwitcher = (page: Page) =>
 export async function openWorkspaceSwitcher(page: Page) {
   const menu = workspaceSwitcher(page);
   if (!(await menu.isVisible())) {
-    if (isPhone(page)) await workspaceControl(page).click();
-    else {
+    if (isPhone(page)) {
+      await closeDrawer(page);
+      await workspaceControl(page).click();
+    } else {
       const account = await openAccountMenu(page);
       await account
         .getByRole("menuitem", { name: "Switch space...", exact: true })
@@ -132,23 +195,40 @@ export const moreTrigger = (page: Page) => page.locator(".more-trigger");
 /**
  * More's entries: the rail's popover menu, or the group under the
  * account's own entries in the phone's account sheet, which opens from
- * the avatar.
+ * the account block at the foot of the drawer.
  */
 export async function openMoreMenu(page: Page) {
   const menu = isPhone(page)
     ? page.getByRole("group", { name: "More", exact: true })
     : page.getByRole("menu", { name: "More", exact: true });
-  if (!(await menu.isVisible())) await moreControl(page).click();
+  if (!(await menu.isVisible())) await pressMoreControl(page);
   await expect(menu).toBeVisible();
   return menu;
 }
 
 /**
  * The control More's entries open from, and the one focus returns to once
- * they close: the rail's More, or the phone's avatar (its sheet lists them).
+ * Theme closes: the rail's More, or the account block at the foot of the
+ * phone's drawer (its sheet lists them, and the drawer stays open under
+ * Theme's sheet).
  */
 export const moreControl = (page: Page) =>
-  isPhone(page) ? page.locator(".account-trigger") : moreTrigger(page);
+  isPhone(page) ? accountBlock(page) : moreTrigger(page);
+
+/** Presses the control More's entries open from, through the drawer on a phone. */
+export async function pressMoreControl(page: Page) {
+  await openDrawer(page);
+  await moreControl(page).click();
+}
+
+/**
+ * The control focus returns to once a surface opened from More over the
+ * page closes (Settings at Keyboard, the install steps): the rail's More,
+ * or the phone's menu control, as the drawer closes behind the entry
+ * taken.
+ */
+export const moreReturn = (page: Page) =>
+  isPhone(page) ? menuControl(page) : moreTrigger(page);
 
 export async function openThemePanel(page: Page) {
   const panel = page.getByRole("dialog", { name: "Theme", exact: true });

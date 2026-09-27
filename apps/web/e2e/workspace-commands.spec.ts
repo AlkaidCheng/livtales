@@ -8,6 +8,7 @@ import { exerciseWorkspaceCommands } from "./helpers/workspace-commands";
 import {
   closeDrawer,
   moreControl,
+  moreReturn,
   openMoreMenu,
   pressSearchEntry,
   searchEntry,
@@ -111,7 +112,7 @@ test("leads from More to the Keyboard settings, where the Search shortcut is swi
   await page.keyboard.press("Escape");
   await expect(section).toHaveCount(0);
   await expect(page).toHaveURL(/\/events$/u);
-  await expect(moreControl(page)).toBeFocused();
+  await expect(moreReturn(page)).toBeFocused();
   // The palette itself carries no settings: the field has focus, the keys
   // read under the results, and Escape returns focus to the entry.
   await pressSearchEntry(page);

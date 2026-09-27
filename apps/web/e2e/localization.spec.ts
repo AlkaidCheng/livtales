@@ -3,7 +3,8 @@ import { expect, type Page, test } from "./fixtures";
 import {
   closeDrawer,
   isPhone,
-  moreControl,
+  openDrawer,
+  pressMoreControl,
   workspaceNavigation,
 } from "./helpers/quiet-chrome";
 import { setDates } from "./helpers/date-rows";
@@ -70,17 +71,18 @@ const hant = {
 };
 
 /**
- * Opens Settings from the profile menu over the page, its Language & time
- * section, and chooses a language from the Language menu, all by their
- * names in the current language. The page changes language in place under the open
- * dialog; the caller closes it or moves on to wherever the journey
- * continues.
+ * Opens Settings from the profile menu over the page (through the drawer
+ * on a phone), its Language & time section, and chooses a language from
+ * the Language menu, all by their names in the current language. The page
+ * changes language in place under the open dialog; the caller closes it
+ * or moves on to wherever the journey continues.
  */
 async function chooseLanguage(
   page: Page,
   names: { settings: string; languageTime: string; languageMenu: string },
   language: string,
 ) {
+  await openDrawer(page);
   await page.getByRole("button", { name: /^Event planner/ }).click();
   await page
     .getByRole("menuitem", { name: names.settings, exact: true })
@@ -153,8 +155,7 @@ test("switches the workspace to Simplified and Traditional Chinese and back @web
   await expect(page).toHaveURL(eventUrl);
   const rail = await workspaceNavigation(page, hans.navigation);
   await expect(rail).toContainText(hans.people);
-  await closeDrawer(page);
-  await moreControl(page).click();
+  await pressMoreControl(page);
   await expect(
     page.getByRole(isPhone(page) ? "group" : "menu", {
       name: hans.more,

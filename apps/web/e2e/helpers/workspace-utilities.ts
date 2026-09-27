@@ -8,6 +8,7 @@ import {
   menuControl,
   moreTrigger,
   openAccountMenu,
+  openDrawer,
   openThemePanel,
   workspaceNavigation,
   workspaceSwitcher,
@@ -135,10 +136,11 @@ export async function exerciseWorkspaceUtilities(
 
 /**
  * The phone's chrome: the app bar's menu opens the sidebar as a drawer
- * with the collections; the avatar opens the account sheet, with More's
- * entries as its second group; the space control opens the switcher
- * as a sheet; Theme opens as a sheet from More. A filter on the page
- * survives a sheet opened and dismissed.
+ * with the collections and, at its foot, the account block, which opens
+ * the account sheet over the drawer, with More's entries as its second
+ * group; the space control opens the switcher as a sheet; Theme opens as
+ * a sheet from More. A filter on the page survives a sheet opened and
+ * dismissed.
  */
 async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   const navigation = await workspaceNavigation(page);
@@ -153,6 +155,11 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
       exact: true,
     }),
   ).toBeVisible();
+  const account = accountBlock(page);
+  await expect(account).toHaveCount(1);
+  await expect(drawer(page).locator(".sidebar-footer")).toContainText(
+    "Personal",
+  );
   await page.screenshot({ path: testInfo.outputPath("drawer.png") });
   await page.keyboard.press("Escape");
   await expect(drawer(page)).toBeHidden();
@@ -161,8 +168,7 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   // The account sheet: the account's name and email, then Friends,
   // Settings, Sign out, then what More offers; Trash is a link there and
   // Customize sidebar is offered, as the drawer arranges with Done.
-  const account = accountBlock(page);
-  await expect(account).toHaveCount(1);
+  await openDrawer(page);
   await account.click();
   const menu = page.getByRole("menu", { name: "Account", exact: true });
   await expect(menu).toBeVisible();
@@ -181,7 +187,8 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await expect(
     more.getByRole("menuitem", { name: "Customize sidebar", exact: true }),
   ).toBeVisible();
-  // One menu: End reaches the last of More's entries.
+  // One menu: End reaches the last of More's entries. Escape leads back
+  // to the drawer, on the block, and again to the menu control.
   await page.keyboard.press("End");
   await expect(
     more.getByRole("menuitem", { name: "Help", exact: true }),
@@ -189,6 +196,8 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
   await expect(account).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer(page)).toBeHidden();
 
   // The space control opens the switcher as its own sheet, on its search
   // field, the current space first, Manage space beside the field.
@@ -213,6 +222,8 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await expect(switcher).toHaveCount(0);
   await expect(control).toBeFocused();
 
+  // Theme's sheet rises from the account sheet over the drawer, and
+  // Escape leads back to the drawer, on the block.
   const theme = await openThemePanel(page);
   await expect(
     theme.getByRole("group", { name: "Appearance" }).getByRole("radio", {
@@ -223,6 +234,7 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await page.keyboard.press("Escape");
   await expect(theme).toHaveCount(0);
   await expect(account).toBeFocused();
+  await closeDrawer(page);
 
   await openEventView(page, "To-dos");
   await page.getByRole("button", { name: /^Filter/ }).click();
@@ -260,6 +272,7 @@ async function exerciseNarrowChrome(page: Page, testInfo: TestInfo) {
   });
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
+  await closeDrawer(page);
   await page.getByRole("button", { name: /^Space: / }).click();
   const switcher = workspaceSwitcher(page);
   await expect(switcher).toBeVisible();

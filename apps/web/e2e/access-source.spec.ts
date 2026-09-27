@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
-import { isPhone } from "./helpers/quiet-chrome";
+import { isPhone, openDrawer } from "./helpers/quiet-chrome";
 import { chooseRowAction } from "./helpers/row-menu";
 import { openEventView } from "./helpers/event-view";
 
@@ -13,6 +13,7 @@ const signIn = async (page: Page, name: string, email: string) => {
 };
 
 const signOut = async (page: Page) => {
+  await openDrawer(page);
   await page.getByRole("button", { name: /^Ben/ }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/sign-in/u);

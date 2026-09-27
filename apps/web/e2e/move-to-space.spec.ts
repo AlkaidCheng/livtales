@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
-import { workspaceBlock } from "./helpers/quiet-chrome";
+import { expectEventPlace, workspaceBlock } from "./helpers/quiet-chrome";
 
 const signIn = async (page: Page, name: string, email: string) => {
   await page.goto("/sign-in/development");
@@ -73,9 +73,7 @@ test("moves an event into a shared space after naming the links it removes @webk
   page.on("pageerror", (error) => errors.push(error.message));
   await signIn(page, "Ana", anaEmail);
   await page.getByRole("link", { name: /Garden wedding/ }).click();
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toHaveText(
-    /^Personal\s*\/\s*Events$/u,
-  );
+  await expectEventPlace(page, "Personal");
 
   await page
     .getByRole("button", { name: "Actions for Garden wedding" })
@@ -115,7 +113,7 @@ test("moves an event into a shared space after naming the links it removes @webk
   ).toContainText("Our wedding's 2 members, by their roles");
   await review.getByRole("button", { name: "Move and remove 2 links" }).click();
 
-  // The event opens in its new space, which the breadcrumb and the
+  // The event opens in its new space, which the event's place and the
   // switcher's block now name, with a notice that offers the old one.
   await expect(
     page.getByText("Moved Garden wedding to Our wedding. Removed 2 links."),
@@ -123,9 +121,7 @@ test("moves an event into a shared space after naming the links it removes @webk
   await expect(page).toHaveURL(
     new RegExp(`/events/${wedding.id}(?:\\?.*)?$`, "u"),
   );
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toHaveText(
-    /^Our wedding\s*\/\s*Events$/u,
-  );
+  await expectEventPlace(page, "Our wedding");
   await expect(workspaceBlock(page)).toContainText("Our wedding");
 
   // Ben, a member of the space, reads it there.

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
-import { moreControl, openMoreMenu } from "./helpers/quiet-chrome";
+import { moreReturn, openMoreMenu } from "./helpers/quiet-chrome";
 
 async function signIn(page: Page, name: string) {
   await page.goto("/sign-in/development");
@@ -98,6 +98,6 @@ test.describe("on Safari for iPhone", () => {
     ]);
     await steps.getByRole("button", { name: "Done", exact: true }).click();
     await expect(steps).toHaveCount(0);
-    await expect(moreControl(page)).toBeFocused();
+    await expect(moreReturn(page)).toBeFocused();
   });
 });

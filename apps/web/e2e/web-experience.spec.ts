@@ -5,6 +5,7 @@ import {
   chooseEventSort,
   chooseEventFilter,
   closeDrawer,
+  openAccountMenu,
   signOutFromMenu,
   workspaceNavigation,
 } from "./helpers/quiet-chrome";
@@ -159,21 +160,21 @@ test("organizes events and keeps navigation usable across reloads and screen siz
   }
   if (testInfo.project.name === "chromium-mobile") {
     // The phone keeps the strip: a view past its width opens from the fold
-    // chip. The avatar opens the account sheet, and Escape returns to it.
+    // chip. The account block at the drawer's foot opens the account
+    // sheet, and Escape returns to it.
     await openEventView(page, "Files");
-    const account = page.locator(".account-trigger");
-    await account.click();
+    await openAccountMenu(page);
     await expect(
       page.getByRole("menuitem", { name: "Sign out", exact: true }),
     ).toBeVisible();
     await page.getByRole("menuitem", { name: /^Friends/ }).focus();
     await page.keyboard.press("Escape");
-    await expect(account).toBeFocused();
+    await expect(page.locator(".account-trigger")).toBeFocused();
     await expect(
       page.getByRole("menuitem", { name: "Sign out", exact: true }),
     ).toHaveCount(0);
   }
-  await page.locator(".account-trigger").click();
+  await openAccountMenu(page);
   expect(
     await page.evaluate(
       () =>
