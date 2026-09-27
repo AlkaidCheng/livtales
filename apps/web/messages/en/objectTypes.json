@@ -13,5 +13,6 @@
   "documents": "Documents",
   "people": "People",
   "notes": "Notes",
-  "scheduledEvent": "Scheduled event"
+  "scheduledEvent": "Scheduled event",
+  "scheduleItem": "Schedule item"
 }

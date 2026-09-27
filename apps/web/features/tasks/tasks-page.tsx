@@ -9,6 +9,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { SpaceAddSeal } from "../../components/add-seal";
 import {
   EmptyState,
   ErrorNotice,
@@ -32,6 +33,7 @@ import {
   useSessionQuery,
   useTasksQuery,
 } from "../../lib/queries";
+import { useIsPhone } from "../../lib/use-media";
 import { ManageLabelsButton } from "./label-manager";
 import { AddTaskRow } from "./add-task-row";
 import {
@@ -123,6 +125,8 @@ export function TasksPage() {
   const labels = useLabelsQuery();
   const persons = usePersonsQuery();
   const session = useSessionQuery();
+  // On a phone the add button stands in for the header's New task.
+  const phone = useIsPhone();
   // The person linked to the signed-in account, when one exists.
   const myPerson = persons.data?.items.find(
     (person) =>
@@ -169,18 +173,20 @@ export function TasksPage() {
           <h1>{t("title")}</h1>
           <p>{t("intro")}</p>
         </div>
-        <button
-          aria-haspopup="dialog"
-          className="button button-primary"
-          onClick={(event) => {
-            event.currentTarget.focus();
-            setAdding({});
-          }}
-          type="button"
-        >
-          <PlusIcon />
-          {t("new")}
-        </button>
+        {phone ? null : (
+          <button
+            aria-haspopup="dialog"
+            className="button button-primary"
+            onClick={(event) => {
+              event.currentTarget.focus();
+              setAdding({});
+            }}
+            type="button"
+          >
+            <PlusIcon />
+            {t("new")}
+          </button>
+        )}
       </header>
 
       {adding !== null ? (
@@ -362,6 +368,9 @@ export function TasksPage() {
           start={editing.start}
           taskId={editing.id}
         />
+      ) : null}
+      {phone ? (
+        <SpaceAddSeal label={t("new")} onAdd={() => setAdding({})} />
       ) : null}
     </main>
   );

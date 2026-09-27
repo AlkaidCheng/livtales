@@ -21,5 +21,24 @@
     "paper": "墨與紙",
     "celadon": "青瓷",
     "neutral": "素色"
-  }
+  },
+  "button": "新增按鈕",
+  "seals": {
+    "circle": "圓形",
+    "square": "方形",
+    "diamond": "菱形",
+    "heart": "心形"
+  },
+  "sealStyles": {
+    "round": "正圓",
+    "scalloped": "花邊",
+    "soft": "柔角",
+    "ticket": "票根",
+    "rounded": "圓角",
+    "gem": "寶石",
+    "plump": "飽滿",
+    "geometric": "幾何"
+  },
+  "sealChoice": "{shape}，{style}",
+  "sealStylesOf": "{shape}樣式"
 }

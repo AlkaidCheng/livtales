@@ -13,5 +13,6 @@
   "documents": "檔案",
   "people": "夥伴",
   "notes": "筆記",
-  "scheduledEvent": "已安排的活動"
+  "scheduledEvent": "已安排的活動",
+  "scheduleItem": "日程項目"
 }

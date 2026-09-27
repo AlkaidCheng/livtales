@@ -133,6 +133,12 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await expect(accountBlock(page).locator(".profile-mark")).toHaveText("BW");
   await expect(page.getByRole("navigation")).toHaveCount(0);
   await expect(page.locator("aside.sidebar")).toHaveCount(0);
+  // New event is the add button at the foot, the header's own gone.
+  const newEvent = page.getByRole("button", { name: "New event", exact: true });
+  await expect(newEvent).toHaveCount(1);
+  await expect(
+    page.locator(".add-seal").getByRole("button", { name: "New event" }),
+  ).toBeInViewport();
   await expectHorizontalReflow(page);
   await page.screenshot({ path: testInfo.outputPath("app-bar.png") });
 
@@ -172,6 +178,9 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await expect(
     page.getByRole("heading", { level: 1, name: "Tasks", exact: true }),
   ).toBeVisible();
+  await expect(
+    page.locator(".add-seal").getByRole("button", { name: "New task" }),
+  ).toBeInViewport();
 
   // A finger held on a collection enters customization in place: the
   // heading reads "Collections - Done", the rows gain their grips and
@@ -231,6 +240,12 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
     "AS",
   );
   await expect(page.getByRole("link", { name: /Ana's plan/ })).toBeVisible();
+  // A Viewer of her space adds nothing there: no add button, and no New
+  // event in the header either.
+  await expect(page.locator(".add-seal")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "New event", exact: true }),
+  ).toHaveCount(0);
   // Cmd/Ctrl+Shift+K opens the sheet from the page and closes it again.
   await page.keyboard.press("ControlOrMeta+Shift+K");
   await expect(switcher).toBeVisible();
@@ -283,6 +298,22 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   const theme = page.getByRole("dialog", { name: "Theme", exact: true });
   await expect(theme).toBeVisible();
   await expect(theme).toBeInViewport();
+  // The sheet holds the palette and add button tiles; a shape's styles
+  // close alone, leaving the sheet open.
+  await expect(
+    theme.getByRole("group", { name: "Palette", exact: true }),
+  ).toBeVisible();
+  const shapes = theme.getByRole("group", { name: "Button", exact: true });
+  await expect(shapes.getByRole("radio")).toHaveCount(4);
+  await shapes.getByRole("button", { name: "Square styles" }).click();
+  const squareStyles = page.getByRole("dialog", { name: "Square" });
+  await expect(squareStyles).toBeInViewport();
+  await page.keyboard.press("Escape");
+  await expect(squareStyles).toHaveCount(0);
+  await expect(theme).toBeVisible();
+  await expect(
+    shapes.getByRole("button", { name: "Square styles" }),
+  ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(theme).toHaveCount(0);
   await expect(accountBlock(page)).toBeFocused();
@@ -306,6 +337,8 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer, with 
   await expect(tag).toBeVisible();
   await expect(tag).toContainText("Shared by Chen Li");
   await expect(tag).toContainText("Viewer");
+  // A viewer of the event has nothing to add to it.
+  await expect(page.locator(".add-seal")).toHaveCount(0);
   await expect(page.locator(".event-hero .access-line")).toBeHidden();
   await expect(page.locator(".mobile-view-select")).toHaveCount(0);
   await expectHorizontalReflow(page);

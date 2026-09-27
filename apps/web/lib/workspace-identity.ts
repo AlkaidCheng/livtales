@@ -91,3 +91,13 @@ export function currentWorkspace(
     }
   );
 }
+
+/**
+ * Whether the account may add records to the session's current workspace:
+ * it is an Owner or Editor there. A workspace reached through a share alone
+ * holds no role, and a Viewer only reads.
+ */
+export function canAddToWorkspace(session: SessionResponse): boolean {
+  const { role } = currentWorkspace(session);
+  return role === "owner" || role === "editor";
+}

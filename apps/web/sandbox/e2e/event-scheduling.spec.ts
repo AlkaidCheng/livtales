@@ -185,10 +185,12 @@ test("creation makes the background inert and allows a single day or no dates", 
 }) => {
   await page.goto(sandboxUrl);
   const trigger = page.getByRole("button", { name: "New event", exact: true });
+  // By its label, not its role: a phone's add button hides under the dialog.
+  const opener = page.locator('button[aria-label="New event"]');
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Create an event" });
-  await trigger.evaluate((element) => element.focus());
-  await expect(trigger).not.toBeFocused();
+  await opener.evaluate((element) => element.focus());
+  await expect(opener).not.toBeFocused();
   expect(
     await dialog.evaluate((element) =>
       element.contains(document.activeElement),

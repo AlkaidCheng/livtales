@@ -88,8 +88,8 @@ again.
 
 More holds what acts on the app rather than on records: Trash, Theme,
 Customize sidebar, Keyboard shortcuts, and Help. Theme opens a panel beside
-the rail with the mode (System, Light, Dark), the palette, density, and
-motion choices, and a reset. Keyboard shortcuts opens Settings at Keyboard
+the rail with the mode (System, Light, Dark), the palette and add button
+tiles, density, and motion choices, and a reset. Keyboard shortcuts opens Settings at Keyboard
 over the page and shows only on a device with a keyboard; Help has no
 surface yet and
 says so in a passing notice. The
@@ -187,12 +187,36 @@ shortcuts on a keyboard device), so the arrow keys walk the whole list.
 Theme opens its own sheet with the same controls as the rail's panel, and
 Customize sidebar opens the drawer customizing.
 
+A phone also has an add button: a seal about 60px across, fixed 18px from
+the bottom right corner and clear of the home indicator, drawn in the shape
+and style Appearance keeps (see Appearance) and in the palette's accent. It
+shows on an event, on Events, on Tasks, and on People, only to an account
+that may add there (one that may edit the event, or an Owner or Editor of
+the space; a Viewer, or an account reaching a space through a share alone,
+sees none), and it stands in for the page's own add control: the Events,
+Tasks, and People headers drop their New event, New task, and New person
+controls on a phone, so there is one. The page keeps room at its foot so
+its last row never sits under the button, passing notices rise above it,
+and it hides while a dialog is open. A press presses the seal briefly (a
+still press when motion is reduced). On Events, Tasks, and People it opens
+New event, New task, or New person at once. On an event it is a menu button
+named "Add to" the event: its menu rises above it over a scrim as pills,
+Task, Schedule item, Expense, Reminder, and Note, the kind the current view
+lists nearest the button (Task on To-dos; Schedule item on Calendar,
+Timeline, and Itinerary; Expense, Reminder, and Note on their own views; the
+usual order elsewhere), and the plus turns into a close mark while it is
+open. Focus starts on the nearest pill and the arrow keys move through
+them; Escape, the scrim, or the button closes the menu with focus back on
+the button. Each pill opens the editor that kind uses on its own view (the
+task and expense editors with the event's sections), and closing that
+editor returns focus to the button.
+
 The Events page is one row: the title with the inline name filter beside
 it at the left, then, at the right edge, quiet Filter (All, Upcoming &
 ongoing, Unscheduled, Past), Sort (Event date, Recently updated, Name A-Z),
 and Layout (Grid, List) menus, Refresh, and the single filled New event
 control; on a phone the title and the controls share the first row and the
-filter takes the whole second. Under the head one row of chips, All, Mine,
+filter takes the whole second, and the add button stands in for New event. Under the head one row of chips, All, Mine,
 Shared with me, Upcoming, and Past, each with its count for the typed name
 (the counts come with the list's first page); one chip is pressed at a
 time, All meaning no scope and no period, and Clear filters resets the
@@ -236,8 +260,8 @@ to the viewport, so a strip that clips its overflow never cuts a tip.
 ## Tasks
 
 Tasks lists every task the user may view in the space: tasks that live on
-their own and tasks inside any event, in one place. New task creates a task
-that belongs to no event and owns its own permission scope; tasks added inside
+their own and tasks inside any event, in one place. New task (the add button
+on a phone) creates a task that belongs to no event and owns its own permission scope; tasks added inside
 an event keep that event's scope and appear here as well. The toolbar filters
 by name and carries the three quiet controls every task collection shares:
 Sort (Manual, the default, the order tasks are kept in; By due, a date-only
@@ -294,7 +318,8 @@ friends, invited, those with an account, those without; then any label),
 Sort (by name, the
 default, or by the latest change), Layout (List or Namecards, a device
 preference kept in browser storage), Refresh, and the filled plus for New
-person, which opens the person editor. The list shows one row per person:
+person, which opens the person editor (on a phone the add button does).
+The list shows one row per person:
 initials (the first character of a name written in Han, kana, or Hangul), the
 nickname over the full name (or the name alone) as the link to the person's
 page, the contacts (an email as a mail link, a phone as a call link), the
@@ -685,15 +710,37 @@ unreadable storage falls back to System; failed writes leave the current page
 usable but cannot guarantee persistence. Sandbox file storage depends on the
 browser and file location.
 
-The Theme panel previews Ink & Paper, Celadon, and Modern Neutral in the
-current light/dark mode; outside a session the account screens' footer
-offers the mode alone. Choosing a palette does not change that mode. Comfortable/Compact
+The palette is three tiles side by side, Ink & Paper, Celadon, and Modern
+Neutral, each a miniature of the app in that palette and the current
+light/dark mode (its ground, a top bar, a tab in its accent and one beside
+it, and two rows); the chosen tile carries the accent's outline. The tiles
+are radios, so Tab reaches the chosen one and the arrow keys choose. Outside
+a session the account screens' footer offers the mode alone. Choosing a
+palette does not change that mode.
+
+Button, under Palette, chooses the phone add button's seal: four shape
+tiles, Circle, Square, Diamond, and Heart, each drawn in its style and named
+with it for assistive technology ("Heart, Plump"), chosen like the palettes.
+A small styles control in each tile's top corner opens a pop-up titled with
+the shape that shows its styles as large previews: Round and Scalloped,
+Soft and Ticket, Rounded and Gem, Plump and Geometric. Choosing one applies
+it with its shape and closes the pop-up, back on the control; Escape, the
+close control, or a press outside closes it alone. Each shape keeps its own
+style, so returning to a shape brings back the style last chosen for it.
+Anyone who has not chosen sees the round Circle. The seal takes the
+palette's accent in both modes (a gradient from `--seal-top` to
+`--seal-bottom` on a faint paper grain, a light `--seal-line` just inside
+the edge, and the plus in `--seal-ink`), and keeps a tap target of at least
+56px in every shape. Comfortable/Compact
 density changes Event-card and record-row spacing without shrinking controls.
 Motion follows the device by default; Reduced minimizes transitions and
 movement even when the device allows them. Device-level reduced motion always
 remains effective. These settings apply immediately and require no save.
 
-Each setting stores only one validated string under its own `chronelle.*` key.
+Each setting stores only one validated string under its own `chronelle.*` key;
+the add button keeps its shape under `chronelle.seal` and each shape's style
+under `chronelle.sealCircle`, `chronelle.sealSquare`, `chronelle.sealDiamond`,
+and `chronelle.sealHeart`, and each default is stored as no key at all.
 Reset display settings removes those overrides without clearing other browser
 data. Cross-tab changes apply even while the dialog is closed. Escape or Done
 closes the dialog and restores focus; underlying forms remain mounted. This
@@ -778,8 +825,9 @@ the account, this one included, and returns to sign-in. Under Preferences,
 Language & time holds menus for the language, the time format (its caption
 is the current moment in that format), and the first day of the week, then
 the time zone's picker, all kept on the account and applied at once; Appearance repeats the Theme panel's
-mode, density, and motion as choices side by side and its palette as a
-menu, which stay on the browser, carries the Install app row (see Install
+mode, density, and motion as choices side by side and its palette and
+Button tiles under their labels at the row's full width, which stay on the
+browser, carries the Install app row (see Install
 as an app), and ends with Reset display settings; Keyboard, on a
 keyboard device, holds the shortcut table described under Search. Settings
 holds only the account and the app's preferences: a space's members are

@@ -29,6 +29,7 @@ import {
   SortIcon,
 } from "../../components/icons";
 import { MenuItem, QuietMenu } from "../../components/quiet-menu";
+import { SpaceAddSeal } from "../../components/add-seal";
 import { useNotices } from "../../components/notices";
 import { RowMenu, type RowMenuEntry } from "../../components/row-menu";
 import { eventPeriod } from "../../lib/event-collection";
@@ -45,6 +46,7 @@ import {
   useEventsQuery,
   useLeaveEventMutation,
 } from "../../lib/queries";
+import { useIsPhone } from "../../lib/use-media";
 import { useOpenHistory } from "../history/history-provider";
 import { useOpenLifecycle } from "../recovery/lifecycle-provider";
 import { CreateEventDialog } from "./create-event-dialog";
@@ -301,6 +303,8 @@ export function EventList() {
   const t = useTranslations("events");
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  // On a phone the add button stands in for the header's New event.
+  const phone = useIsPhone();
   const leaving = useLeaveEvents();
   const { criteria, change, layout, changeLayout } = useEventCollectionState();
   const { query, scope, filter, sort } = criteria;
@@ -421,17 +425,19 @@ export function EventList() {
           >
             <RefreshIcon />
           </IconButton>
-          <IconButton
-            label={t("new")}
-            tone="primary"
-            aria-haspopup="dialog"
-            onClick={(event) => {
-              event.currentTarget.focus();
-              setIsCreating(true);
-            }}
-          >
-            <PlusIcon />
-          </IconButton>
+          {phone ? null : (
+            <IconButton
+              label={t("new")}
+              tone="primary"
+              aria-haspopup="dialog"
+              onClick={(event) => {
+                event.currentTarget.focus();
+                setIsCreating(true);
+              }}
+            >
+              <PlusIcon />
+            </IconButton>
+          )}
         </div>
       </header>
 
@@ -541,6 +547,9 @@ export function EventList() {
           </button>
         ) : null}
       </section>
+      {phone ? (
+        <SpaceAddSeal label={t("new")} onAdd={() => setIsCreating(true)} />
+      ) : null}
     </main>
   );
 }

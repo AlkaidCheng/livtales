@@ -445,9 +445,33 @@ describe("the Settings dialog", () => {
     );
     await user.click(within(mode).getByRole("radio", { name: "Dark" }));
     expect(document.documentElement).toHaveAttribute("data-appearance", "dark");
-    const palette = screen.getByRole("combobox", { name: "Palette" });
-    await chooseFromMenu(user, palette, "Celadon");
+    const palette = screen.getByRole("group", { name: "Palette" });
+    await user.click(within(palette).getByRole("radio", { name: "Celadon" }));
     expect(document.documentElement).toHaveAttribute("data-palette", "celadon");
+    const seal = screen.getByRole("group", { name: "Button" });
+    expect(
+      within(seal).getByRole("radio", { name: "Circle, Round" }),
+    ).toBeChecked();
+    await user.click(
+      within(seal).getByRole("button", { name: "Heart styles" }),
+    );
+    const styles = screen.getByRole("dialog", { name: "Heart" });
+    expect(
+      within(styles).getByRole("button", { name: "Plump", pressed: true }),
+    ).toHaveFocus();
+    await user.click(within(styles).getByRole("button", { name: "Geometric" }));
+    expect(styles).not.toBeInTheDocument();
+    expect(
+      within(seal).getByRole("radio", { name: "Heart, Geometric" }),
+    ).toBeChecked();
+    expect(
+      within(seal).getByRole("button", { name: "Heart styles" }),
+    ).toHaveFocus();
+    expect(document.documentElement).toHaveAttribute("data-seal", "heart");
+    expect(document.documentElement).toHaveAttribute(
+      "data-seal-heart",
+      "geometric",
+    );
     await user.click(
       within(screen.getByRole("group", { name: "Density" })).getByRole(
         "radio",
@@ -467,7 +491,12 @@ describe("the Settings dialog", () => {
     await user.click(
       screen.getByRole("button", { name: "Reset display settings" }),
     );
-    expect(palette).toHaveTextContent("Ink & Paper");
+    expect(
+      within(palette).getByRole("radio", { name: "Ink & Paper" }),
+    ).toBeChecked();
+    expect(
+      within(seal).getByRole("radio", { name: "Circle, Round" }),
+    ).toBeChecked();
     expect(within(mode).getByRole("radio", { name: "System" })).toBeChecked();
     expect(screen.queryByRole("combobox", { name: "Language" })).toBeNull();
   });

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
+import { SpaceAddSeal } from "../../components/add-seal";
 import { ErrorNotice, LoadingState } from "../../components/feedback";
 import { IconButton } from "../../components/icon-button";
 import {
@@ -27,6 +28,7 @@ import {
   usePersonsQuery,
   useSessionQuery,
 } from "../../lib/queries";
+import { useIsPhone } from "../../lib/use-media";
 import { usePersonConnections } from "../../lib/use-person-connections";
 import { InviteFriendDialog } from "../friends/invite-friend-dialog";
 import {
@@ -76,6 +78,8 @@ export function PeoplePage() {
   const people = usePersonsQuery(true, { query: debouncedQuery });
   const labels = useLabelsQuery();
   const session = useSessionQuery();
+  // On a phone the add button stands in for the header's New person.
+  const phone = useIsPhone();
   const quickAdd = useQuickAddSlots();
   const me = session.data?.user.id;
   const changingQuery = isComposing || query.trim() !== debouncedQuery;
@@ -151,17 +155,19 @@ export function PeoplePage() {
           >
             <UserPlusIcon />
           </IconButton>
-          <IconButton
-            aria-haspopup="dialog"
-            label={t("new")}
-            onClick={(event) => {
-              event.currentTarget.focus();
-              setIsAdding(true);
-            }}
-            tone="primary"
-          >
-            <PlusIcon />
-          </IconButton>
+          {phone ? null : (
+            <IconButton
+              aria-haspopup="dialog"
+              label={t("new")}
+              onClick={(event) => {
+                event.currentTarget.focus();
+                setIsAdding(true);
+              }}
+              tone="primary"
+            >
+              <PlusIcon />
+            </IconButton>
+          )}
         </div>
       </header>
       <PersonChips
@@ -236,6 +242,9 @@ export function PeoplePage() {
           personId={editingId}
           onClose={() => setEditingId(null)}
         />
+      ) : null}
+      {phone ? (
+        <SpaceAddSeal label={t("new")} onAdd={() => setIsAdding(true)} />
       ) : null}
     </main>
   );
