@@ -1,5 +1,9 @@
 import {
+  type AccountPage,
   type EventLayoutResponse,
+  type EventViewState,
+  type ViewChoices,
+  accountPageParamsSchema,
   commandExecuteRequestSchema,
   commandTransitionRequestSchema,
   eventCalendarDatesSchema,
@@ -9,9 +13,12 @@ import {
   eventLayoutResponseSchema,
   eventLayoutRestoreSchema,
   eventLayoutUpdateSchema,
+  eventLayoutQuerySchema,
   eventListQuerySchema,
   eventPlanningResourceResponseSchema,
   eventUpdateRequestSchema,
+  eventViewStateSchema,
+  eventViewStateUpdateSchema,
   expenseUpdateRequestSchema,
   type FriendsResponse,
   friendInvitationRequestSchema,
@@ -38,6 +45,7 @@ import {
   objectMoveRequestSchema,
   objectSearchQuerySchema,
   noteCreateRequestSchema,
+  pageChoicesUpdateSchema,
   noteListQuerySchema,
   noteUpdateRequestSchema,
   personCreateRequestSchema,
@@ -59,6 +67,7 @@ import {
   taskListQuerySchema,
   taskUpdateRequestSchema,
   userResponseSchema,
+  viewChoicesSchema,
   type WorkspaceMember,
   workspaceMemberAddRequestSchema,
   workspaceMemberRoleRequestSchema,
@@ -67,6 +76,11 @@ import {
 import { byRank, rankBetweenRows } from "../lib/collection-order";
 import { eventPeriod } from "../lib/event-collection";
 import { mergeEventTabs } from "../lib/event-tabs";
+import {
+  applyEventViewUpdate,
+  mergeChoices,
+  resolveEventView,
+} from "../lib/personal-views";
 import { mergeWorkspaceRecency } from "../lib/workspace-recency";
 import { compareNames } from "../lib/format";
 import { sandboxStorageKey } from "./storage-key";
@@ -117,6 +131,10 @@ interface State {
   pendingShares: PendingShare[];
   /** The members of the sample workspace. */
   members: WorkspaceMember[];
+  /** The sample account's own view of each event, by event id, once it saves one. */
+  views: Record<string, EventViewState>;
+  /** The choices the sample account left the Events, Tasks, and People pages with. */
+  pageChoices: Partial<Record<AccountPage, ViewChoices>>;
 }
 
 const friendUserId = "00000000-0000-4000-8000-000000000003";
@@ -520,7 +538,16 @@ function seed(): State {
     shares: [],
     pendingShares: [],
     members: [defaultMember],
+    views: {},
+    pageChoices: {},
   };
+}
+
+/** The entries of a snapshot's map; anything else is refused. */
+function entriesOf(value: unknown): [string, unknown][] {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    throw new Error("Invalid snapshot map.");
+  return Object.entries(value);
 }
 
 function parseState(raw: string): State {
@@ -634,6 +661,24 @@ function parseState(raw: string): State {
   const members = workspaceMemberSchema
     .array()
     .parse("members" in value ? value.members : [defaultMember]);
+  const events = new Set(
+    objects
+      .filter((object) => object.objectType === "event")
+      .map((object) => object.id),
+  );
+  const views = Object.fromEntries(
+    entriesOf("views" in value ? value.views : {})
+      .filter(([eventId]) => events.has(eventId))
+      .map(([eventId, view]) => [eventId, eventViewStateSchema.parse(view)]),
+  );
+  const pageChoices = Object.fromEntries(
+    entriesOf("pageChoices" in value ? value.pageChoices : {}).map(
+      ([page, choices]) => [
+        accountPageParamsSchema.parse({ page }).page,
+        viewChoicesSchema.parse(choices),
+      ],
+    ),
+  );
   return {
     objects,
     relations,
@@ -645,6 +690,8 @@ function parseState(raw: string): State {
     shares,
     pendingShares,
     members,
+    views,
+    pageChoices,
   };
 }
 
@@ -1683,12 +1730,14 @@ export class SandboxStore {
         );
       const method = options.method ?? "GET";
       // The Viewer preview stands for access to the sample records; the
-      // account's own preferences stay its to change, as they do for a
-      // viewer of a real event.
+      // account's own preferences and views stay its to change, as they
+      // do for a viewer of a real event.
       if (
         method !== "GET" &&
         role === "viewer" &&
-        url.pathname !== "/api/auth/me"
+        url.pathname !== "/api/auth/me" &&
+        !/^\/api\/events\/[^/]+\/view$/.test(url.pathname) &&
+        !url.pathname.startsWith("/api/account/pages/")
       )
         throw new SandboxError(
           403,
@@ -1727,6 +1776,18 @@ export class SandboxStore {
         { status: 400 },
       );
     }
+  }
+
+  /** An event's current layout; an event never arranged has no pages yet. */
+  #layoutOf(eventId: string): EventLayoutResponse {
+    return (
+      this.#state.layouts.find((layout) => layout.eventId === eventId) ?? {
+        eventId,
+        version: 0,
+        updatedAt: null,
+        pages: [],
+      }
+    );
   }
 
   #user(): Preferences {
@@ -1770,6 +1831,10 @@ export class SandboxStore {
         ),
       };
     if (collection === "friends" && !id) return this.#state.friends;
+    if (collection === "account" && id === "pages" && !action) {
+      const { page } = accountPageParamsSchema.parse({ page: operation });
+      return { page, choices: this.#state.pageChoices[page] ?? {} };
+    }
     if (collection === "users" && id === "search") {
       const q = (url.searchParams.get("q") ?? "").trim();
       const found =
@@ -2257,14 +2322,16 @@ export class SandboxStore {
           };
         }
         if (action) return undefined;
-        return (
-          this.#state.layouts.find((layout) => layout.eventId === id) ?? {
-            eventId: id,
-            version: 0,
-            updatedAt: null,
-            pages: [],
-          }
+        const layout = this.#layoutOf(id);
+        const { include } = eventLayoutQuerySchema.parse(
+          Object.fromEntries(url.searchParams),
         );
+        return include === "yours"
+          ? {
+              ...layout,
+              yours: resolveEventView(layout, this.#state.views[id] ?? null),
+            }
+          : layout;
       }
       if (operation === "access")
         return {
@@ -2518,6 +2585,52 @@ export class SandboxStore {
         !operation)
     )
       return this.#sectionWrite(method, collection, id, body);
+    if (
+      collection === "events" &&
+      id &&
+      operation === "view" &&
+      !action &&
+      method === "PATCH"
+    ) {
+      // The account's own view of the event: its first save keeps a copy
+      // of the event's defaults, which the change then applies to.
+      if (this.#object(id).objectType !== "event")
+        throw new SandboxError(
+          400,
+          "invalid_request",
+          "Views belong to Events.",
+        );
+      const input = eventViewStateUpdateSchema.parse(body);
+      const layout = this.#layoutOf(id);
+      const view = applyEventViewUpdate(
+        layout,
+        resolveEventView(layout, this.#state.views[id] ?? null),
+        input,
+      );
+      this.#commit({
+        ...this.#state,
+        views: { ...this.#state.views, [id]: view },
+      });
+      return view;
+    }
+    if (
+      collection === "account" &&
+      id === "pages" &&
+      !action &&
+      method === "PATCH"
+    ) {
+      // A page's choices merge by name; null returns one to its default.
+      const { page } = accountPageParamsSchema.parse({ page: operation });
+      const input = pageChoicesUpdateSchema.parse(body);
+      const choices = viewChoicesSchema.parse(
+        mergeChoices(this.#state.pageChoices[page] ?? {}, input.choices),
+      );
+      this.#commit({
+        ...this.#state,
+        pageChoices: { ...this.#state.pageChoices, [page]: choices },
+      });
+      return { page, choices };
+    }
     if (collection === "account" && !id && method === "PATCH") {
       // The name, the discovery switches, and the Welcome step's
       // completion; the username was chosen at sign-up.
