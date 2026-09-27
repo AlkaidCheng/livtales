@@ -111,10 +111,11 @@ export function ItineraryPanel({
     setCopied((await copyText(daySheetText(sheet))) ? t("copied") : "");
   }
 
-  // A horizontal swipe on the sheet turns a day, on a touch screen only.
+  // A horizontal swipe on the day's sheet turns a day, on a touch screen
+  // only; the event's tab swipe steps aside there.
   const press = useRef<{ id: number; x: number; y: number } | null>(null);
   function onPointerDown(pointer: ReactPointerEvent<HTMLElement>) {
-    if (pointer.pointerType !== "touch") return;
+    if (pointer.pointerType !== "touch" || view === "list") return;
     press.current = {
       id: pointer.pointerId,
       x: pointer.clientX,
@@ -214,6 +215,7 @@ export function ItineraryPanel({
       )}
       <div
         className="day-sheet-pages"
+        data-own-swipe={view === "list" ? undefined : ""}
         onPointerCancel={() => {
           press.current = null;
         }}

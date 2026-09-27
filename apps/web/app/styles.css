@@ -2925,6 +2925,34 @@ p[role="alert"] {
   padding: 0;
 }
 
+/* The content under the strip, which a sideways swipe on a touch screen
+   moves between the tabs: the browser keeps the vertical scroll and the
+   pinch. The leaving layer shares the content's cell and holds a still
+   copy of the tab that slides out as its neighbour slides in; the page
+   clips both at its sides. */
+.event-swipe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  touch-action: pan-y pinch-zoom;
+}
+
+.event-swipe > * {
+  grid-area: 1 / 1;
+}
+
+.event-swipe[data-swiping] {
+  user-select: none;
+}
+
+.event-swipe-leaving {
+  align-self: start;
+  pointer-events: none;
+}
+
+.event-workspace:has(> .event-swipe[data-swiping]) {
+  overflow-x: clip;
+}
+
 .locked-reference {
   align-items: center;
   color: var(--muted);
