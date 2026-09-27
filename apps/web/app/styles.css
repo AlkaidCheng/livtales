@@ -9424,6 +9424,11 @@ html:has(.event-create-dialog[open]) {
 /* A touch held on a tab or the chip opens Manage tabs: no callout or
    selection meanwhile, and no tap delay. */
 .event-strip .event-tab,
+/* The chip's count keeps one width per digit, so a count one higher never
+   reads narrower. */
+.event-strip-fold {
+  font-variant-numeric: tabular-nums;
+}
 .event-strip-more .icon-control {
   -webkit-touch-callout: none;
   touch-action: manipulation;
