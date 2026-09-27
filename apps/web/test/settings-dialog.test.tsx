@@ -313,12 +313,17 @@ describe("the Settings dialog", () => {
     expect(window.sessionStorage.getItem("chronelle.session")).toBeNull();
   });
 
-  it("keeps the clock, week start, and zone on the account and applies them at once", async () => {
-    const user = userEvent.setup();
+  /** Settings at Language & time, inside the rail. */
+  async function openLanguageAndTime() {
     renderAt("language", inShell);
     expect(
       await screen.findByRole("button", { name: "Language & time" }),
     ).toHaveAttribute("aria-current", "page");
+  }
+
+  it("keeps the clock on the account and applies it at once", async () => {
+    const user = userEvent.setup();
+    await openLanguageAndTime();
     // Each setting is a row whose label names its menu and whose caption
     // describes it; the clock's caption is the moment it shows.
     // From language names what the language comes to.
@@ -344,20 +349,30 @@ describe("the Settings dialog", () => {
     expect(screen.getByText(/^Now: /)).toHaveTextContent(
       /Now: \w{3} \d{1,2}, \d{4}, \d{2}:\d{2}$/,
     );
+  });
 
+  it("keeps the week start on the account and applies it at once", async () => {
+    const user = userEvent.setup();
+    await openLanguageAndTime();
     const week = screen.getByRole("combobox", { name: "Week starts on" });
-    expect(week).toHaveTextContent("From language (Sunday)");
+    await waitFor(() =>
+      expect(week).toHaveTextContent("From language (Sunday)"),
+    );
     await chooseFromMenu(user, week, "Monday");
     await waitFor(async () =>
       expect((await storedPreferences()).weekStart).toBe(1),
     );
     expect(activeTimePreferences().weekStart).toBe(1);
     expect(week).toHaveTextContent("Monday");
+  });
 
+  it("keeps the zone on the account from a picker that finds it by country", async () => {
+    const user = userEvent.setup();
+    await openLanguageAndTime();
     // The zone is a picker: its button names the device's zone until one
     // is chosen, and opens a list that finds a zone by city or country.
     const zone = screen.getByRole("combobox", { name: "Time zone" });
-    expect(zone).toHaveTextContent(/^Device · /);
+    await waitFor(() => expect(zone).toHaveTextContent(/^Device · /));
     expect(zone).toHaveAccessibleDescription(
       "Times are shown in this zone. Device follows wherever you are.",
     );
@@ -370,7 +385,9 @@ describe("the Settings dialog", () => {
     expect(
       within(picker).getByRole("option", { name: /^Device time zone/ }),
     ).toHaveAttribute("aria-selected", "true");
-    await user.type(search, "japan");
+    // The query arrives whole: each keystroke would filter the full list
+    // again, which the picker's own tests cover.
+    fireEvent.change(search, { target: { value: "japan" } });
     const tokyo = within(picker).getByRole("option", { name: /^Tokyo/ });
     expect(tokyo).toHaveTextContent("UTC+09:00");
     expect(
