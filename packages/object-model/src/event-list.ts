@@ -160,8 +160,14 @@ const schedulePosition = sql`coalesce(${events.startsAt}, ${events.startsOn}::ti
 
 const foldedName = sql<string>`lower(${objects.displayName}) COLLATE "C"`;
 
+/**
+ * The keyset order of a list and the position after a cursor. Date order
+ * runs forward from the earliest start, undated last; the Past list runs
+ * back from the most recent start instead.
+ */
 function eventOrder(
   sort: EventListQuery["sort"],
+  filter: EventListQuery["filter"],
   cursor: EventListCursor | undefined,
 ) {
   const afterName =
@@ -188,18 +194,21 @@ function eventOrder(
       };
     }
     case "date": {
+      const back = filter === "past";
       const time = sql`${cursor?.startsAt}::timestamptz`;
       const after =
         cursor?.startsAt === null
           ? and(isNull(schedulePosition), afterName)
           : or(
               isNull(schedulePosition),
-              gt(schedulePosition, time),
+              back ? lt(schedulePosition, time) : gt(schedulePosition, time),
               and(eq(schedulePosition, time), afterName),
             );
       return {
         order: [
-          sql`${schedulePosition} ASC NULLS LAST`,
+          back
+            ? sql`${schedulePosition} DESC NULLS LAST`
+            : sql`${schedulePosition} ASC NULLS LAST`,
           asc(foldedName),
           asc(objects.id),
         ],
@@ -268,7 +277,7 @@ export async function listEventPage(
   const cursor = readPosition(input.cursor, context);
   // Period membership is stable across pages; authorization uses its own fresh clock.
   const asOf = cursor?.asOf ?? new Date().toISOString().replace("Z", "000Z");
-  const { order, after } = eventOrder(input.sort, cursor);
+  const { order, after } = eventOrder(input.sort, input.filter, cursor);
   const pattern = `%${input.query.replace(/[\\%_]/g, "\\$&")}%`;
 
   return withReadAuthorization(database, async (transaction, authorization) => {

@@ -2103,12 +2103,15 @@ export class SandboxStore {
             ).size,
           },
         }));
+      // Date order runs forward, undated last; Past runs back.
+      const back = query.filter === "past" ? -1 : 1;
       items.sort((a, b) =>
         query.sort === "name"
           ? compareNames(a.displayName, b.displayName)
           : query.sort === "updated"
             ? b.updatedAt.localeCompare(a.updatedAt)
-            : (a.startsOn ?? a.startsAt ?? "z").localeCompare(
+            : back *
+              (a.startsOn ?? a.startsAt ?? "z").localeCompare(
                 b.startsOn ?? b.startsAt ?? "z",
               ),
       );

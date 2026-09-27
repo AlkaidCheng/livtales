@@ -144,6 +144,25 @@ describe("CloudBaseEventReadRepository", () => {
     expect(second.nextCursor).toBeNull();
   });
 
+  it("runs the Past list back from the most recent start across pages", async () => {
+    const later = new Date("2030-02-01T00:00:00.000Z");
+    const repository = new CloudBaseEventReadRepository(client(), () => later);
+    const first = await repository.listEvents(principal, {
+      filter: "past",
+      limit: 1,
+      sort: "date",
+    });
+    expect(first.items.map((event) => event.id)).toEqual([secondId]);
+    const second = await repository.listEvents(principal, {
+      cursor: first.nextCursor ?? undefined,
+      filter: "past",
+      limit: 1,
+      sort: "date",
+    });
+    expect(second.items.map((event) => event.id)).toEqual([firstId]);
+    expect(second.nextCursor).toBeNull();
+  });
+
   it("does not return objects outside the principal grant scope", async () => {
     const repository = new CloudBaseEventReadRepository(client(), () => now);
     const result = await repository.listEvents(principal, { limit: 10 });

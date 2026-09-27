@@ -354,7 +354,7 @@ describe.sequential("event collection pagination", () => {
       (await reader.listEvents(principal, { filter: "past" })).items.map(
         ({ id }) => id,
       ),
-    ).toEqual([past, boundary]);
+    ).toEqual([boundary, past]);
     expect(
       (await reader.listEvents(principal, { filter: "unscheduled" })).items.map(
         ({ id }) => id,
@@ -373,6 +373,40 @@ describe.sequential("event collection pagination", () => {
         })
       ).items,
     ).toEqual([]);
+  });
+
+  it("runs the Past list back from the most recent start across pages", async () => {
+    const { reader, principal, ids } = await fixture(4, 0);
+    const [dateOnly, recent, midnight, future] = ids;
+    if (!dateOnly || !recent || !midnight || !future)
+      throw new Error("Expected dated fixtures");
+    const db = database.connection.db;
+    for (const [id, schedule, displayName] of [
+      [dateOnly, { startsOn: "2020-05-01" }, "Beta"],
+      [recent, { startsAt: new Date("2021-03-01T10:00:00Z") }, "Recent"],
+      [midnight, { startsAt: new Date("2020-05-01T00:00:00Z") }, "Alpha"],
+      [future, { startsAt: new Date("2099-01-01T00:00:00Z") }, "Future"],
+    ] as const) {
+      await db.update(events).set(schedule).where(eq(events.objectId, id));
+      await db.update(objects).set({ displayName }).where(eq(objects.id, id));
+    }
+    const walk = async (filter: EventListQueryInput["filter"]) => {
+      const found: string[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await reader.listEvents(principal, {
+          filter,
+          limit: 1,
+          cursor,
+        });
+        found.push(...page.items.map(({ id }) => id));
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor !== undefined && found.length <= ids.length);
+      return found;
+    };
+    // A date-only start ties with a midnight UTC start and yields to its name.
+    expect(await walk("past")).toEqual([recent, midnight, dateOnly]);
+    expect(await walk("all")).toEqual([midnight, dateOnly, recent, future]);
   });
 
   it("excludes scoped children, tombstones, unrelated users and other workspaces", async () => {
