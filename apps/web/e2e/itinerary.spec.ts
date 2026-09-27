@@ -97,6 +97,10 @@ test("adds a trip's itinerary, reads a day sheet with places and gaps, turns day
   await expect(card).toContainText(
     "One day at a time: the running order with times, places and the gaps between.",
   );
+  // A new event's strip holds the Overview and To-dos; the card puts the
+  // Itinerary on it.
+  await expect(card).toHaveAttribute("aria-pressed", "false");
+  await card.click();
   await expect(card).toHaveAttribute("aria-pressed", "true");
   await gallery.getByRole("button", { name: "Done" }).click();
 

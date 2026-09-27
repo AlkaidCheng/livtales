@@ -23,7 +23,7 @@ const hans = {
   more: "\u66f4\u591a",
   events: "\u6d3b\u52a8",
   views: "\u6d3b\u52a8\u89c6\u56fe",
-  files: "\u6587\u4ef6",
+  overview: "\u6982\u89c8",
   loaded: /\u5df2\u52a0\u8f7d \d+ \u4e2a\u6d3b\u52a8/,
   range: "2030\u5e747\u67083\u65e5 \u81f3 2030\u5e747\u670812\u65e5",
   newTask: "\u65b0\u5efa\u4efb\u52a1",
@@ -66,7 +66,7 @@ const hant = {
   system: "\u8ddf\u96a8\u7cfb\u7d71",
   events: "\u6d3b\u52d5",
   views: "\u6d3b\u52d5\u6aa2\u8996",
-  files: "\u6a94\u6848",
+  overview: "\u6982\u89bd",
 };
 
 /**
@@ -165,7 +165,7 @@ test("switches the workspace to Simplified and Traditional Chinese and back @web
   await page.goto(eventUrl);
   await expect(
     page.getByRole("tablist", { name: hans.views, exact: true }),
-  ).toContainText(hans.files);
+  ).toContainText(hans.overview);
   await expect(page.locator(".event-date")).toHaveText(hans.range);
   await expect(
     (await workspaceNavigation(page, hans.navigation)).getByRole("link", {
@@ -305,7 +305,7 @@ test("switches the workspace to Simplified and Traditional Chinese and back @web
   await page.getByRole("link", { name: /Summer vacation/ }).click();
   await expect(
     page.getByRole("tablist", { name: hant.views, exact: true }),
-  ).toContainText(hant.files);
+  ).toContainText(hant.overview);
 
   // System follows the browser, which speaks English under test; the
   // account forgets its language with it, so a reload keeps English.
@@ -314,7 +314,7 @@ test("switches the workspace to Simplified and Traditional Chinese and back @web
   await page.goto(eventUrl);
   await expect(
     page.getByRole("tablist", { name: "Event views", exact: true }),
-  ).toContainText("Files");
+  ).toContainText("Overview");
   await expect(page.locator(".event-date")).toHaveText(
     "Jul 3, 2030 to Jul 12, 2030",
   );

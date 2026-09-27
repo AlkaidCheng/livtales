@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
 import { openTaskEditor } from "./helpers/task-add";
+import { openAddPage } from "./helpers/event-view";
 
 test("saves composed pages through the API and keeps canonical tasks after layout removal", async ({
   page,
@@ -20,12 +21,14 @@ test("saves composed pages through the API and keeps canonical tasks after layou
   await page.getByRole("button", { name: "New event", exact: true }).click();
   await page.getByLabel("Event name").fill("Summer vacation");
   await page.getByRole("button", { name: "Create event", exact: true }).click();
-  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+$/u);
+  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+\?view=overview$/u);
   const eventId = new URL(page.url()).pathname.split("/").at(-1);
+  // A new event opens on its Overview, with Overview and To-dos alone on
+  // the strip; its first page starts from the gallery.
   await expect(
-    page.getByRole("button", { name: "Add a page", exact: true }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+    page.getByRole("tab", { name: "Overview", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await openAddPage(page);
   await page.getByLabel("Page name").fill("Preparation");
   await page
     .getByRole("dialog")

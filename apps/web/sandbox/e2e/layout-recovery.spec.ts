@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { choosePageOption } from "../../e2e/helpers/quiet-chrome";
+import { openAddPage } from "../../e2e/helpers/event-view";
 
 const sandboxUrl = new URL(
   "../../../../.livtales/sandbox/livtales.html",
@@ -15,7 +16,7 @@ test("recovers an offline layout across reloads and previews read-only history",
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(sandboxUrl);
   await page.getByRole("link", { name: /Autumn gathering/ }).click();
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   await page.getByLabel("Page name").fill("Preparation");
   await page
     .getByRole("dialog")

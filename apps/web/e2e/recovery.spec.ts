@@ -20,7 +20,7 @@ test("recovers canonical objects and independent context links", async ({
   await page.getByRole("button", { name: "New event" }).click();
   await page.getByLabel("Event name").fill("Recovery workshop");
   await page.getByRole("button", { name: "Create event" }).click();
-  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+$/u);
+  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+\?view=overview$/u);
   const eventUrl = page.url();
   await openEventView(page, "To-dos");
   await openTaskEditor(page);

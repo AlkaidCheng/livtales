@@ -1,13 +1,15 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
 import { expectHorizontalReflow } from "./page-navigation";
 import { choosePageOption } from "./quiet-chrome";
+import { openAddPage } from "./event-view";
 
 export async function exercisePagePresets(page: Page, testInfo: TestInfo) {
   const add = page.getByRole("button", { name: "Add page", exact: true });
   const dialog = page.getByRole("dialog", { name: "Add a page" });
   const name = dialog.getByRole("textbox", { name: "Page name" });
   const preview = dialog.getByRole("region", { name: "Page preview" });
-  await add.click();
+  // The first page starts from the gallery; later ones from the strip.
+  await openAddPage(page);
   await expect(name).toBeFocused();
   await expect(
     dialog.getByRole("radio", { name: "Blank", exact: true }),

@@ -88,7 +88,7 @@ test("organizes events and keeps navigation usable across reloads and screen siz
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByRole("button", { name: "New event" })).toBeFocused();
   await page.getByRole("link", { name: /Autumn gathering/u }).click();
-  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+$/u);
+  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+\?view=overview$/u);
   await openEventView(page, "Overview");
   await expect(
     page.getByRole("heading", { name: "Next up", exact: true }),

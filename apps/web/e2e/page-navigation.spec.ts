@@ -61,7 +61,8 @@ test("keeps named pages bookmarkable through views and workspace navigation @web
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/);
-  await page.goto(`/events/${event.id}`);
+  // A first visit opens on the Overview; the journey starts on the pages.
+  await page.goto(`/events/${event.id}?view=pages`);
   await exercisePageNavigation(page, testInfo);
   expect(
     (await (await request.get(layoutUrl, { headers })).json()).version,

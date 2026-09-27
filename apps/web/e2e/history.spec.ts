@@ -15,7 +15,7 @@ test("compares and restores history while preserving an open draft @webkit-deskt
   await page.getByRole("button", { name: "New event" }).click();
   await page.getByLabel("Event name").fill(original);
   await page.getByRole("button", { name: "Create event" }).click();
-  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+$/u);
+  await expect(page).toHaveURL(/\/events\/[0-9a-f-]+\?view=overview$/u);
   await page.getByRole("button", { name: "Edit event" }).click();
   await page.getByLabel("Name", { exact: true }).fill(revised);
   await page.getByRole("button", { name: "Save event" }).click();

@@ -138,7 +138,9 @@ test("shows the events shared with an account beside its own, opens one in place
   // with the access line (a tag beside the date on a phone), without a
   // workspace switch.
   await kyotoCard.click();
-  await expect(page).toHaveURL(new RegExp(`/events/${kyoto.id}$`, "u"));
+  await expect(page).toHaveURL(
+    new RegExp(`/events/${kyoto.id}\\?view=overview$`, "u"),
+  );
   await expect(
     page.getByRole("heading", { name: "Kyoto in November", level: 1 }),
   ).toBeVisible();

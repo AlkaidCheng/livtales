@@ -64,6 +64,12 @@ export async function exerciseContextCommands(
     await page.keyboard.press("Escape");
   }
 
+  // Before its first page the event's strip has no Add page button: the
+  // command opens the dialog itself, and Escape returns focus to where it
+  // was before the commands opened.
+  await page.evaluate(() =>
+    document.activeElement?.setAttribute("data-command-origin", ""),
+  );
   await openCommands(page);
   await dialog.getByRole("option", { name: /Add page/ }).click();
   const pageDialog = page.getByRole("dialog", {
@@ -72,9 +78,12 @@ export async function exerciseContextCommands(
   });
   await expect(pageDialog.getByLabel("Page name")).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(
-    page.getByRole("button", { name: "Add page", exact: true }),
-  ).toBeFocused();
+  await expect(page.locator("[data-command-origin]")).toBeFocused();
+  await page.evaluate(() =>
+    document
+      .querySelector("[data-command-origin]")
+      ?.removeAttribute("data-command-origin"),
+  );
   await openCommands(page);
   await dialog.getByRole("option", { name: /Add page/ }).click();
   const pageName = "Preparations, reservations, and quiet afternoons together";

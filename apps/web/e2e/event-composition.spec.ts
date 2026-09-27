@@ -43,7 +43,8 @@ test("persists composition moves through the authorized versioned layout API", a
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/);
-  await page.goto(`/events/${event.id}`);
+  // A first visit opens on the Overview; the journey starts on the pages.
+  await page.goto(`/events/${event.id}?view=pages`);
   await choosePageOption(page, "Arrange components");
   const changed = page.waitForResponse(
     (response) =>

@@ -53,28 +53,35 @@ export async function createFirstPlan(page: Page, testInfo: TestInfo) {
   await expectNoDates(create);
   await page.keyboard.insertText("A first gathering");
   await page.keyboard.press("Enter");
+  // A new event opens on its Overview; its first page starts from the
+  // gallery behind the strip's plus.
   await expect(
-    page.getByRole("button", { name: "Add a page", exact: true }),
-  ).toBeVisible();
+    page.getByRole("tab", { name: "Overview", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".event-date")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Set dates", exact: true }),
   ).toBeVisible();
   await expectHorizontalReflow(page);
-  const addPage = page.getByRole("button", { name: "Add page", exact: true });
-  await tabTo(page, addPage);
+  const addView = page.getByRole("button", { name: "Add a view", exact: true });
+  await tabTo(page, addView);
   await page.screenshot({
     path: testInfo.outputPath("first-event.png"),
   });
 
-  await activateWithKeyboard(page, addPage);
+  const newPage = page
+    .getByRole("dialog", { name: "Add to A first gathering" })
+    .getByRole("button", { name: "New page", exact: true });
+  await page.keyboard.press("Enter");
+  await activateWithKeyboard(page, newPage);
   const dialog = page.getByRole("dialog", { name: "Add a page" });
   await expect(
     dialog.getByRole("button", { name: "About this dialog" }),
   ).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(addPage).toBeFocused();
+  await expect(addView).toBeFocused();
   await page.keyboard.press("Enter");
+  await activateWithKeyboard(page, newPage);
   await expect(dialog.getByLabel("Page name")).toBeFocused();
   await page.keyboard.insertText("Preparation");
   await page.keyboard.press("Enter");

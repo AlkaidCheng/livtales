@@ -63,7 +63,8 @@ test("undoes and redoes edits by name, keeps layout undo apart, and previews his
   // The sign-in lands on the collection before the journey moves on;
   // leaving earlier races that redirect.
   await expect(page).toHaveURL(/\/events$/u);
-  await page.goto(`/events/${event.id}`);
+  // A first visit opens on the Overview; the journey starts on the pages.
+  await page.goto(`/events/${event.id}?view=pages`);
 
   // Nothing to undo yet: the item says so and cannot run.
   let more = await openMore(page, "Autumn retreat");

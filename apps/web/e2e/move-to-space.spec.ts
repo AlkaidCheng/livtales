@@ -120,7 +120,9 @@ test("moves an event into a shared space after naming the links it removes @webk
   await expect(
     page.getByText("Moved Garden wedding to Our wedding. Removed 2 links."),
   ).toBeVisible();
-  await expect(page).toHaveURL(new RegExp(`/events/${wedding.id}$`, "u"));
+  await expect(page).toHaveURL(
+    new RegExp(`/events/${wedding.id}(?:\\?.*)?$`, "u"),
+  );
   await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toHaveText(
     /^Our wedding\s*\/\s*Events$/u,
   );

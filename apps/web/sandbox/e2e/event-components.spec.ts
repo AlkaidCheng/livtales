@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openAddPage } from "../../e2e/helpers/event-view";
 
 const sandboxUrl = new URL(
   "../../../../.livtales/sandbox/livtales.html",
@@ -14,7 +15,7 @@ test("inserts mixed components offline and edits one schedule across three proje
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(sandboxUrl);
   await page.getByRole("link", { name: /Autumn gathering/ }).click();
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   await page.getByLabel("Page name").fill("On the day");
   await page
     .getByRole("dialog")

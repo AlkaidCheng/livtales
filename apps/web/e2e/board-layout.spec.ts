@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
 import { chooseLayout } from "./helpers/component-views";
 import { today } from "./helpers/today";
+import { openAddPage } from "./helpers/event-view";
 
 /** A calendar day some days from today, as a due date field takes it. */
 function dayFromToday(offset: number): string {
@@ -59,7 +60,7 @@ test("lays the To-dos out as a board of the days that hold tasks, Overdue and To
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Wedding countdown/ }).click();
   // A page's To-dos component keeps its layout with the page.
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   const addPage = page.getByRole("dialog", { name: "Add a page" });
   await addPage.getByLabel("Page name").fill("Preparation");
   await addPage.getByRole("button", { name: "Add page", exact: true }).click();

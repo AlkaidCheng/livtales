@@ -2,9 +2,10 @@ import { expect, type Page, type TestInfo } from "@playwright/test";
 import { openCommands } from "./context-commands";
 import { expectHorizontalReflow } from "./page-navigation";
 import { choosePageOption, pageOptions } from "./quiet-chrome";
+import { openAddPage } from "./event-view";
 
 export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
-  await page.getByRole("button", { name: "Add page", exact: true }).click();
+  await openAddPage(page);
   const addPage = page.getByRole("dialog", { name: "Add a page" });
   await addPage.getByLabel("Page name").fill("Preparation");
   await addPage.getByRole("button", { name: "Add page", exact: true }).click();
