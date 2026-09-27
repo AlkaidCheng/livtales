@@ -44,13 +44,15 @@ describe("the Events list's folds", () => {
     window.sessionStorage.clear();
   });
 
-  it("starts the years before this one folded in Past alone", () => {
+  it("starts the years before this one folded in Past and All", () => {
     expect(foldedByDefault("past", "2025", "2026")).toBe(true);
+    expect(foldedByDefault("all", "2025", "2026")).toBe(true);
     expect(foldedByDefault("past", "2026", "2026")).toBe(false);
+    expect(foldedByDefault("all", "2027", "2026")).toBe(false);
     expect(foldedByDefault("past", "2025-12", "2026")).toBe(false);
-    expect(foldedByDefault("past", "undated", "2026")).toBe(false);
+    expect(foldedByDefault("all", "undated", "2026")).toBe(false);
     expect(foldedByDefault("upcoming", "2025", "2026")).toBe(false);
-    expect(foldedByDefault("all", "2025", "2026")).toBe(false);
+    expect(foldedByDefault("unscheduled", "2025", "2026")).toBe(false);
     expect(foldedByDefault("past", "2025", null)).toBe(false);
   });
 

@@ -67,8 +67,9 @@ function writeFolds(account: string, folds: StoredFolds): void {
 }
 
 /**
- * Whether a heading starts folded before any choice: in Past, the years
- * before this one, so the list opens on recent months.
+ * Whether a heading starts folded before any choice: in Past and in All
+ * (whose Mine and Shared share its folds), the years before this one, so
+ * either list opens near the present.
  */
 export function foldedByDefault(
   list: EventFoldList,
@@ -76,7 +77,7 @@ export function foldedByDefault(
   thisYear: string | null,
 ): boolean {
   return (
-    list === "past" &&
+    (list === "past" || list === "all") &&
     thisYear !== null &&
     /^\d{4}$/.test(key) &&
     key < thisYear
