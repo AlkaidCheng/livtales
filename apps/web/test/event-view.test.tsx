@@ -3,7 +3,12 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseEventView } from "../lib/event-views";
-import { useEventPage, useEventView } from "../lib/use-event-view";
+import {
+  landOnEventPlace,
+  useEventAddress,
+  useEventPage,
+  useEventView,
+} from "../lib/use-event-view";
 
 afterEach(() => {
   cleanup();
@@ -22,8 +27,10 @@ describe("event view navigation", () => {
     act(() => result.current[1]("todos"));
     expect(result.current[0]).toBe("todos");
     expect(window.location.search).toBe("?view=todos&ref=collection");
+    // The Pages view without a page is named, so the address never reads
+    // as an event just opened.
     act(() => result.current[1]("pages"));
-    expect(window.location.search).toBe("?ref=collection");
+    expect(window.location.search).toBe("?view=pages&ref=collection");
     act(() => {
       window.history.replaceState(null, "", "/events/plan?view=files");
       window.dispatchEvent(new PopStateEvent("popstate"));
@@ -74,6 +81,47 @@ describe("event view navigation", () => {
     const { result } = renderHook(useEventPage);
     const length = window.history.length;
     act(() => result.current[1]("preparation"));
+    expect(window.history.length).toBe(length);
+  });
+  it("reads an event's address as just opened, placed, or left", () => {
+    window.history.replaceState(null, "", "/events/plan?ref=collection");
+    const { result } = renderHook(() => useEventAddress("plan"));
+    expect(result.current).toBe("bare");
+    act(() => {
+      window.history.replaceState(null, "", "/events/plan?view=calendar");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(result.current).toBe("placed");
+    act(() => {
+      window.history.replaceState(null, "", "/events/plan?page=travel");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(result.current).toBe("placed");
+    // The Events list names neither, but it is not the event.
+    act(() => {
+      window.history.replaceState(null, "", "/events");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(result.current).toBe("away");
+  });
+  it("names a chosen page alone, without the Pages view beside it", () => {
+    window.history.replaceState(null, "", "/events/plan?view=pages");
+    const { result } = renderHook(useEventPage);
+    act(() => result.current[1]("travel"));
+    expect(window.location.search).toBe("?page=travel");
+  });
+  it("lands on a place in place of the bare address, without a history entry", () => {
+    window.history.replaceState(null, "", "/events/plan?ref=collection");
+    const length = window.history.length;
+    act(() => landOnEventPlace({ view: "calendar" }));
+    expect(window.location.search).toBe("?ref=collection&view=calendar");
+    window.history.replaceState(null, "", "/events/plan");
+    act(() =>
+      landOnEventPlace({ page: "01a0b355-cad8-73d2-89f8-0a12abf66601" }),
+    );
+    expect(window.location.search).toBe(
+      "?page=01a0b355-cad8-73d2-89f8-0a12abf66601",
+    );
     expect(window.history.length).toBe(length);
   });
 });

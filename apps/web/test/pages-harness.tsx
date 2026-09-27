@@ -20,7 +20,7 @@ export function PagesHarness({
         selectedPageId={state.selectedPage?.id}
         showingPages
         onSelectPage={state.selectPage}
-        canAddPage={state.canAddPage}
+        canAddPage={state.canAddPage && state.pages.length > 0}
         onAddPage={() => state.setAdding({ pageId: null })}
         addPageRef={state.addPageButton}
         pageMenu={state.pageMenu}

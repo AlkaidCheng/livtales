@@ -6956,6 +6956,13 @@ html:has(.event-create-dialog[open]) {
   padding: 18px 28px;
   border-top: 1px solid var(--line);
 }
+/* The gallery's New page sits apart at the footer's start. */
+.gallery-new-page {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  margin-right: auto;
+}
 @media (max-width: 480px) {
   .event-create-header {
     padding: 20px 18px 16px;

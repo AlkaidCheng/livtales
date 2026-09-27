@@ -18,6 +18,16 @@ export const fixedViews: ReadonlySet<EventView> = new Set<EventView>([
   "removed-links",
 ]);
 
+/**
+ * The views a new event's strip shows before the account arranges it: the
+ * Overview and To-dos. The other views wait in the gallery; Sharing and
+ * Removed links, which cannot be removed, start hidden.
+ */
+export const defaultViews: ReadonlySet<EventView> = new Set<EventView>([
+  "overview",
+  "todos",
+]);
+
 /** The views the gallery offers: the specialized components, not the Overview or the recovery list. */
 export const galleryViews: readonly EventView[] = stripViews.filter(
   (view) => view !== "overview" && view !== "removed-links",
@@ -38,14 +48,25 @@ export interface TabArrangement {
  * and views it does not name follow in default order; keys the app does
  * not know are ignored. Hidden keys are kept as given, since they name
  * pages as well as views.
+ *
+ * With `defaults`, a view the preference never placed on the strip starts
+ * as a new event's does (see `defaultViews`): off the event, or hidden
+ * when it cannot be removed. A preference once kept names every view the
+ * strip showed, so an arranged strip keeps its views.
  */
 export function arrangeEventTabs(
   tabs: EventTabsPreference,
   known: readonly EventView[],
+  { defaults = true }: { readonly defaults?: boolean } = {},
 ): TabArrangement {
+  const placed = new Set(tabs.order ?? []);
+  const unplaced = (view: EventView) =>
+    defaults && !placed.has(view) && !defaultViews.has(view);
   const removed = new Set(
     known.filter(
-      (view) => !fixedViews.has(view) && (tabs.removed ?? []).includes(view),
+      (view) =>
+        !fixedViews.has(view) &&
+        ((tabs.removed ?? []).includes(view) || unplaced(view)),
     ),
   );
   const offered = known.filter((view) => !removed.has(view));
@@ -54,7 +75,10 @@ export function arrangeEventTabs(
   );
   return {
     order: [...kept, ...offered.filter((view) => !kept.includes(view))],
-    hidden: new Set(tabs.hidden ?? []),
+    hidden: new Set([
+      ...(tabs.hidden ?? []),
+      ...offered.filter((view) => fixedViews.has(view) && unplaced(view)),
+    ]),
     removed,
   };
 }
