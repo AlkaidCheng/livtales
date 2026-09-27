@@ -238,11 +238,31 @@ place of Move to Trash: the card goes at once and a notice offers Undo for
 a few seconds; the account's grants are dropped once the notice has gone
 without it, so an Undo costs nothing and needs no share to be given back.
 
-Each event is one compact card of a fixed height: a date tile (the month
-over the day; TBD for an event without a date; muted for a past one), the
-name on one line, the dates on a muted line under it ("Date to be decided"
-for an undated event), and the third line for sharing. The whole card is
-the link; there is no period label and no arrow. The Grid layout is two
+In Event date order the list runs by year, then month: a year heading in
+the display face starts each year and a month heading in small capitals,
+with its count at the right ("October", "2 events"), starts each month,
+both worded in the app's language. Upcoming runs forward from today and
+Past runs back, the most recent first; All runs forward from the earliest
+event. An event sits under the month it starts in (a multi-day one too),
+a timed start placed in the account's time zone, and undated events close
+the list under No date yet. A continued page adds to the months already
+shown, so a month keeps one heading, and the counts are of the events
+loaded. Each heading is a button (with its expanded state) that folds its
+group to that one line and opens it again, its chevron turned while
+folded; a folded year hides its months and shows its own count. In Past
+the years before this one start folded, so the list opens on recent
+months. The folds are kept in this browser for the account, each list
+(All, Upcoming, Past, Unscheduled) its own; while a name is typed every
+heading starts open and a fold lasts for that name alone, so no match is
+hidden. Name A-Z and Recently updated keep one list without headings.
+
+Each event is one compact card of a fixed height: the name on one line,
+the dates on a muted line under it with the place after a middle dot
+("Date to be decided" for an undated event), and the third line for
+sharing; a past event's name reads muted. The copy takes the card's
+flexible width, so a mark of the event's own can later stand at its left.
+The whole card is the link; there is no period label and no arrow. On a
+wide screen the headings run across the grid. The Grid layout is two
 columns of cards in a wider column than the lists; the List layout is the
 same object as rows in the lists' column, ruled like the other lists. Two
 controls surface at a card's right edge on hover or focus (and stay
@@ -967,7 +987,8 @@ not yet reviewed the two Chinese catalogs; wording may change.
   Session changes clear the draft immediately without confirmation.
 - Filter the authorized event collection by name and date, and sort by date,
   last update, or name. Upcoming includes events still in progress. Events with
-  no end date move to Past once their start time passes.
+  no end date move to Past once their start time passes. In date order Past
+  lists the most recent event first.
 - Name, period, and sort selections survive in-app navigation. Returning from
   an Event restores its card position and keyboard focus after loading settles;
   interacting while waiting cancels the restoration. Removed cards fall back to
@@ -978,9 +999,11 @@ not yet reviewed the two Chinese catalogs; wording may change.
 - Collection criteria and return references stay in memory, not URLs or browser
   storage. Reload, sign-out, identity replacement, and space changes reset
   them. These temporary preferences are not saved views or shared bookmarks.
-- Choose grid or list layout. Only this preference is saved in local browser
+- Choose grid or list layout. This preference and the folded year and month
+  headings (keyed by the account and the list) are saved in local browser
   storage; no object data, search text, or permissions are persisted there.
-  Storage restrictions do not prevent using either layout.
+  Storage restrictions do not prevent using either layout or folding a
+  heading for the visit.
 - Event views have bookmarkable URLs, such as `/events/OBJECT_ID?view=calendar`.
   Reload and browser Back/Forward preserve the selected view. An event
   opened at an address that names neither a view nor a page returns to

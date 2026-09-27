@@ -1,7 +1,6 @@
 import type { EventResponse } from "@livtales/schemas";
 import { calendarDateSchema } from "@livtales/schemas";
 import { activeLocale, tr } from "../i18n/active-locale";
-import { instantOptions } from "../i18n/active-preferences";
 import { formatDateTime, fromDateTimeInput, toDateTimeInput } from "./format";
 
 export interface EventScheduleDraft {
@@ -93,18 +92,4 @@ export function formatEventSchedule(
   return event.endsAt === null
     ? start
     : range(start, formatDateTime(event.endsAt));
-}
-
-export function formatEventDatePart(
-  event: EventResponse,
-  part: "month" | "day",
-): string {
-  const value = event.startsOn ?? event.startsAt;
-  if (value === null) return tr("dates")(part === "month" ? "tbd" : "noDay");
-  return new Intl.DateTimeFormat(activeLocale(), {
-    ...(part === "month"
-      ? { month: "short" as const }
-      : { day: "numeric" as const }),
-    ...(event.startsOn ? { timeZone: "UTC" } : instantOptions()),
-  }).format(new Date(event.startsOn ? `${value}T00:00:00Z` : value));
 }

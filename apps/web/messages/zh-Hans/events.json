@@ -32,6 +32,8 @@
     "list": "列表"
   },
   "undated": "日期待定",
+  "noDate": "暂无日期",
+  "groupCount": "{count, plural, other {# 个活动}}",
   "actionsFor": "{name} 的操作",
   "menu": {
     "edit": "编辑活动",

@@ -37,20 +37,22 @@ import {
   useEventCollectionReturn,
   useEventCollectionState,
 } from "../../lib/event-collection-state";
-import {
-  formatEventDatePart,
-  formatEventSchedule,
-} from "../../lib/event-schedule";
+import { useEventFolds } from "../../lib/event-folds";
+import { groupEventsByMonth } from "../../lib/event-groups";
+import { formatEventSchedule } from "../../lib/event-schedule";
 import {
   useEventAccessQuery,
   useEventsQuery,
   useLeaveEventMutation,
 } from "../../lib/queries";
+import { useDisplayPreferences } from "../../lib/use-display-preferences";
 import { useIsPhone } from "../../lib/use-media";
+import { instantDayKey } from "../../lib/zone";
 import { useOpenHistory } from "../history/history-provider";
 import { useOpenLifecycle } from "../recovery/lifecycle-provider";
 import { CreateEventDialog } from "./create-event-dialog";
 import { EventInspector } from "./event-inspector";
+import { EventMonthGroups } from "./event-month-groups";
 import { ShareSheet } from "./share-sheet";
 
 /**
@@ -203,27 +205,32 @@ function EventShareLine({ event }: { readonly event: EventListItem }) {
 }
 
 /**
- * One compact object: the date tile, the name, the dates, and a third
- * line for sharing; the whole card is the link. A past or undated event
- * reads muted in its tile. A shared card opens its event page directly:
- * the API reads the workspace from the event.
+ * One compact object: the name, the dates with the place, and a third
+ * line for sharing; the whole card is the link. A past event reads muted.
+ * The name is a heading one level under the group the card sits in. A
+ * shared card opens its event page directly: the API reads the workspace
+ * from the event.
  */
 function EventCard({
   event,
+  level,
   now,
   onOpen,
   onLeave,
 }: {
   readonly event: EventListItem;
+  readonly level: 2 | 3 | 4;
   readonly now: number;
   readonly onOpen: MouseEventHandler<HTMLAnchorElement>;
   readonly onLeave: (event: EventListItem) => void;
 }) {
   const t = useTranslations("events");
-  const dates = useTranslations("dates");
   const [armed, setArmed] = useState(false);
   const period = eventPeriod(event, now);
   const arm = () => setArmed(true);
+  const Name = `h${level}` as const;
+  const when =
+    period === "unscheduled" ? t("undated") : formatEventSchedule(event);
   return (
     <article
       className={`event-card-shell period-${period}${
@@ -238,22 +245,10 @@ function EventCard({
         href={`/events/${event.id}`}
         onClick={onOpen}
       >
-        <div className="event-date-mark">
-          {period === "unscheduled" ? (
-            <strong className="event-date-tbd">{dates("tbd")}</strong>
-          ) : (
-            <>
-              <span>{formatEventDatePart(event, "month").toUpperCase()}</span>
-              <strong>{formatEventDatePart(event, "day")}</strong>
-            </>
-          )}
-        </div>
         <div className="event-card-copy">
-          <h2>{event.displayName}</h2>
+          <Name className="event-card-name">{event.displayName}</Name>
           <p>
-            {period === "unscheduled"
-              ? t("undated")
-              : formatEventSchedule(event)}
+            {event.location === null ? when : `${when} · ${event.location}`}
           </p>
           <EventShareLine event={event} />
         </div>
@@ -331,6 +326,34 @@ export function EventList() {
         (event) => !leaving.leaving.has(event.id),
       );
   const now = Date.parse(events.data?.asOf ?? "");
+  // In date order the list runs by year and month in the account's zone;
+  // Past runs back.
+  const timeZone = useDisplayPreferences().timeZone ?? undefined;
+  const groups =
+    sort === "date"
+      ? groupEventsByMonth(
+          items,
+          filter === "past" ? "back" : "forward",
+          timeZone,
+        )
+      : null;
+  const folds = useEventFolds(
+    filter,
+    Number.isNaN(now)
+      ? null
+      : instantDayKey(new Date(now), timeZone).slice(0, 4),
+    debouncedQuery,
+  );
+  const card = (event: EventListItem, level: 2 | 3 | 4) => (
+    <EventCard
+      event={event}
+      level={level}
+      now={now}
+      key={event.id}
+      onLeave={leaving.leave}
+      onOpen={(click) => remember(event.id, click)}
+    />
+  );
   const filtered = debouncedQuery !== "" || scope !== "all" || filter !== "all";
   const filters = ["all", "upcoming", "unscheduled", "past"] as const;
   // The chips: the scope, then the two periods; one chip is pressed at a
@@ -525,17 +548,18 @@ export function EventList() {
             </button>
           </div>
         ) : null}
-        <div className={`event-grid event-layout-${layout}`}>
-          {items.map((event) => (
-            <EventCard
-              event={event}
-              now={now}
-              key={event.id}
-              onLeave={leaving.leave}
-              onOpen={(click) => remember(event.id, click)}
-            />
-          ))}
-        </div>
+        {groups === null ? (
+          <div className={`event-grid event-layout-${layout}`}>
+            {items.map((event) => card(event, 2))}
+          </div>
+        ) : (
+          <EventMonthGroups
+            card={card}
+            folds={folds}
+            groups={groups}
+            layout={layout}
+          />
+        )}
         {!changingQuery && events.hasNextPage ? (
           <button
             className="button button-secondary"

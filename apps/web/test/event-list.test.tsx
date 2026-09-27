@@ -224,6 +224,170 @@ describe("EventList", () => {
     expect(JSON.stringify(window.sessionStorage)).not.toContain("Garden");
   });
 
+  it("groups date order by year and month, merging a month continued on the next page", async () => {
+    const dated = (
+      id: number,
+      displayName: string,
+      startsOn: string | null,
+    ) => ({
+      ...event,
+      id: `019d6e7d-0000-7000-8000-0000000001${String(id).padStart(2, "0")}`,
+      displayName,
+      startsOn,
+      location: id === 1 ? "Garden" : null,
+    });
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        page(
+          [
+            dated(1, "Autumn gathering", "2026-09-20"),
+            dated(2, "Harvest supper", "2026-10-02"),
+          ],
+          "next_page",
+        ),
+      )
+      .mockResolvedValueOnce(
+        page([
+          dated(3, "Lantern walk", "2026-10-24"),
+          dated(4, "Winter cabin", "2027-01-09"),
+          dated(5, "A quiet studio weekend", null),
+        ]),
+      );
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    render(
+      <Providers>
+        <EventList />
+      </Providers>,
+    );
+    const october = await screen.findByRole("button", {
+      name: "October 1 event",
+    });
+    expect(october).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("heading", { level: 2, name: "2026" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { level: 4, name: "Autumn gathering" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: /Autumn gathering/ }),
+    ).toHaveTextContent("Sep 20, 2026 · Garden");
+    await user.click(screen.getByRole("button", { name: "Load more events" }));
+    expect(
+      await screen.findByRole("button", { name: "October 2 events" }),
+    ).toBeVisible();
+    expect(
+      screen
+        .getAllByRole("button", { expanded: true })
+        .map((button) => button.textContent),
+    ).toEqual([
+      "2026",
+      "September 1 event",
+      "October 2 events",
+      "2027",
+      "January 1 event",
+      "No date yet 1 event",
+    ]);
+    expect(
+      screen.getByRole("heading", { level: 3, name: "A quiet studio weekend" }),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "October 2 events" }));
+    expect(
+      screen.getByRole("button", { name: "October 2 events" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(
+      screen.queryByRole("link", { name: /Lantern walk/ }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "2026" }));
+    const folded = screen.getByRole("button", { name: "2026 3 events" });
+    expect(folded).toHaveAttribute("aria-expanded", "false");
+    expect(folded).toHaveFocus();
+    expect(
+      screen.queryByRole("button", { name: /September/ }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Winter cabin/ })).toBeVisible();
+  });
+
+  it("runs Past back from the most recent month with the earlier years folded", async () => {
+    const past = (id: number, displayName: string, startsOn: string) => ({
+      ...event,
+      id: `019d6e7d-0000-7000-8000-0000000002${String(id).padStart(2, "0")}`,
+      displayName,
+      startsOn,
+    });
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(page([]))
+      .mockResolvedValueOnce(
+        page([
+          past(1, "Summer picnic", "2026-08-16"),
+          past(2, "Family reunion", "2026-07-04"),
+          past(3, "New Year's Eve", "2025-12-31"),
+          past(4, "Autumn walk", "2025-10-19"),
+        ]),
+      );
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    render(
+      <Providers>
+        <EventList />
+      </Providers>,
+    );
+    await screen.findByText("No events yet");
+    await user.click(screen.getByRole("button", { name: "Past" }));
+    const earlier = await screen.findByRole("button", {
+      name: "2025 2 events",
+    });
+    expect(earlier).toHaveAttribute("aria-expanded", "false");
+    expect(fetch.mock.calls[1]?.[0]).toBe(
+      "/api/events?query=&scope=all&filter=past&sort=date",
+    );
+    expect(
+      screen
+        .getAllByRole("button", { name: /^(2026|2025|August|July)/ })
+        .map((button) => button.textContent),
+    ).toEqual(["2026", "August 1 event", "July 1 event", "2025 2 events"]);
+    expect(
+      screen.queryByRole("link", { name: /New Year's Eve/ }),
+    ).not.toBeInTheDocument();
+    await user.click(earlier);
+    expect(
+      await screen.findByRole("link", { name: /New Year's Eve/ }),
+    ).toBeVisible();
+    expect(
+      screen.getAllByRole("button", { name: /^(December|October)/ }),
+    ).toHaveLength(2);
+  });
+
+  it("keeps a flat list when sorted by name or update", async () => {
+    const dated = { ...event, startsOn: "2026-10-02" };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockImplementation(async () => page([dated, another]));
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    render(
+      <Providers>
+        <EventList />
+      </Providers>,
+    );
+    await screen.findByRole("button", { name: "October 1 event" });
+    await user.click(screen.getByRole("button", { name: "Sort events" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Name A-Z" }));
+    expect(
+      await screen.findByRole("heading", {
+        level: 2,
+        name: "Garden gathering",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /October/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("waits for committed composition text before sending a name request", async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
