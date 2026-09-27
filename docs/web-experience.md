@@ -1019,6 +1019,29 @@ not yet reviewed the two Chinese catalogs; wording may change.
   the title sits under them, and a share reads as a tag beside the date
   ("Shared by Chen Li" and the role) in place of the access line; the Events
   page's chips sit closer above the cards.
+- On a touch screen (a finger or a pen; a mouse never swipes, at any
+  width), a sideways swipe on the event's content moves one tab along the
+  strip in the order it shows: its pages, then its views, with hidden and
+  removed views left out as they are from the strip. Left opens the next
+  tab and right the previous. The content follows the finger; let go past
+  about 50 pixels, it slides out while the neighbour slides in, and the
+  neighbour opens exactly as a tap on its tab would: the address and its
+  history entry, the strip's mark, and a tab folded into the chip coming
+  back onto the strip. Short of that the content springs back, and at the
+  first and last tab it gives a little and springs back. With reduced
+  motion, the system's or the Motion setting, the tab changes without the
+  slide. A swipe never starts within 20 pixels of the screen's sides
+  (Back and the drawer), on a field, on content that scrolls sideways
+  itself (the Calendar's week, a wide table), on the Itinerary's day sheet,
+  whose own swipe turns a day, while a dialog, sheet, or menu is open,
+  while text is selected or a field has focus, or while a page is being
+  arranged. A drag that starts mostly downward stays the page's scroll, a
+  press held still is left to the long-press gestures, and two fingers
+  pinch. Nothing on screen mentions the swipe; the tabs remain the way to
+  move. A mobile Chromium journey draws touches through the browser's own
+  touch input (so its scrolling and `touch-action` apply) and a desktop
+  one checks that a mouse drag never swipes; they are not checks on
+  physical phones, iOS Safari's edge gestures, or with a screen reader.
 - The gallery (Add a view, or Add view in Manage tabs) shows every
   specialized view as a card with a mark, a name and one line: To-dos,
   Calendar, Timeline, Itinerary, Expenses, Reminders, Files, People, Notes,
@@ -1524,8 +1547,10 @@ day name, the all-day items, then one line per row as
 `09:30-11:30  Fushimi Inari, the lower loop - Fushimi Inari Taisha, main gate`,
 and the untimed items with a dash) and says "Day copied."; a browser without
 a clipboard says nothing. On a phone the time column narrows, the duration
-folds under the times, and a horizontal swipe across the sheet turns a day.
-Reminders are not on the sheet; they have their own view.
+folds under the times, and a horizontal swipe across the Day sheet turns a
+day (there, the event's swipe between tabs steps aside; All days leaves the
+swipe to the tabs). Reminders are not on the sheet; they have their own
+view.
 
 ## Component views
 

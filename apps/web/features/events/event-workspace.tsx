@@ -58,6 +58,7 @@ import {
 import { EventOverview } from "./event-overview";
 import { EventPages } from "./event-pages";
 import { EventStrip } from "./event-strip";
+import { EventSwipe, type SwipeTab } from "./event-swipe";
 import { EventViewGallery } from "./event-view-gallery";
 import { ManageTabsDialog } from "./manage-tabs-dialog";
 import { useEventPagesState } from "./use-event-pages";
@@ -247,6 +248,27 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
             (shownTab === "pages" && page.id === pagesState.selectedPage?.id),
         )
       : [];
+  function openPage(pageId: string) {
+    pagesState.selectPage(pageId);
+    setActiveTab("pages");
+  }
+  // A swipe moves along the strip as it shows: its pages, then its views.
+  const swipeTabs: SwipeTab[] = [
+    ...stripPages.map((page) => ({
+      key: `page:${page.id}`,
+      open: () => openPage(page.id),
+    })),
+    ...stripViews.map((view) => ({
+      key: `view:${view}`,
+      open: () => setActiveTab(view),
+    })),
+  ];
+  const shownKey =
+    shownTab !== "pages"
+      ? `view:${shownTab}`
+      : pagesState.selectedPage === undefined
+        ? null
+        : `page:${pagesState.selectedPage.id}`;
   const schedule = formatEventSchedule(event);
   const startNewPage = () => {
     setActiveTab("pages");
@@ -434,10 +456,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
         pages={stripPages}
         selectedPageId={pagesState.selectedPage?.id}
         showingPages={shownTab === "pages"}
-        onSelectPage={(pageId) => {
-          pagesState.selectPage(pageId);
-          setActiveTab("pages");
-        }}
+        onSelectPage={openPage}
         // An event without pages starts at its views; its first page comes
         // from the gallery, Manage tabs, or the Add page command.
         canAddPage={pagesState.canAddPage && pagesState.pages.length > 0}
@@ -464,66 +483,72 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
         onAddView={() => setTabsDialog("gallery")}
         onManageTabs={() => setTabsDialog("manage")}
       />
-      {shownTab === "pages" ? (
-        <EventPages
-          key={eventId}
-          layout={layout}
-          selected={pagesState.selectedPage}
-          selectedId={pagesState.selectedPageId}
-          canEdit={canEdit}
-          onSelect={pagesState.selectPage}
-          adding={pagesState.adding}
-          onAddingChange={pagesState.setAdding}
-          arranging={pagesState.arranging}
-          onArrangingChange={pagesState.setArranging}
-          layoutUndo={pagesState.layoutUndo}
-          pageDrop={pagesState.pageDrop}
-        />
-      ) : (
-        <div
-          ref={view}
-          tabIndex={-1}
-          aria-labelledby={`event-tab-${shownTab}`}
-          className="event-view"
-          id={`event-panel-${shownTab}`}
-          role="tabpanel"
-        >
-          {activeProjection?.isPending ? (
-            <LoadingState label={t("loadingView")} />
-          ) : activeProjection?.isError ? (
-            <ErrorNotice
-              error={activeProjection.error}
-              onRefresh={() => void activeProjection.refetch()}
-            />
-          ) : (
-            <>
-              {shownTab === "overview" && detail !== undefined ? (
-                <EventOverview detail={detail} onOpen={setActiveTab} />
-              ) : null}
-              {component.success ? (
-                <EventComponent
-                  key={component.data}
-                  kind={component.data}
-                  eventId={eventId}
-                  canEdit={canEdit}
-                  view={
-                    tabView?.tab === component.data ? tabView.view : undefined
-                  }
-                  onChangeView={(view) =>
-                    setTabView({ tab: component.data, view })
-                  }
-                />
-              ) : null}
-              {shownTab === "sharing" && canShare && detail !== undefined ? (
-                <SharingPanel detail={detail} eventId={eventId} />
-              ) : null}
-              {shownTab === "removed-links" ? (
-                <RemovedLinksPanel objectId={eventId} />
-              ) : null}
-            </>
-          )}
-        </div>
-      )}
+      <EventSwipe
+        tabs={swipeTabs}
+        current={shownKey}
+        disabled={pagesState.arranging}
+      >
+        {shownTab === "pages" ? (
+          <EventPages
+            key={eventId}
+            layout={layout}
+            selected={pagesState.selectedPage}
+            selectedId={pagesState.selectedPageId}
+            canEdit={canEdit}
+            onSelect={pagesState.selectPage}
+            adding={pagesState.adding}
+            onAddingChange={pagesState.setAdding}
+            arranging={pagesState.arranging}
+            onArrangingChange={pagesState.setArranging}
+            layoutUndo={pagesState.layoutUndo}
+            pageDrop={pagesState.pageDrop}
+          />
+        ) : (
+          <div
+            ref={view}
+            tabIndex={-1}
+            aria-labelledby={`event-tab-${shownTab}`}
+            className="event-view"
+            id={`event-panel-${shownTab}`}
+            role="tabpanel"
+          >
+            {activeProjection?.isPending ? (
+              <LoadingState label={t("loadingView")} />
+            ) : activeProjection?.isError ? (
+              <ErrorNotice
+                error={activeProjection.error}
+                onRefresh={() => void activeProjection.refetch()}
+              />
+            ) : (
+              <>
+                {shownTab === "overview" && detail !== undefined ? (
+                  <EventOverview detail={detail} onOpen={setActiveTab} />
+                ) : null}
+                {component.success ? (
+                  <EventComponent
+                    key={component.data}
+                    kind={component.data}
+                    eventId={eventId}
+                    canEdit={canEdit}
+                    view={
+                      tabView?.tab === component.data ? tabView.view : undefined
+                    }
+                    onChangeView={(view) =>
+                      setTabView({ tab: component.data, view })
+                    }
+                  />
+                ) : null}
+                {shownTab === "sharing" && canShare && detail !== undefined ? (
+                  <SharingPanel detail={detail} eventId={eventId} />
+                ) : null}
+                {shownTab === "removed-links" ? (
+                  <RemovedLinksPanel objectId={eventId} />
+                ) : null}
+              </>
+            )}
+          </div>
+        )}
+      </EventSwipe>
       {pagesState.dialog}
       {moving && session !== undefined ? (
         <MoveToSpaceDialog
