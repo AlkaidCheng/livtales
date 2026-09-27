@@ -52,6 +52,11 @@ describe("names browsers already store", () => {
       "chronelle.density",
       "chronelle.motion",
       "chronelle.sidebar",
+      "chronelle.seal",
+      "chronelle.sealCircle",
+      "chronelle.sealSquare",
+      "chronelle.sealDiamond",
+      "chronelle.sealHeart",
     ]);
     expect(displayBootstrap).toContain('getItem("chronelle."+name)');
   });

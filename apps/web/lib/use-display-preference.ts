@@ -7,6 +7,11 @@ import {
   type DisplayPreference,
   type DisplayValue,
   parseDisplayPreference,
+  type Seal,
+  type SealShape,
+  type SealStyle,
+  sealOf,
+  sealStylePreference,
 } from "./display-preferences";
 
 const changeEvent = "livtales:display";
@@ -53,15 +58,13 @@ function subscribe(name: DisplayPreference, notify: () => void) {
   };
 }
 
-function setPreference<K extends DisplayPreference>(
-  name: K,
-  value: DisplayValue<K>,
-) {
-  applyPreference(name, value);
+function setPreference(name: DisplayPreference, value: string) {
+  const choice = parseDisplayPreference(name, value);
+  applyPreference(name, choice);
   try {
-    if (value === displayChoices[name][0])
+    if (choice === displayChoices[name][0])
       window.localStorage.removeItem(displayStorageKey(name));
-    else window.localStorage.setItem(displayStorageKey(name), value);
+    else window.localStorage.setItem(displayStorageKey(name), choice);
   } catch {
     // Current-page preferences remain usable when persistent storage is blocked.
   }
@@ -82,5 +85,33 @@ export function useDisplayPreference<K extends DisplayPreference>(name: K) {
   return {
     value,
     setValue: (next: DisplayValue<K>) => setPreference(name, next),
+  };
+}
+
+/**
+ * The phone's add button as the browser keeps it: the chosen shape, drawn
+ * in the style that shape keeps, and each shape's own style, so returning
+ * to a shape brings back the style last chosen for it. Choosing a style
+ * chooses its shape too.
+ */
+export function useSeal() {
+  const shape = useDisplayPreference("seal");
+  const styles: { readonly [S in SealShape]: SealStyle<S> } = {
+    circle: useDisplayPreference("sealCircle").value,
+    square: useDisplayPreference("sealSquare").value,
+    diamond: useDisplayPreference("sealDiamond").value,
+    heart: useDisplayPreference("sealHeart").value,
+  };
+  const drawn = (of: SealShape): Seal => sealOf(of, styles[of]);
+  return {
+    shape: shape.value,
+    seal: drawn(shape.value),
+    sealOf: drawn,
+    styleOf: (of: SealShape): SealStyle => styles[of],
+    chooseShape: shape.setValue,
+    chooseStyle: <S extends SealShape>(of: S, style: SealStyle<S>) => {
+      setPreference(sealStylePreference[of], style);
+      setPreference("seal", of);
+    },
   };
 }
