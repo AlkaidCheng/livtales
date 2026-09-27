@@ -4,11 +4,8 @@ import { useTranslations } from "next-intl";
 import { useId } from "react";
 
 import { useInstallControl } from "../../components/install-app";
-import {
-  displayChoices,
-  palettes,
-  parseDisplayPreference,
-} from "../../lib/display-preferences";
+import { MenuSelect } from "../../components/menu-select";
+import { displayChoices, palettes } from "../../lib/display-preferences";
 import {
   resetDisplayPreferences,
   useDisplayPreference,
@@ -49,22 +46,16 @@ export function AppearanceSection() {
       </SettingRow>
       <SettingRow label={t("palette")}>
         {(control) => (
-          <select
+          <MenuSelect
             {...control}
-            className="setting-select"
-            onChange={(event) =>
-              palette.setValue(
-                parseDisplayPreference("palette", event.target.value),
-              )
-            }
+            label={t("palette")}
+            onChange={palette.setValue}
+            options={palettes.map((choice) => ({
+              value: choice.id,
+              label: t(`palettes.${choice.id}`),
+            }))}
             value={palette.value}
-          >
-            {palettes.map((choice) => (
-              <option key={choice.id} value={choice.id}>
-                {t(`palettes.${choice.id}`)}
-              </option>
-            ))}
-          </select>
+          />
         )}
       </SettingRow>
       <SettingRow kind="choices" label={t("density")}>

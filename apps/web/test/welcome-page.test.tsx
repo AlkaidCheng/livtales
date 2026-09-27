@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "../app/providers";
 import { WelcomePage } from "../features/account/welcome-page";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
+import { chooseFromMenu } from "./helpers/menu";
 
 const router = vi.hoisted(() => ({
   push: vi.fn(),
@@ -68,6 +69,17 @@ beforeEach(async () => {
   );
 });
 
+beforeEach(() => {
+  for (const method of ["showModal", "close"] as const) {
+    Object.defineProperty(HTMLDialogElement.prototype, method, {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        this.toggleAttribute("open", method === "showModal");
+      },
+    });
+  }
+});
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -88,30 +100,38 @@ describe("the Welcome step", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Welcome to LivTales" }),
     ).toBeVisible();
-    const name = screen.getByRole("textbox", { name: "Name" });
+    const name = screen.getByRole("textbox", { name: "Display name" });
     expect(name).toHaveValue("");
     expect(name).toBeRequired();
-    expect(screen.getByRole("combobox", { name: "Language" })).toHaveValue(
-      "system",
-    );
     expect(
-      screen.getByRole("option", { name: "Browser default (English)" }),
-    ).toBeVisible();
+      screen.getByRole("combobox", { name: "Language" }),
+    ).toHaveTextContent("Browser default (English)");
     const zone = screen.getByRole("combobox", { name: "Time zone" });
-    expect(zone).toHaveValue("");
-    expect(screen.getByRole("option", { name: /^Device: / })).toBeVisible();
+    expect(zone).toHaveTextContent(/^Device · /);
     const clock = screen.getByRole("combobox", { name: "Clock" });
-    expect(clock).toHaveValue("");
+    expect(clock).toHaveTextContent("From language (12-hour)");
     expect(screen.getByText(/detected from this device/)).toBeVisible();
 
     await user.type(name, "Mira Planner");
-    await user.selectOptions(clock, "h23");
+    await chooseFromMenu(user, clock, "24-hour");
+    // The zone list finds a zone by its country's name, in any language
+    // the app speaks, and shows its time on the clock just chosen.
+    await user.click(zone);
+    await user.type(
+      screen.getByRole("combobox", { name: "Search time zones" }),
+      "新西兰",
+    );
+    const auckland = screen.getByRole("option", { name: /^Auckland/ });
+    expect(auckland).toHaveTextContent(/New Zealand/);
+    expect(auckland).toHaveTextContent(/\b\d{2}:\d{2}\b/);
+    await user.click(auckland);
+    expect(zone).toHaveTextContent(/^Auckland/);
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/events"));
     expect(requests).toContainEqual({
       method: "PATCH",
       path: "/api/auth/me",
-      body: { hourCycle: "h23" },
+      body: { timeZone: "Pacific/Auckland", hourCycle: "h23" },
     });
     expect(requests).toContainEqual({
       method: "PATCH",
@@ -121,6 +141,7 @@ describe("the Welcome step", () => {
     const me = await (await store.fetch("/api/auth/session")).json();
     expect(me.user).toMatchObject({
       displayName: "Mira Planner",
+      timeZone: "Pacific/Auckland",
       hourCycle: "h23",
     });
     expect(me.user.onboardedAt).not.toBeNull();
@@ -134,7 +155,7 @@ describe("the Welcome step", () => {
     );
     render(<WelcomePage />, { wrapper });
     await user.type(
-      await screen.findByRole("textbox", { name: "Name" }),
+      await screen.findByRole("textbox", { name: "Display name" }),
       "Mira Planner",
     );
     await user.click(screen.getByRole("button", { name: "Continue" }));
@@ -159,6 +180,6 @@ describe("the Welcome step", () => {
     await waitFor(() =>
       expect(router.replace).toHaveBeenCalledWith("/sign-in"),
     );
-    expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Display name" })).toBeNull();
   });
 });

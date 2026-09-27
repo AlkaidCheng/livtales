@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
 import { chooseLayout } from "./helpers/component-views";
+import { chooseFromMenu } from "./helpers/menu";
 import { setDue } from "./helpers/date-rows";
 import { openEventView } from "./helpers/event-view";
 import { expectHorizontalReflow } from "./helpers/page-navigation";
@@ -61,8 +62,8 @@ function shown(
 /** Chooses an option from a Settings row's menu, which then shows it. */
 async function choose(page: Page, menu: string, option: string) {
   const select = page.getByRole("combobox", { name: menu, exact: true });
-  await select.selectOption({ label: option });
-  await expect(select.locator("option:checked")).toHaveText(option);
+  await chooseFromMenu(page, select, option);
+  await expect(select).toHaveText(option);
 }
 
 test("keeps the language, clock, zone, and week on the account and applies them everywhere @webkit-desktop", async ({
@@ -124,15 +125,17 @@ test("keeps the language, clock, zone, and week on the account and applies them 
     name: "Language",
     exact: true,
   });
-  await language.selectOption({ label: hans.simplified });
+  await chooseFromMenu(page, language, hans.simplified);
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-Hans");
   await expect(
     page.getByRole("dialog", { name: hans.settings, exact: true }),
   ).toBeVisible();
   await expect(page.locator(".workspace-nav")).toContainText(hans.people);
-  await page
-    .getByRole("combobox", { name: hans.language, exact: true })
-    .selectOption({ label: "English" });
+  await chooseFromMenu(
+    page,
+    page.getByRole("combobox", { name: hans.language, exact: true }),
+    "English",
+  );
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
   // A 24-hour clock changes every time shown, the Now line included.
@@ -142,17 +145,28 @@ test("keeps the language, clock, zone, and week on the account and applies them 
   await expect(now).toHaveText(/\d{2}:\d{2}$/);
   await expect(now).not.toHaveText(/[AP]M$/);
 
-  // A chosen zone moves the task's clock; the search narrows the list.
+  // A chosen zone moves the task's clock. The picker opens over Settings,
+  // finds a zone by city or country, and Escape closes it alone.
   const zone = page.getByRole("combobox", { name: "Time zone", exact: true });
-  await expect(zone).toHaveValue("");
-  await page
-    .getByRole("searchbox", { name: "Search time zones", exact: true })
-    .fill("utc");
-  await expect(
-    zone.getByRole("option", { name: /^UTC \(UTC\+00:00\)$/ }),
-  ).toBeAttached();
-  await zone.selectOption("UTC");
-  await expect(zone).toHaveValue("UTC");
+  await expect(zone).toContainText(/^Device · /);
+  await zone.click();
+  const zones = page.getByRole("dialog", { name: "Time zone", exact: true });
+  const search = zones.getByRole("combobox", {
+    name: "Search time zones",
+    exact: true,
+  });
+  await expect(search).toBeFocused();
+  await search.fill("iceland");
+  await expect(zones.getByRole("option").first()).toContainText("Reykjavik");
+  await page.keyboard.press("Escape");
+  await expect(zones).toHaveCount(0);
+  await expect(settings).toBeVisible();
+  await expect(zone).toBeFocused();
+  await zone.click();
+  await search.fill("utc");
+  await zones.getByRole("option", { name: /^UTC/ }).first().click();
+  await expect(zones).toHaveCount(0);
+  await expect(zone).toHaveText(/^UTCUTC\+00:00$/);
 
   // The week starts on Monday once chosen, whatever the language says.
   await choose(page, "Week starts on", "Monday");
@@ -177,12 +191,12 @@ test("keeps the language, clock, zone, and week on the account and applies them 
   await expect(page).toHaveURL(/\/events\?settings=language$/u);
   await expect(
     page.getByRole("combobox", { name: "Time format", exact: true }),
-  ).toHaveValue("h23");
+  ).toHaveText("24-hour");
   await expect(
     page.getByRole("combobox", { name: "Week starts on", exact: true }),
-  ).toHaveValue("1");
-  await expect(zone).toHaveValue("UTC");
-  await expect(language).toHaveValue("en");
+  ).toHaveText("Monday");
+  await expect(zone).toHaveText(/^UTCUTC\+00:00$/);
+  await expect(language).toHaveText("English");
 
   // Sign out everywhere ends this session too.
   await sections.getByRole("button", { name: "General", exact: true }).click();
@@ -371,7 +385,8 @@ test("opens Settings over an event's view and returns to it as it was left @webk
 
   // Every section's rows fit it too: a control too wide for its label's
   // line moves under the label, and nothing in the section scrolls
-  // sideways.
+  // sideways. Language & time keeps each menu beside its label, with the
+  // caption under both.
   const content = settings.locator(".section-dialog-content");
   for (const name of ["General", "Language & time", "Appearance"]) {
     await sections.getByRole("button", { name, exact: true }).click();
@@ -388,12 +403,18 @@ test("opens Settings over an event's view and returns to it as it was left @webk
       const zone = await settings
         .getByRole("combobox", { name: "Time zone", exact: true })
         .boundingBox();
+      const label = await settings
+        .getByText("Time zone", { exact: true })
+        .boundingBox();
       const caption = await settings
         .getByText(/^Times are shown in this zone\./u)
         .boundingBox();
-      expect(zone?.y).toBeGreaterThanOrEqual(
-        (caption?.y ?? Number.POSITIVE_INFINITY) + (caption?.height ?? 0),
-      );
+      const area = await content.boundingBox();
+      if (!zone || !label || !caption || !area)
+        throw new Error("The time zone row is not laid out.");
+      expect(zone.y).toBeLessThan(label.y + label.height);
+      expect(caption.y).toBeGreaterThanOrEqual(zone.y + zone.height - 1);
+      expect(zone.x + zone.width).toBeLessThanOrEqual(area.x + area.width);
     }
   }
 });

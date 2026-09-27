@@ -13,6 +13,7 @@ import {
   useComponentShortcut,
 } from "../../lib/use-component-shortcut";
 import { useKeyboardDevice } from "../../lib/use-keyboard-device";
+import { MenuSelect } from "../../components/menu-select";
 
 /** The modifier as the viewer's platform names it; null until hydration. */
 function useModifier(): string | null {
@@ -106,22 +107,23 @@ export function KeyboardSection() {
                   : keys(modifier, "/")}
             </td>
             <td>
-              <select
+              <MenuSelect
                 aria-label={t("component")}
-                className="setting-select"
-                value={component.value}
-                onChange={(event) =>
-                  component.setValue(parseComponentShortcut(event.target.value))
+                label={t("component")}
+                onChange={(next) =>
+                  component.setValue(parseComponentShortcut(next))
                 }
-              >
-                {Object.entries(componentShortcuts).map(([value, choice]) => (
-                  <option key={value} value={value}>
-                    {value === "disabled"
-                      ? t("off")
-                      : choice.label.replace("Cmd/Ctrl", modifier)}
-                  </option>
-                ))}
-              </select>
+                options={Object.entries(componentShortcuts).map(
+                  ([value, choice]) => ({
+                    value,
+                    label:
+                      value === "disabled"
+                        ? t("off")
+                        : choice.label.replace("Cmd/Ctrl", modifier),
+                  }),
+                )}
+                value={component.value}
+              />
             </td>
           </tr>
           <tr>

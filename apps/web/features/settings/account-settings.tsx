@@ -53,12 +53,16 @@ export function AccountSettings() {
 
   return (
     <div className="setting-rows">
-      <SettingRow label={t("displayName")} onSubmit={saveName}>
+      <SettingRow
+        caption={t("displayNameNote")}
+        label={t("displayName")}
+        onSubmit={saveName}
+      >
         {(control) => (
           <>
             <input
               {...control}
-              autoComplete="name"
+              autoComplete="nickname"
               className="setting-input"
               disabled={user === undefined || account.isPending}
               maxLength={120}

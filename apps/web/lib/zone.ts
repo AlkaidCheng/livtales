@@ -143,11 +143,11 @@ export function isKnownTimeZone(name: string): boolean {
   }
 }
 
-/** The zone's offset from UTC at the instant, as "UTC+08:00" or "UTC-03:30". */
-export function zoneOffsetLabel(
+/** The zone's offset from UTC at the instant, in minutes (east positive). */
+export function zoneOffsetMinutes(
   timeZone: string,
   instant: Date = new Date(),
-): string {
+): number {
   const wall = wallClock(instant, timeZone);
   const asUtc = Date.UTC(
     wall.year,
@@ -157,9 +157,17 @@ export function zoneOffsetLabel(
     wall.minute,
     wall.second,
   );
-  const minutes = Math.round(
+  return Math.round(
     (asUtc - Math.floor(instant.getTime() / 1000) * 1000) / 60_000,
   );
+}
+
+/** The zone's offset from UTC at the instant, as "UTC+08:00" or "UTC-03:30". */
+export function zoneOffsetLabel(
+  timeZone: string,
+  instant: Date = new Date(),
+): string {
+  const minutes = zoneOffsetMinutes(timeZone, instant);
   const sign = minutes < 0 ? "-" : "+";
   const magnitude = Math.abs(minutes);
   return `UTC${sign}${pad(Math.floor(magnitude / 60))}:${pad(magnitude % 60)}`;

@@ -21,6 +21,7 @@ import {
   type ContextCommand,
 } from "../components/context-commands";
 import { WorkspaceCommands } from "../components/workspace-commands";
+import { chooseFromMenu } from "./helpers/menu";
 
 vi.mock("../lib/use-command-search", () => ({
   useCommandSearch: () => ({
@@ -337,14 +338,14 @@ it("shares component settings immediately and resets only keyboard preferences",
   const user = setup();
   window.localStorage.setItem("chronelle.palette", "neutral");
   const select = componentSelect();
-  await user.selectOptions(select, "modified-slash");
+  await chooseFromMenu(user, select, /\+ \/$/);
   expect(screen.getByLabelText("Component binding")).toHaveTextContent(
     "modified-slash",
   );
   expect(window.localStorage.getItem("chronelle.component-shortcut")).toBe(
     "modified-slash",
   );
-  await user.selectOptions(select, "disabled");
+  await chooseFromMenu(user, select, "Off");
   await user.click(searchSwitch());
   await user.click(submitSwitch());
   expect(window.localStorage.getItem("chronelle.editor-shortcut")).toBe(
@@ -353,7 +354,7 @@ it("shares component settings immediately and resets only keyboard preferences",
   await user.click(
     screen.getByRole("button", { name: "Reset keyboard shortcuts" }),
   );
-  expect(select).toHaveValue("slash");
+  expect(select).toHaveTextContent(/^\/$/);
   expect(searchSwitch()).toBeChecked();
   expect(submitSwitch()).toBeChecked();
   expect(window.localStorage.getItem("chronelle.editor-shortcut")).toBeNull();
@@ -414,13 +415,13 @@ it("keeps component settings across dialog remounts when storage is blocked", as
   vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
     throw new Error("blocked");
   });
-  await user.selectOptions(componentSelect(), "disabled");
+  await chooseFromMenu(user, componentSelect(), "Off");
   expect(screen.getByLabelText("Component binding")).toHaveTextContent(
     "disabled",
   );
   await user.click(trigger());
   await user.click(screen.getByRole("button", { name: "Close search" }));
-  expect(componentSelect()).toHaveValue("disabled");
+  expect(componentSelect()).toHaveTextContent("Off");
 });
 
 it("reads updated storage after all preference consumers remount", () => {

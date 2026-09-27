@@ -2,13 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useId, useState } from "react";
 
 import { AccountPage } from "../../components/account-page";
+import { MenuSelect } from "../../components/menu-select";
 import { ErrorNotice, LoadingState } from "../../components/feedback";
 import type { HourCycle } from "../../i18n/active-preferences";
 import { isLocale, type LocaleChoice } from "../../i18n/locale-preference";
-import { locales } from "../../i18n/locales";
+import { languageHourCycle, locales } from "../../i18n/locales";
 import { takeAfterSignIn } from "../../lib/after-sign-in";
 import { useAuthSession } from "../../lib/auth-session";
 import { useUpdateAccount } from "../../lib/friend-queries";
@@ -40,6 +41,11 @@ export function WelcomePage() {
   const adoptLocale = useAdoptAccountLocale();
   const user = session.data?.user;
   const [name, setName] = useState("");
+  const nameId = useId();
+  const nameLabelId = `${nameId}-label`;
+  const nameHintId = `${nameId}-hint`;
+  const languageId = `${nameId}-language`;
+  const clockId = `${nameId}-clock`;
   const [language, setLanguage] = useState<LocaleChoice | null>(null);
   const [timeZone, setTimeZone] = useState<string | null>(null);
   const [hourCycle, setHourCycle] = useState<HourCycle | null>(null);
@@ -64,6 +70,10 @@ export function WelcomePage() {
     isLocale(user.locale)
       ? user.locale
       : "system");
+  // The clock From language comes to, for the language chosen above.
+  const languageClock = languageHourCycle(
+    languageChoice === "system" ? active : languageChoice,
+  );
   const activeName =
     locales.find((entry) => entry.tag === active)?.native ?? active;
 
@@ -119,50 +129,73 @@ export function WelcomePage() {
         <h1 className="account-title">{t("welcome.title")}</h1>
         <p className="account-intro">{t("welcome.intro")}</p>
         <label className="field">
-          <span>{t("welcome.name")}</span>
+          <span id={nameLabelId}>{t("welcome.name")}</span>
           <input
-            autoComplete="name"
+            aria-describedby={nameHintId}
+            aria-labelledby={nameLabelId}
+            autoComplete="nickname"
             maxLength={120}
             onChange={(event) => setName(event.target.value)}
+            placeholder={t("welcome.namePlaceholder")}
             required
             value={name}
           />
+          <span className="field-hint-line" id={nameHintId}>
+            {t("welcome.nameHint")}
+          </span>
         </label>
-        <label className="field">
-          <span>{t("welcome.language")}</span>
-          <select
-            onChange={(event) => {
-              const next = event.target.value;
-              setLanguage(isLocale(next) ? next : "system");
-            }}
-            value={languageChoice}
-          >
-            <option value="system">
-              {t("welcome.browserLanguage", { language: activeName })}
-            </option>
-            {locales.map((entry) => (
-              <option key={entry.tag} lang={entry.tag} value={entry.tag}>
-                {entry.native}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="account-row">
-          <TimeZoneField onChange={setTimeZone} value={timeZone} />
-          <label className="field">
-            <span>{t("welcome.clock")}</span>
-            <select
-              onChange={(event) => {
-                const next = event.target.value;
-                setHourCycle(next === "h12" || next === "h23" ? next : null);
-              }}
-              value={hourCycle ?? ""}
-            >
-              <option value="">{t("welcome.clockFromLanguage")}</option>
-              <option value="h23">{t("welcome.twentyFourHour")}</option>
-              <option value="h12">{t("welcome.twelveHour")}</option>
-            </select>
+        <div className="field">
+          <label className="field-label" htmlFor={languageId}>
+            {t("welcome.language")}
           </label>
+          <MenuSelect<LocaleChoice>
+            id={languageId}
+            label={t("welcome.language")}
+            onChange={(next) => setLanguage(isLocale(next) ? next : "system")}
+            options={[
+              {
+                value: "system",
+                label: t("welcome.browserLanguage", { language: activeName }),
+              },
+              ...locales.map((entry) => ({
+                value: entry.tag,
+                label: entry.native,
+                lang: entry.tag,
+              })),
+            ]}
+            value={languageChoice}
+            variant="field"
+          />
+        </div>
+        <TimeZoneField
+          hourCycle={hourCycle ?? languageClock}
+          onChange={setTimeZone}
+          value={timeZone}
+        />
+        <div className="field">
+          <label className="field-label" htmlFor={clockId}>
+            {t("welcome.clock")}
+          </label>
+          <MenuSelect
+            id={clockId}
+            label={t("welcome.clock")}
+            onChange={(next) => setHourCycle(next === "" ? null : next)}
+            options={[
+              {
+                value: "",
+                label: t("welcome.clockFromLanguage", {
+                  clock:
+                    languageClock === "h23"
+                      ? t("welcome.twentyFourHour")
+                      : t("welcome.twelveHour"),
+                }),
+              },
+              { value: "h23", label: t("welcome.twentyFourHour") },
+              { value: "h12", label: t("welcome.twelveHour") },
+            ]}
+            value={hourCycle ?? ""}
+            variant="field"
+          />
         </div>
         <p className="account-hint">{t("welcome.hint")}</p>
         {preferences.isError ? <ErrorNotice error={preferences.error} /> : null}

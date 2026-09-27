@@ -508,6 +508,20 @@ export function SubtaskIcon({ className }: IconProps) {
   );
 }
 
+/** A chevron pointing down: a menu that opens below its button. */
+export function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ className }: IconProps) {
   return (
     <svg

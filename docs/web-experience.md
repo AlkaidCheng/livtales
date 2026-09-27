@@ -18,9 +18,11 @@ sentence and takes the six-digit code sent to it (Send a new code issues
 another; a sign-in attempt on an unverified address also sends one and
 lands on the same screen; the screen opened by hand asks for the address
 too). The first sign-in of a new account then opens Welcome (`/welcome`),
-once: the account's `@username` and email at the top, then the Name
-(required), the Language (Browser default, or one of the languages), the
-Time zone and the Clock (the device's until changed), and Continue, which
+once: the account's `@username` and email at the top, then the Display name
+(required; a nickname or first name, which friends and people you share
+with see, with autofill offering a nickname rather than a full name), the Language (Browser default, or one of the languages), the
+Time zone (the zone picker described under Settings) and the Clock (the
+device's until changed), each on a row of its own, and Continue, which
 opens the app; the step comes back until it is completed, and the
 account is named as its username until then. An account created any other
 way (the development sign-in today; other sign-in methods later) brings its
@@ -765,7 +767,7 @@ whose control does not fit beside its name puts the control under it; a
 switch always stays beside its name.
 
 General holds
-the Name, changed here with Save name, the username as chosen at sign-up,
+the Display name, changed here with Save name, the username as chosen at sign-up,
 which cannot be changed, and the email as the account holds it; Who can
 find you, under its own caption, with By username always on,
 and By name and By email as switches the account turns off to be left out of
@@ -775,8 +777,7 @@ everywhere, which ends every session of
 the account, this one included, and returns to sign-in. Under Preferences,
 Language & time holds menus for the language, the time format (its caption
 is the current moment in that format), and the first day of the week, then
-the time zone's menu with the search that narrows it underneath, all kept
-on the account and applied at once; Appearance repeats the Theme panel's
+the time zone's picker, all kept on the account and applied at once; Appearance repeats the Theme panel's
 mode, density, and motion as choices side by side and its palette as a
 menu, which stay on the browser, carries the Install app row (see Install
 as an app), and ends with Reset display settings; Keyboard, on a
@@ -785,9 +786,26 @@ holds only the account and the app's preferences: a space's members are
 managed in Manage space (see the space switcher), and its old Members
 address opens Events.
 
-The time zone is Device (named, with its offset) or any zone the browser
-knows, grouped by region with its current offset; a search field narrows the
-list by name or offset. Times are formatted in that zone and days are placed
+The time zone is Device or any zone the browser knows. Its field is a button
+naming the zone's city and current offset (Device · Los Angeles, UTC-07:00)
+that opens the zone picker: a search field over a list, next to the button
+on a wide screen and as a sheet from the bottom on a phone. With no search
+the list suggests the device's zone first, then every zone by region (the
+region's name stays at the top of the list while its zones scroll past).
+Each row names the city, its country and the zone's name in the display
+language (France · Central European Time), the time there now on the chosen
+clock, and the offset; a check marks the chosen zone. The search finds a
+zone by its city, by a major city it serves (Beijing finds Shanghai), by its
+country in the display language, English, or Chinese, by the zone's name
+or abbreviation (Pacific, PDT), or by offset (+8, UTC-7, gmt+5:30), and
+lists a country's own zone first; accents, case, and separators are ignored
+(sao paulo finds São Paulo). A zone the browser lists under an older name
+shows its current one (Asia/Calcutta as Kolkata). The arrow keys and Page
+Up and Down move through the list, Enter chooses, and Escape or a click
+outside closes the picker alone, returning to its button; a key that ends
+an input-method composition stays with the composition. When nothing
+matches, the list says so and suggests a city, a country, or an offset.
+Times are formatted in that zone and days are placed
 in it: a task due at an instant, a timed Event's span, an expense, a
 reminder, and today all fall on the zone's calendar day, and the date-time
 fields of the editors read and write on the zone's wall clock. The time
@@ -795,7 +813,10 @@ format is From language (the language's convention: 12-hour for English and
 Traditional Chinese, 24-hour for Simplified Chinese), 12-hour, or 24-hour.
 Week starts on is From language (Sunday for English and Traditional Chinese,
 Monday for Simplified Chinese), Monday, or Sunday; the week strip, the month
-grid, the date pickers, and the period labels start on that day. An Event's
+grid, the date pickers, and the period labels start on that day. Each From
+language choice names what it comes to in the display language, as From
+language (12-hour) or From language (Sunday), and Welcome's Clock names it
+for the language chosen above it. Settings' menus are quiet value buttons: the choice on a soft fill with a chevron, as wide as their choices. They and Welcome's Language and Clock open the app's own list next to the button, as wide as its longest option (on a phone, a pop-up in the middle of the screen titled with what it chooses), with the chosen option checked; the arrow keys, Home and End, and a typed first letter move through it, Enter or Space chooses, and Escape or a click outside closes it alone, back on its button. Language & time keeps each menu on its label's line and sets the caption under both, on every screen; the zone's button there shows the city alone (its list shows the offsets). An Event's
 own time zone field is unchanged; a new Event or schedule item takes the
 account's zone as its default.
 
@@ -869,7 +890,9 @@ with a username, reads the code from the journeys' mailbox file, completes
 Welcome with a name and a 24-hour clock, finds both in Settings, and signs
 in again by username. A Settings journey (Chromium and WebKit desktop) opens Settings from the
 account menu over Tasks, changes the language and back, chooses a 24-hour
-clock, the UTC zone, and a Monday week, closes to a timed task already
+clock, a zone found by country in the zone picker (closing the picker with
+Escape leaves Settings open) and then the UTC zone, and a Monday week,
+closes to a timed task already
 following them and a week strip starting Monday, reads every choice back
 after a reload through the old Language & time address, and signs out
 everywhere. A second journey (desktop and mobile Chromium and WebKit) opens
@@ -879,7 +902,7 @@ opens it again), checking that the page underneath was not remounted, that
 focus returns to the account block, and that an address-opened Settings
 closes without a history entry; it also follows an old address and checks
 a 320px screen for sideways scrolling in General, Language & time, and
-Appearance, with the time zone's menu under its name. The offline sandbox runs the same
+Appearance, with the time zone's picker under its name. The offline sandbox runs the same
 opening, switching, closing, and Back through its fragment. Unit tests hold
 every catalog to the English key set and parameter names. A native reader has
 not yet reviewed the two Chinese catalogs; wording may change.

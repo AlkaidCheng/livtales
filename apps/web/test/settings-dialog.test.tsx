@@ -31,6 +31,7 @@ import {
   useDisplayPreferences,
 } from "../lib/use-display-preferences";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
+import { chooseFromMenu } from "./helpers/menu";
 
 const router = vi.hoisted(() => ({
   push: vi.fn(),
@@ -160,7 +161,7 @@ describe("the Settings dialog", () => {
       within(dialog).getByRole("heading", { level: 2, name: "General" }),
     ).toBeVisible();
     await waitFor(() =>
-      expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue(
+      expect(screen.getByRole("textbox", { name: "Display name" })).toHaveValue(
         "Sample planner",
       ),
     );
@@ -248,7 +249,7 @@ describe("the Settings dialog", () => {
   it("changes the name through PATCH /api/account and keeps it on the session", async () => {
     const user = userEvent.setup();
     renderAt("general");
-    const name = await screen.findByRole("textbox", { name: "Name" });
+    const name = await screen.findByRole("textbox", { name: "Display name" });
     await waitFor(() => expect(name).toHaveValue("Sample planner"));
     const save = screen.getByRole("button", { name: "Save name" });
     expect(save).toBeDisabled();
@@ -320,11 +321,15 @@ describe("the Settings dialog", () => {
     ).toHaveAttribute("aria-current", "page");
     // Each setting is a row whose label names its menu and whose caption
     // describes it; the clock's caption is the moment it shows.
+    // From language names what the language comes to.
     const clock = screen.getByRole("combobox", { name: "Time format" });
-    await waitFor(() => expect(clock).toHaveValue(""));
+    await waitFor(() =>
+      expect(clock).toHaveTextContent("From language (12-hour)"),
+    );
     expect(clock).toHaveAccessibleDescription(/^Now: /);
-    await user.selectOptions(clock, "24-hour");
-    expect(clock).toHaveValue("h23");
+    await chooseFromMenu(user, clock, "24-hour");
+    expect(clock).toHaveTextContent("24-hour");
+    expect(clock).toHaveFocus();
     await waitFor(() =>
       expect(requests).toContainEqual({
         method: "PATCH",
@@ -341,39 +346,47 @@ describe("the Settings dialog", () => {
     );
 
     const week = screen.getByRole("combobox", { name: "Week starts on" });
-    expect(week).toHaveValue("");
-    await user.selectOptions(week, "Monday");
+    expect(week).toHaveTextContent("From language (Sunday)");
+    await chooseFromMenu(user, week, "Monday");
     await waitFor(async () =>
       expect((await storedPreferences()).weekStart).toBe(1),
     );
     expect(activeTimePreferences().weekStart).toBe(1);
-    expect(week).toHaveValue("1");
+    expect(week).toHaveTextContent("Monday");
 
+    // The zone is a picker: its button names the device's zone until one
+    // is chosen, and opens a list that finds a zone by city or country.
     const zone = screen.getByRole("combobox", { name: "Time zone" });
-    expect(zone).toHaveValue("");
+    expect(zone).toHaveTextContent(/^Device · /);
     expect(zone).toHaveAccessibleDescription(
       "Times are shown in this zone. Device follows wherever you are.",
     );
+    await user.click(zone);
+    const picker = screen.getByRole("dialog", { name: "Time zone" });
+    const search = within(picker).getByRole("combobox", {
+      name: "Search time zones",
+    });
+    expect(search).toHaveFocus();
     expect(
-      within(zone).getByRole("option", { name: /^Device: / }),
-    ).toBeVisible();
-    await user.type(
-      screen.getByRole("searchbox", { name: "Search time zones" }),
-      "tokyo",
-    );
+      within(picker).getByRole("option", { name: /^Device time zone/ }),
+    ).toHaveAttribute("aria-selected", "true");
+    await user.type(search, "japan");
+    const tokyo = within(picker).getByRole("option", { name: /^Tokyo/ });
+    expect(tokyo).toHaveTextContent("UTC+09:00");
     expect(
-      within(zone).getByRole("option", { name: /^Tokyo \(UTC\+09:00\)$/ }),
-    ).toBeVisible();
-    expect(
-      within(zone).queryByRole("option", { name: /^Shanghai/ }),
+      within(picker).queryByRole("option", { name: /^Shanghai/ }),
     ).toBeNull();
-    await user.selectOptions(zone, "Asia/Tokyo");
+    await user.keyboard("{Enter}");
     await waitFor(async () =>
       expect((await storedPreferences()).timeZone).toBe("Asia/Tokyo"),
     );
     expect(activeTimePreferences().timeZone).toBe("Asia/Tokyo");
-    expect(zone).toHaveValue("Asia/Tokyo");
-    await user.selectOptions(zone, "");
+    expect(screen.queryByRole("dialog", { name: "Time zone" })).toBeNull();
+    expect(zone).toHaveTextContent(/^TokyoUTC\+09:00$/);
+    expect(zone).toHaveFocus();
+    // The device's zone is the first row of the list with no search.
+    await user.click(zone);
+    await user.click(screen.getByRole("option", { name: /^Device time zone/ }));
     await waitFor(async () =>
       expect((await storedPreferences()).timeZone).toBeNull(),
     );
@@ -383,19 +396,19 @@ describe("the Settings dialog", () => {
     const user = userEvent.setup();
     renderAt("language");
     const language = await screen.findByRole("combobox", { name: "Language" });
-    expect(language).toHaveValue("system");
-    expect(
-      within(language).getByRole("option", {
-        name: "\u7e41\u9ad4\u4e2d\u6587",
-      }),
-    ).toHaveAttribute("lang", "zh-Hant");
-    await user.selectOptions(language, "\u7e41\u9ad4\u4e2d\u6587");
+    expect(language).toHaveTextContent("System");
+    await user.click(language);
+    const traditional = screen.getByRole("option", {
+      name: "\u7e41\u9ad4\u4e2d\u6587",
+    });
+    expect(traditional).toHaveAttribute("lang", "zh-Hant");
+    await user.click(traditional);
     expect(document.cookie).toContain(`${localeCookie}=zh-Hant`);
     expect(router.refresh).toHaveBeenCalled();
     await waitFor(async () =>
       expect((await storedPreferences()).locale).toBe("zh-Hant"),
     );
-    await user.selectOptions(language, "System");
+    await chooseFromMenu(user, language, "System");
     await waitFor(async () =>
       expect((await storedPreferences()).locale).toBeNull(),
     );
@@ -416,7 +429,7 @@ describe("the Settings dialog", () => {
     await user.click(within(mode).getByRole("radio", { name: "Dark" }));
     expect(document.documentElement).toHaveAttribute("data-appearance", "dark");
     const palette = screen.getByRole("combobox", { name: "Palette" });
-    await user.selectOptions(palette, "Celadon");
+    await chooseFromMenu(user, palette, "Celadon");
     expect(document.documentElement).toHaveAttribute("data-palette", "celadon");
     await user.click(
       within(screen.getByRole("group", { name: "Density" })).getByRole(
@@ -437,7 +450,7 @@ describe("the Settings dialog", () => {
     await user.click(
       screen.getByRole("button", { name: "Reset display settings" }),
     );
-    expect(palette).toHaveValue("paper");
+    expect(palette).toHaveTextContent("Ink & Paper");
     expect(within(mode).getByRole("radio", { name: "System" })).toBeChecked();
     expect(screen.queryByRole("combobox", { name: "Language" })).toBeNull();
   });
@@ -471,9 +484,10 @@ describe("the Settings dialog", () => {
     expect(window.localStorage.getItem("chronelle.command-shortcut")).toBe(
       "disabled",
     );
-    await user.selectOptions(
+    await chooseFromMenu(
+      user,
       table.getByRole("combobox", { name: "Add a component" }),
-      "disabled",
+      "Off",
     );
     expect(window.localStorage.getItem("chronelle.component-shortcut")).toBe(
       "disabled",
