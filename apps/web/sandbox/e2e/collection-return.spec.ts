@@ -21,5 +21,8 @@ test("returns to the offline collection with browser storage denied", async ({
       });
   });
   await page.goto(sandboxUrl);
-  await exerciseCollectionReturn(page, testInfo, "studio", 1);
+  // Without storage the sample store lasts until the reload.
+  await exerciseCollectionReturn(page, testInfo, "studio", 1, {
+    choicesKept: false,
+  });
 });

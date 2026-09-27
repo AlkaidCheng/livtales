@@ -9,7 +9,7 @@ const chip = (page: Page, name: string) =>
 /** The list's headings in order, each as it reads with its count. */
 const headings = (page: Page) => page.locator(".event-fold");
 
-test("groups the Events list by year and month, folds each heading, and keeps the folds per list across a reload", async ({
+test("groups the Events list by year and month, folds each heading, and keeps the chip and the folds per list across a reload", async ({
   page,
   request,
 }, testInfo) => {
@@ -161,9 +161,22 @@ test("groups the Events list by year and month, folds each heading, and keeps th
   ]);
   await page.screenshot({ path: testInfo.outputPath("past.png") });
 
-  // A reload keeps each list's folds; the chips start over at All, whose
-  // own folds are its defaults.
+  // A reload keeps the chip pressed and each list's folds; All's own folds
+  // are its defaults.
   await page.reload();
+  await expect(chip(page, "Past")).toHaveAttribute("aria-pressed", "true");
+  await expect(headings(page)).toHaveText([
+    `${thisYear}`,
+    `${thisMonth} 1 event`,
+    `${before}`,
+    "December 1 event",
+    "October 1 event",
+    `${earlier} 1 event`,
+  ]);
+  await page
+    .getByRole("group", { name: "Which events" })
+    .getByRole("button", { name: /^All/ })
+    .click();
   await expect(
     page.getByRole("button", { name: "October 2 events" }),
   ).toHaveAttribute("aria-expanded", "true");

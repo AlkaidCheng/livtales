@@ -40,23 +40,21 @@ async function arrangedEvent(request: APIRequestContext, email: string) {
     },
   });
   expect(layout.status()).toBe(200);
-  const tabs = await request.patch("/api/auth/me", {
+  const tabs = await request.patch(`/api/events/${event.id}/view`, {
     headers,
     data: {
-      eventTabs: {
-        [event.id]: {
-          order: ["overview", "todos", "calendar"],
-          hidden: ["sharing", "removed-links"],
-          removed: [
-            "timeline",
-            "itinerary",
-            "expenses",
-            "reminders",
-            "files",
-            "people",
-            "notes",
-          ],
-        },
+      tabs: {
+        order: ["overview", "todos", "calendar"],
+        hidden: ["sharing", "removed-links"],
+        removed: [
+          "timeline",
+          "itinerary",
+          "expenses",
+          "reminders",
+          "files",
+          "people",
+          "notes",
+        ],
       },
     },
   });
