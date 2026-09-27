@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
 import { openEventView } from "./helpers/event-view";
+import { pressViewAction } from "./helpers/view-options";
+import { chooseLayout } from "./helpers/component-views";
 
 /** The rows of the shown day's sheet, top to bottom, as they read. */
 async function sheetRows(page: Page, day: string): Promise<string[]> {
@@ -177,7 +179,7 @@ test("adds a trip's itinerary, reads a day sheet with places and gaps, turns day
   const chromium = testInfo.project.name.startsWith("chromium");
   if (chromium)
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.getByRole("button", { name: "Copy day" }).click();
+  await pressViewAction(page, "Copy day");
   await expect(sheet.getByRole("status")).toHaveText("Day copied.");
   if (chromium) {
     const copied = await page.evaluate(() => navigator.clipboard.readText());
@@ -198,16 +200,12 @@ test("adds a trip's itinerary, reads a day sheet with places and gaps, turns day
   }
 
   // All days stacks every sheet under its own day line.
-  await page.getByRole("button", { name: "Layout: Day" }).click();
-  await page.getByRole("menuitemradio", { name: "All days" }).click();
+  await chooseLayout(page.locator("main"), "All days");
   await expect(page.getByRole("heading", { level: 3 })).toHaveText([
     "Sat, Nov 2",
     "Sun, Nov 3",
     "Mon, Nov 4",
   ]);
-  await expect(
-    page.getByRole("button", { name: "Layout: All days" }),
-  ).toBeVisible();
 
   // Add schedule item from the sheet is the Calendar's dialog, with the Place.
   await page.getByRole("button", { name: "Add schedule item" }).click();

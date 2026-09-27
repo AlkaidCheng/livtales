@@ -6,12 +6,19 @@ import { openAddPage, openEventView } from "./helpers/event-view";
 async function stripTabs(page: Page): Promise<string[]> {
   return page
     .locator(".event-strip [data-tab-key]:not([hidden])")
-    .allTextContents();
+    .evaluateAll((tabs) =>
+      tabs.map((tab) => tab.firstChild?.textContent ?? ""),
+    );
 }
 
 /** Every view tab in order, folded ones included. */
 async function viewTabs(page: Page): Promise<string[]> {
-  return page.getByRole("tab", { includeHidden: true }).allTextContents();
+  // A tab's name is its first text; the current one's count follows it.
+  return page
+    .getByRole("tab", { includeHidden: true })
+    .evaluateAll((tabs) =>
+      tabs.map((tab) => tab.firstChild?.textContent ?? ""),
+    );
 }
 
 test("starts a new event's strip minimal and keeps the account's tabs through the gallery, Manage tabs, the fold chip and a reload @webkit-desktop @webkit-mobile", async ({

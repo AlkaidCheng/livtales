@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
 import { openEventView } from "./helpers/event-view";
 import { openDrawer } from "./helpers/quiet-chrome";
+import { pressViewAction } from "./helpers/view-options";
 
 const signIn = async (page: Page, name: string, email: string) => {
   await page.goto("/sign-in/development");
@@ -92,11 +93,12 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
     errors.push(error.message);
   });
 
-  // Ana shares Tasks with Ben from the view's head row.
+  // Ana shares Tasks with Ben from the view's controls on the strip (its
+  // options on a phone).
   await signIn(page, "Ana", anaEmail);
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
   await openEventView(page, "Tasks");
-  await page.getByRole("button", { name: "Share", exact: true }).click();
+  const opener = await pressViewAction(page, "Share");
   const sheet = page.getByRole("dialog", { name: "Share Tasks" });
   await expect(sheet).toContainText("Only you see this so far.");
   await sheet.getByRole("button", { name: "Add people", exact: true }).click();
@@ -110,9 +112,7 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
   ).toHaveValue("viewer");
   await sheet.getByRole("button", { name: "Done", exact: true }).click();
   await expect(sheet).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Share", exact: true }),
-  ).toBeFocused();
+  await expect(opener).toBeFocused();
 
   // Ben opens the event from his own list, where Ana's share appears:
   // Tasks alone, its rows, no pages.
@@ -123,7 +123,8 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
     page.getByRole("heading", { level: 1, name: "Kyoto in November" }),
   ).toBeVisible();
   const tabs = page.getByRole("tablist", { name: "Event views", exact: true });
-  await expect(tabs.getByRole("tab")).toHaveText(["Tasks"]);
+  // The one tab, with its count of open tasks after its name.
+  await expect(tabs.getByRole("tab")).toHaveText([/^Tasks\d*$/u]);
   await expect(page.getByText("Book the hall")).toBeVisible();
   await expect(page.getByText("Order the cake")).toBeVisible();
   // The Tasks table names its section head row by the section.
@@ -145,7 +146,7 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
   await signIn(page, "Ana", anaEmail);
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
   await openEventView(page, "Tasks");
-  await page.getByRole("button", { name: "Share", exact: true }).click();
+  await pressViewAction(page, "Share");
   await page
     .getByRole("dialog", { name: "Share Tasks" })
     .getByRole("button", { name: "Remove Ben" })
@@ -188,7 +189,8 @@ test("shares one view, then one section, and the friend sees that alone; the Sha
   await signOut(page, "Ana");
   await signIn(page, "Ben", benEmail);
   await page.getByRole("link", { name: /Kyoto in November/ }).click();
-  await expect(tabs.getByRole("tab")).toHaveText(["Tasks"]);
+  // The one tab, with its count of open tasks after its name.
+  await expect(tabs.getByRole("tab")).toHaveText([/^Tasks\d*$/u]);
   await expect(page.getByText("Book the hall")).toBeVisible();
   await expect(page.getByText("Order the cake")).toHaveCount(0);
   expect(errors).toEqual([]);

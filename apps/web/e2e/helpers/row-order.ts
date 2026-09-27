@@ -7,7 +7,7 @@ import { openEventView } from "./event-view";
 
 /** Opens the Sort menu and chooses an order by its label. */
 async function chooseSort(page: Page, name: string) {
-  await page.getByRole("button", { name: /^Sort/ }).click();
+  await page.getByRole("button", { name: /^Sort(: |$)/ }).click();
   await page.getByRole("menuitemradio", { name, exact: true }).click();
 }
 

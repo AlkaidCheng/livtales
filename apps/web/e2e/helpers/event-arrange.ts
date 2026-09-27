@@ -3,6 +3,7 @@ import { openCommands } from "./context-commands";
 import { expectHorizontalReflow } from "./page-navigation";
 import { choosePageOption, pageOptions } from "./quiet-chrome";
 import { openAddPage } from "./event-view";
+import { showTasks } from "./view-options";
 
 export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
   await openAddPage(page);
@@ -20,9 +21,7 @@ export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
       .click();
     await expect(picker).toHaveCount(0);
   }
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await showTasks(page, "All");
   // The filter is session state of the Tasks component: arranging must
   // keep the component mounted, so the choice survives every toggle.
   const filter = page.getByRole("button", {

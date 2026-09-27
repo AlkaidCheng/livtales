@@ -10,6 +10,7 @@ import {
   focusAccountBlock,
   openCollection,
 } from "./helpers/quiet-chrome";
+import { showingFinished, showTasks } from "./helpers/view-options";
 
 // The Chinese strings the journey looks for, as escapes so the spec stays
 // ASCII like the rest of the suite.
@@ -250,14 +251,9 @@ test("opens Settings over an event's view and returns to it as it was left @webk
   await openEventView(page, "Tasks");
   const eventUrl = page.url();
   expect(eventUrl).toMatch(/\?view=todos$/u);
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
-  const filter = page.getByRole("button", {
-    name: "Filter: 1 filter",
-    exact: true,
-  });
-  await expect(filter).toHaveClass(/is-active/);
+  await showTasks(page, "All");
+  const filter = showingFinished(page);
+  await expect(filter).toBeVisible();
   const heading = page.getByRole("heading", {
     level: 1,
     name: "Autumn gathering",
@@ -271,7 +267,7 @@ test("opens Settings over an event's view and returns to it as it was left @webk
     await expect(settingsDialog(page)).toHaveCount(0);
     await expect(page).toHaveURL(eventUrl);
     await expect(todos).toHaveAttribute("aria-selected", "true");
-    await expect(filter).toHaveClass(/is-active/);
+    await expect(filter).toBeVisible();
     await expect(heading).toHaveAttribute("data-probe", "kept");
     await expect(
       page.getByText("Book the venue", { exact: true }),

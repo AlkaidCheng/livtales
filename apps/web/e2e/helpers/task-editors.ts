@@ -5,6 +5,7 @@ import { expectHorizontalReflow } from "./page-navigation";
 import { chooseRowAction } from "./row-menu";
 import { openTaskEditor } from "./task-add";
 import { openEventView } from "./event-view";
+import { showTasks } from "./view-options";
 
 export async function exerciseTaskEditors(page: Page, testInfo: TestInfo) {
   const viewport = page.viewportSize();
@@ -98,9 +99,7 @@ export async function exerciseTaskEditors(page: Page, testInfo: TestInfo) {
     })
     .click();
   await expect(row).toHaveCount(0);
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "Done", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await showTasks(page, "Finished");
   await expect(row).toHaveCount(1);
   await row
     .getByRole("button", {
@@ -109,8 +108,6 @@ export async function exerciseTaskEditors(page: Page, testInfo: TestInfo) {
     })
     .click();
   await expect(row).toHaveCount(0);
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "Open", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await showTasks(page, "Open");
   await expect(row).toHaveCount(1);
 }

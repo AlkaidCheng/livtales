@@ -1,6 +1,7 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
 import { expectToken } from "./appearance";
 import { expectHorizontalReflow } from "./page-navigation";
+import { chooseLayout } from "./component-views";
 import { openEventView } from "./event-view";
 import { chip, composer } from "./record-composers";
 
@@ -69,10 +70,7 @@ export async function exerciseScheduleInspector(
   await expect(
     calendar.getByRole("heading", { name: "Recovered schedule item" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Layout", exact: false }).click();
-  await page
-    .getByRole("menuitemradio", { name: "Agenda", exact: true })
-    .click();
+  await chooseLayout(page.locator("main"), "Agenda");
   await expect(
     page.getByRole("heading", {
       name: "Recovered schedule item",

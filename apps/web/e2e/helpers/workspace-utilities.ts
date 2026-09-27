@@ -14,6 +14,7 @@ import {
   workspaceSwitcher,
 } from "./quiet-chrome";
 import { openEventView } from "./event-view";
+import { showingFinished, showTasks } from "./view-options";
 
 export async function exerciseWorkspaceUtilities(
   page: Page,
@@ -117,18 +118,13 @@ export async function exerciseWorkspaceUtilities(
   await expect(moreTrigger(page)).toBeFocused();
 
   await openEventView(page, "Tasks");
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
-  const filter = page.getByRole("button", {
-    name: "Filter: 1 filter",
-    exact: true,
-  });
+  await showTasks(page, "All");
+  const filter = showingFinished(page);
   const eventUrl = page.url();
   await openAccountMenu(page);
   await page.mouse.click(2, 2);
   await expect(menu).toHaveCount(0);
-  await expect(filter).toHaveClass(/is-active/);
+  await expect(filter).toBeVisible();
   expect(page.url()).toBe(eventUrl);
 
   await exerciseNarrowChrome(page, testInfo);
@@ -237,18 +233,13 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await closeDrawer(page);
 
   await openEventView(page, "Tasks");
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
-  const filter = page.getByRole("button", {
-    name: "Filter: 1 filter",
-    exact: true,
-  });
+  await showTasks(page, "All");
+  const filter = showingFinished(page);
   const eventUrl = page.url();
   await openAccountMenu(page);
   await page.mouse.click(2, 2);
   await expect(menu).toHaveCount(0);
-  await expect(filter).toHaveClass(/is-active/);
+  await expect(filter).toBeVisible();
   expect(page.url()).toBe(eventUrl);
   await closeDrawer(page);
 

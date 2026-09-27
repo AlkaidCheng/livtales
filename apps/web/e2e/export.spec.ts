@@ -1,14 +1,40 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import type { Download } from "@playwright/test";
+import type { Download, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import { openEventView } from "./helpers/event-view";
+import { showTasks } from "./helpers/view-options";
 
 /** The downloaded file's lines, the byte-order mark kept on the first. */
 async function linesOf(download: Download): Promise<string[]> {
   const path = await download.path();
   expect(path).not.toBeNull();
   return (await readFile(path as string, "utf8")).split("\r\n");
+}
+
+/**
+ * Exports the tab as one format: from the Export word's menu on a wide
+ * screen, from the row of buttons in the tab's options on a phone.
+ */
+async function exportAs(page: Page, name: string) {
+  const exportButton = page.getByRole("button", {
+    name: "Export",
+    exact: true,
+  });
+  if (await exportButton.isVisible()) {
+    await exportButton.click();
+    await page
+      .getByRole("menu", { name: "Export" })
+      .getByRole("menuitem", { name })
+      .click();
+    return;
+  }
+  await page.getByRole("button", { name: / options$/ }).click();
+  await page
+    .getByRole("dialog", { name: / options$/ })
+    .getByRole("group", { name: "Export" })
+    .getByRole("button", { name })
+    .click();
 }
 
 // The CSV writes instants in the shown zone: Kyoto's for a Kyoto plan.
@@ -75,22 +101,25 @@ test("exports a view as it is shown: the CSV follows the filter and the PDF prin
   await page.goto(`/events/${event.id}?view=todos`);
   await expect(page.getByText("Book the ryokan")).toBeVisible();
 
-  // Export sits at the end of the head row and opens two plain items.
+  // Export sits among the tab's controls at the strip's end, and opens two
+  // plain items; a phone offers them as buttons in the tab's options.
+  const controls = page.locator(".event-strip-options");
   const exportButton = page.getByRole("button", {
     name: "Export",
     exact: true,
   });
-  await exportButton.click();
-  const menu = page.getByRole("menu", { name: "Export" });
-  await expect(menu.getByRole("menuitem")).toHaveText([
-    "Export as PDF",
-    "Export data (CSV)",
-  ]);
-  await page.screenshot({ path: testInfo.outputPath("export-menu.png") });
+  if (await exportButton.isVisible()) {
+    await exportButton.click();
+    await expect(
+      page.getByRole("menu", { name: "Export" }).getByRole("menuitem"),
+    ).toHaveText(["Export as PDF", "Export data (CSV)"]);
+    await page.screenshot({ path: testInfo.outputPath("export-menu.png") });
+    await page.keyboard.press("Escape");
+  }
 
   // The CSV holds the open task alone, named after the event and the view.
   const todosDownload = page.waitForEvent("download");
-  await menu.getByRole("menuitem", { name: "Export data (CSV)" }).click();
+  await exportAs(page, "Export data (CSV)");
   const todos = await todosDownload;
   expect(todos.suggestedFilename()).toMatch(
     /^Kyoto in November - Tasks - \d{4}-\d{2}-\d{2}\.csv$/u,
@@ -104,13 +133,11 @@ test("exports a view as it is shown: the CSV follows the filter and the PDF prin
     "",
   ]);
 
-  // Filter: All brings the done task into the list, and so into the file.
-  await page.getByRole("button", { name: "Filter", exact: true }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
+  // Show: All brings the done task into the list, and so into the file.
+  await showTasks(page, "All");
   await expect(page.getByText("Confirm the garden venue")).toBeVisible();
   const allDownload = page.waitForEvent("download");
-  await exportButton.click();
-  await menu.getByRole("menuitem", { name: "Export data (CSV)" }).click();
+  await exportAs(page, "Export data (CSV)");
   expect(
     (await linesOf(await allDownload))
       .slice(1, -1)
@@ -122,8 +149,7 @@ test("exports a view as it is shown: the CSV follows the filter and the PDF prin
   await openEventView(page, "Calendar");
   await expect(page.getByText("Lunch, then the market")).toBeVisible();
   const calendarDownload = page.waitForEvent("download");
-  await exportButton.click();
-  await menu.getByRole("menuitem", { name: "Export data (CSV)" }).click();
+  await exportAs(page, "Export data (CSV)");
   const calendar = await calendarDownload;
   expect(calendar.suggestedFilename()).toMatch(/ - Calendar - /u);
   expect((await linesOf(calendar))[1]).toBe(
@@ -138,8 +164,7 @@ test("exports a view as it is shown: the CSV follows the filter and the PDF prin
         document.documentElement.dataset.printing;
     };
   });
-  await exportButton.click();
-  await menu.getByRole("menuitem", { name: "Export as PDF" }).click();
+  await exportAs(page, "Export as PDF");
   await expect(page.locator("html")).toHaveAttribute(
     "data-printed",
     "calendar",
@@ -151,7 +176,7 @@ test("exports a view as it is shown: the CSV follows the filter and the PDF prin
   await page.emulateMedia({ media: "print" });
   await expect(page.locator(".sidebar")).toBeHidden();
   await expect(page.getByRole("tablist")).toBeHidden();
-  await expect(exportButton).toBeHidden();
+  await expect(controls).toBeHidden();
   await expect(
     page.getByRole("heading", { level: 1, name: "Kyoto: in November" }),
   ).toBeVisible();
@@ -163,6 +188,6 @@ test("exports a view as it is shown: the CSV follows the filter and the PDF prin
   await page.emulateMedia({ media: null });
   await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
   await expect(page.locator("html")).not.toHaveAttribute("data-printing");
-  await expect(exportButton).toBeVisible();
+  await expect(controls).toBeVisible();
   expect(errors).toEqual([]);
 });
