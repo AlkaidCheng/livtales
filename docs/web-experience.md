@@ -228,8 +228,8 @@ whichever space they live in, so a share needs no space switch to
 be found: a card shared with the account is the same card, its third line
 carrying the tag "Shared by Mei Lin" and the role held (Viewer when every
 grant is narrowed to a view); one of the account's own that others hold
-reads "Shared with 2" there; the rest keep the line empty so every card
-keeps its height. Opening a shared card opens the event page directly, in
+reads "Shared with 2" there; the rest have no third line. Opening a
+shared card opens the event page directly, in
 the event's own space, with the access line under the title naming the
 sharer; the rail stays on the account's space, and its Tasks and People
 collections stay the space's own. A shared card's Share control shows
@@ -250,19 +250,26 @@ shown, so a month keeps one heading, and the counts are of the events
 loaded. Each heading is a button (with its expanded state) that folds its
 group to that one line and opens it again, its chevron turned while
 folded; a folded year hides its months and shows its own count. In Past
-the years before this one start folded, so the list opens on recent
-months. The folds are kept in this browser for the account, each list
-(All, Upcoming, Past, Unscheduled) its own; while a name is typed every
-heading starts open and a fold lasts for that name alone, so no match is
-hidden. Name A-Z and Recently updated keep one list without headings.
+and in All (with Mine and Shared with me, which share its folds) the years
+before this one start folded, so the list opens near the present. The
+folds are kept in this browser for the account, each list (All, Upcoming,
+Past, Unscheduled) its own; while a name is typed every heading starts
+open and a fold lasts for that name alone, so no match is hidden. Name A-Z
+and Recently updated keep one list without headings.
 
-Each event is one compact card of a fixed height: the name on one line,
-the dates on a muted line under it with the place after a middle dot
-("Date to be decided" for an undated event), and the third line for
-sharing; a past event's name reads muted. The copy takes the card's
-flexible width, so a mark of the event's own can later stand at its left.
-The whole card is the link; there is no period label and no arrow. On a
-wide screen the headings run across the grid. The Grid layout is two
+Each event is one compact card, as tall as its content: the name on one
+line, the dates on a muted line under it with the place after a middle
+dot ("Date to be decided" for an undated event), and, for a shared event
+alone, a third line for sharing; a past event's name reads muted. Under a
+year's heading the dates leave the year to the heading: a day with its
+weekday ("Sat, Oct 10 · 10:00 AM · Garden", "Sun, Mar 21"), days as a span
+that leaves out what the start already names ("Nov 14 – 20", "Oct 30 –
+Nov 2"), with the years only when the span ends in another year; without
+headings the card names the full date. Cards side by side in the grid
+take the taller one's height. The copy takes the card's flexible width, so
+a mark of the event's own can later stand at its left. The whole card is
+the link; there is no period label and no arrow. On a wide screen the
+headings run across the grid. The Grid layout is two
 columns of cards in a wider column than the lists; the List layout is the
 same object as rows in the lists' column, ruled like the other lists. Two
 controls surface at a card's right edge on hover or focus (and stay

@@ -271,9 +271,13 @@ describe("EventList", () => {
     expect(
       screen.getByRole("heading", { level: 4, name: "Autumn gathering" }),
     ).toBeVisible();
+    // Under its year's heading the card's dates leave the year out; an
+    // unshared card has no sharing line.
+    const autumn = screen.getByRole("link", { name: /Autumn gathering/ });
+    expect(autumn).toHaveTextContent(/^Autumn gatheringSun, Sep 20 · Garden$/);
     expect(
-      screen.getByRole("link", { name: /Autumn gathering/ }),
-    ).toHaveTextContent("Sep 20, 2026 · Garden");
+      autumn.querySelector(".event-card-share-line"),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Load more events" }));
     expect(
       await screen.findByRole("button", { name: "October 2 events" }),
@@ -386,6 +390,40 @@ describe("EventList", () => {
     expect(
       screen.queryByRole("button", { name: /October/ }),
     ).not.toBeInTheDocument();
+    // Without a year's heading the card names the full date.
+    expect(
+      screen.getByRole("link", { name: /Garden gathering/ }),
+    ).toHaveTextContent("Oct 2, 2026");
+  });
+
+  it("starts the years before this one folded in All", async () => {
+    const earlierEvent = { ...event, startsOn: "2025-10-19" };
+    const laterEvent = { ...another, startsOn: "2026-10-02" };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockImplementation(async () => page([earlierEvent, laterEvent]));
+    vi.stubGlobal("fetch", fetch);
+    const user = userEvent.setup();
+    render(
+      <Providers>
+        <EventList />
+      </Providers>,
+    );
+    const earlier = await screen.findByRole("button", {
+      name: "2025 1 event",
+    });
+    expect(earlier).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "2026" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(
+      screen.queryByRole("link", { name: /Garden gathering/ }),
+    ).not.toBeInTheDocument();
+    await user.click(earlier);
+    expect(
+      await screen.findByRole("link", { name: /Garden gathering/ }),
+    ).toBeVisible();
   });
 
   it("waits for committed composition text before sending a name request", async () => {

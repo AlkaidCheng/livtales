@@ -39,7 +39,10 @@ import {
 } from "../../lib/event-collection-state";
 import { useEventFolds } from "../../lib/event-folds";
 import { groupEventsByMonth } from "../../lib/event-groups";
-import { formatEventSchedule } from "../../lib/event-schedule";
+import {
+  formatEventSchedule,
+  formatEventWithinYear,
+} from "../../lib/event-schedule";
 import {
   useEventAccessQuery,
   useEventsQuery,
@@ -52,7 +55,10 @@ import { useOpenHistory } from "../history/history-provider";
 import { useOpenLifecycle } from "../recovery/lifecycle-provider";
 import { CreateEventDialog } from "./create-event-dialog";
 import { EventInspector } from "./event-inspector";
-import { EventMonthGroups } from "./event-month-groups";
+import {
+  type EventCardPlacement,
+  EventMonthGroups,
+} from "./event-month-groups";
 import { ShareSheet } from "./share-sheet";
 
 /**
@@ -172,7 +178,7 @@ function EventCardActions({
 /**
  * The card's third line: who shared the event and the role held, for an
  * event shared with the account; how many accounts it is shared with, for
- * the account's own; empty otherwise, so every card keeps its height.
+ * the account's own; none for an event that is not shared.
  */
 function EventShareLine({ event }: { readonly event: EventListItem }) {
   const t = useTranslations("events");
@@ -201,25 +207,26 @@ function EventShareLine({ event }: { readonly event: EventListItem }) {
       </p>
     );
   }
-  return <p className="event-card-share-line" />;
+  return null;
 }
 
 /**
- * One compact object: the name, the dates with the place, and a third
- * line for sharing; the whole card is the link. A past event reads muted.
- * The name is a heading one level under the group the card sits in. A
- * shared card opens its event page directly: the API reads the workspace
- * from the event.
+ * One compact object: the name, the dates with the place, and a line for
+ * sharing when the event is shared; the whole card is the link. A past
+ * event reads muted. The name is a heading one level under the group the
+ * card sits in; under a month, and so under its year's heading, the
+ * dates leave the year to the heading. A shared card opens its event page
+ * directly: the API reads the workspace from the event.
  */
 function EventCard({
   event,
-  level,
+  placement,
   now,
   onOpen,
   onLeave,
 }: {
   readonly event: EventListItem;
-  readonly level: 2 | 3 | 4;
+  readonly placement: EventCardPlacement;
   readonly now: number;
   readonly onOpen: MouseEventHandler<HTMLAnchorElement>;
   readonly onLeave: (event: EventListItem) => void;
@@ -228,9 +235,13 @@ function EventCard({
   const [armed, setArmed] = useState(false);
   const period = eventPeriod(event, now);
   const arm = () => setArmed(true);
-  const Name = `h${level}` as const;
+  const Name = ({ list: "h2", undated: "h3", month: "h4" } as const)[placement];
   const when =
-    period === "unscheduled" ? t("undated") : formatEventSchedule(event);
+    period === "unscheduled"
+      ? t("undated")
+      : placement === "month"
+        ? formatEventWithinYear(event)
+        : formatEventSchedule(event);
   return (
     <article
       className={`event-card-shell period-${period}${
@@ -344,10 +355,10 @@ export function EventList() {
       : instantDayKey(new Date(now), timeZone).slice(0, 4),
     debouncedQuery,
   );
-  const card = (event: EventListItem, level: 2 | 3 | 4) => (
+  const card = (event: EventListItem, placement: EventCardPlacement) => (
     <EventCard
       event={event}
-      level={level}
+      placement={placement}
       now={now}
       key={event.id}
       onLeave={leaving.leave}
@@ -550,7 +561,7 @@ export function EventList() {
         ) : null}
         {groups === null ? (
           <div className={`event-grid event-layout-${layout}`}>
-            {items.map((event) => card(event, 2))}
+            {items.map((event) => card(event, "list"))}
           </div>
         ) : (
           <EventMonthGroups

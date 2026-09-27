@@ -2441,12 +2441,14 @@ a.search-result:hover {
   }
 }
 
-/* One compact card: three rows of text (the name, the dates with the
-   place, a line for sharing) and the controls at the right edge. The
-   card is one fixed height so every card in the grid shares its
-   baselines; the link is the card, the controls sit beside it. The copy
-   takes the card's flexible width, so a mark can stand at its left. */
+/* One compact card: the name, the dates with the place, a line for
+   sharing when the event is shared, and the controls at the right edge.
+   The card takes its content's height; cards side by side in the grid
+   stretch to the taller one. The link is the card, the controls sit
+   beside it. The copy takes the card's flexible width, so a mark can
+   stand at its left. */
 .event-card-shell {
+  display: grid;
   position: relative;
 }
 
@@ -2458,8 +2460,7 @@ a.search-result:hover {
   color: inherit;
   display: flex;
   gap: 12px;
-  height: 74px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   text-decoration: none;
   transition: border-color 150ms ease;
 }
@@ -2472,6 +2473,7 @@ a.search-result:hover {
   --card-title: inherit;
   display: grid;
   flex: 1;
+  gap: 2px;
   min-width: 0;
   /* The controls' gutter, so a long name never runs under them. */
   padding-right: 60px;
@@ -2504,14 +2506,14 @@ a.search-result:hover {
   white-space: nowrap;
 }
 
-/* The third line: the sharer's tag and the role, or the count shared
-   with; an empty line on the other cards keeps every card's height. */
+/* The third line, on a shared event's card alone: the sharer's tag and
+   the role, or the count shared with. */
 .event-card-share-line {
   align-items: center;
   display: flex;
   gap: 8px;
   height: 18px;
-  margin-top: 4px;
+  margin-top: 2px;
   min-width: 0;
 }
 

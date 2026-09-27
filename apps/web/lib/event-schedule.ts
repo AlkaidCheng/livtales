@@ -1,7 +1,14 @@
 import type { EventResponse } from "@livtales/schemas";
 import { calendarDateSchema } from "@livtales/schemas";
 import { activeLocale, tr } from "../i18n/active-locale";
-import { formatDateTime, fromDateTimeInput, toDateTimeInput } from "./format";
+import { instantOptions } from "../i18n/active-preferences";
+import {
+  dateFormat,
+  formatDateTime,
+  fromDateTimeInput,
+  toDateTimeInput,
+} from "./format";
+import { instantDayKey } from "./zone";
 
 export interface EventScheduleDraft {
   mode: "unscheduled" | "dates" | "timed";
@@ -92,4 +99,79 @@ export function formatEventSchedule(
   return event.endsAt === null
     ? start
     : range(start, formatDateTime(event.endsAt));
+}
+
+const dayOptions = {
+  month: "short",
+  day: "numeric",
+} as const satisfies Intl.DateTimeFormatOptions;
+
+/** The year option when two days (YYYY-MM-DD) fall in different years. */
+const yearIfCrossed = (start: string, end: string) =>
+  start.slice(0, 4) === end.slice(0, 4) ? {} : { year: "numeric" as const };
+
+/**
+ * When an event happens, worded for a card under its year's heading: the
+ * year shows only where a span ends in another year. One day reads with
+ * its weekday ("Sat, Oct 10"), a time after it ("Sat, Oct 10 · 10:00 AM",
+ * a same-day end as a span of times), and days as a span that leaves out
+ * what the start already names ("Nov 14 – 20", "Oct 30 – Nov 2",
+ * "Dec 30, 2026 – Jan 2, 2027"). Calendar dates name their day in every
+ * zone; a timed event reads in the account's zone and clock.
+ */
+export function formatEventWithinYear(
+  event: Pick<EventResponse, "startsAt" | "endsAt" | "startsOn" | "endsOn">,
+  locale: string = activeLocale(),
+): string {
+  const span = (start: string, end: string) =>
+    tr("dates")("span", { start, end });
+  if (event.startsOn) {
+    const utc = (options: Intl.DateTimeFormatOptions) =>
+      dateFormat(locale, { ...options, timeZone: "UTC" });
+    const start = new Date(`${event.startsOn}T00:00:00Z`);
+    const endsOn = event.endsOn ?? event.startsOn;
+    if (endsOn === event.startsOn)
+      return utc({ weekday: "short", ...dayOptions }).format(start);
+    const end = new Date(`${endsOn}T00:00:00Z`);
+    const days = utc({
+      ...yearIfCrossed(event.startsOn, endsOn),
+      ...dayOptions,
+    });
+    const sameMonth = event.startsOn.slice(0, 7) === endsOn.slice(0, 7);
+    return span(
+      days.format(start),
+      (sameMonth ? utc({ day: "numeric" }) : days).format(end),
+    );
+  }
+  if (event.startsAt === null) return "";
+  const zone = instantOptions();
+  const start = new Date(event.startsAt);
+  const end = event.endsAt === null ? start : new Date(event.endsAt);
+  const startDay = instantDayKey(start);
+  const endDay = instantDayKey(end);
+  if (startDay === endDay) {
+    const day = dateFormat(locale, {
+      weekday: "short",
+      ...dayOptions,
+      ...zone,
+    }).format(start);
+    const time = dateFormat(locale, {
+      hour: "numeric",
+      minute: "2-digit",
+      ...zone,
+    });
+    return `${day} · ${
+      end.getTime() === start.getTime()
+        ? time.format(start)
+        : span(time.format(start), time.format(end))
+    }`;
+  }
+  const moment = dateFormat(locale, {
+    ...yearIfCrossed(startDay, endDay),
+    ...dayOptions,
+    hour: "numeric",
+    minute: "2-digit",
+    ...zone,
+  });
+  return span(moment.format(start), moment.format(end));
 }

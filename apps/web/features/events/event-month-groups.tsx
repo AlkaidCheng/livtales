@@ -9,6 +9,12 @@ import type { EventFolds } from "../../lib/event-folds";
 import { type EventGroups, undatedGroupKey } from "../../lib/event-groups";
 import { useDisplayPreferences } from "../../lib/use-display-preferences";
 
+/**
+ * Where a card of the Events list sits: in the one list of a name or
+ * update order, under No date yet, or under a month of its year.
+ */
+export type EventCardPlacement = "list" | "undated" | "month";
+
 /** The first day of a month as a UTC instant, for naming it in any zone. */
 function monthStart(year: number, month: number): Date {
   const date = new Date(0);
@@ -78,8 +84,11 @@ export function EventMonthGroups({
   readonly groups: EventGroups<EventListItem>;
   readonly folds: EventFolds;
   readonly layout: "grid" | "list";
-  /** One card, its name a heading one level under the group's. */
-  readonly card: (event: EventListItem, level: 3 | 4) => ReactNode;
+  /** One card, as it reads where it is placed. */
+  readonly card: (
+    event: EventListItem,
+    placement: EventCardPlacement,
+  ) => ReactNode;
 }) {
   const t = useTranslations("events");
   const { locale } = useDisplayPreferences();
@@ -91,9 +100,12 @@ export function EventMonthGroups({
     month: "long",
     timeZone: "UTC",
   });
-  const cards = (events: readonly EventListItem[], level: 3 | 4) => (
+  const cards = (
+    events: readonly EventListItem[],
+    placement: EventCardPlacement,
+  ) => (
     <div className={`event-grid event-layout-${layout}`}>
-      {events.map((event) => card(event, level))}
+      {events.map((event) => card(event, placement))}
     </div>
   );
   const undatedOpen = !folds.isFolded(undatedGroupKey);
@@ -126,7 +138,7 @@ export function EventMonthGroups({
                         open={monthOpen}
                         tone="month"
                       />
-                      {monthOpen ? cards(month.events, 4) : null}
+                      {monthOpen ? cards(month.events, "month") : null}
                     </div>
                   );
                 })
@@ -144,7 +156,7 @@ export function EventMonthGroups({
             open={undatedOpen}
             tone="month"
           />
-          {undatedOpen ? cards(groups.undated, 3) : null}
+          {undatedOpen ? cards(groups.undated, "undated") : null}
         </div>
       ) : null}
     </div>
