@@ -70,6 +70,8 @@ export function EventStrip({
   const tabs = useRef(new Map<EventView, HTMLButtonElement>());
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set());
+  // The width and the tabs the fold was last measured for.
+  const measuredFor = useRef<string | null>(null);
   const shortcut = useComponentShortcut();
   const currentKey = showingPages
     ? selectedPageId === undefined
@@ -111,7 +113,10 @@ export function EventStrip({
   // What does not fit folds from the end, views before pages, with every
   // tab shown for the measure so a change of width can unfold again. The
   // chip takes its room as soon as one tab folds, and the measure runs
-  // again once the chip shows its count, so its width is counted too.
+  // again once the chip shows its count, so its width is counted too. That
+  // second measure, at the same width and with the same tabs, only folds
+  // further: a count that reads narrower ("+11" beside "+10") must not
+  // unfold the tab that made it, or the two would fold it back and forth.
   const tabKeys = [
     ...pages.map((page) => `page:${page.id}`),
     ...views.map((view) => `view:${view.id}`),
@@ -142,7 +147,7 @@ export function EventStrip({
         return width <= element.clientWidth + 1;
       };
       const next = new Set<string>();
-      for (const button of buttons.reverse()) {
+      for (const button of [...buttons].reverse()) {
         if (fits()) break;
         const key = button.dataset.tabKey ?? "";
         if (key === currentKey) continue;
@@ -150,10 +155,21 @@ export function EventStrip({
         if (chip) chip.hidden = false;
         next.add(key);
       }
+      const basis = [element.clientWidth, ...tabKeys, ...labels, currentKey]
+        .map(String)
+        .join("\n");
+      const settled = measuredFor.current === basis;
+      measuredFor.current = basis;
+      const kept = settled && next.size < folded.size ? folded : next;
+      if (kept !== next) {
+        for (const button of buttons)
+          button.hidden = kept.has(button.dataset.tabKey ?? "");
+        if (chip) chip.hidden = false;
+      }
       setFolded((current) =>
-        current.size === next.size && [...next].every((key) => current.has(key))
+        current.size === kept.size && [...kept].every((key) => current.has(key))
           ? current
-          : next,
+          : kept,
       );
     };
     measure();

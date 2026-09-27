@@ -164,3 +164,77 @@ describe("the strip's long press", () => {
     fireEvent.contextMenu(tab);
   });
 });
+
+describe("the strip's fold", () => {
+  // jsdom lays nothing out: a tab is 60px wide unless hidden, the chip is
+  // as wide as its count reads in a proportional face ("+11" narrower than
+  // "+10"), and a part of the strip is as wide as what it holds.
+  function widthOf(element: Element): number {
+    if (element instanceof HTMLElement && element.hidden) return 0;
+    if (element.hasAttribute("data-tab-key")) return 60;
+    if (element.hasAttribute("data-strip-chip")) {
+      const count = Number(/\+(\d+)/.exec(element.textContent ?? "")?.[1]);
+      return count === 10 ? 70 : count === 11 ? 50 : 60;
+    }
+    if (element.classList.contains("event-strip-bar")) return 1;
+    return Array.from(element.children).reduce(
+      (total, child) => total + widthOf(child),
+      0,
+    );
+  }
+
+  beforeEach(() => {
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: Element) {
+        return { width: widthOf(this) } as DOMRect;
+      },
+    );
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(
+      function (this: HTMLElement) {
+        return this.classList.contains("event-strip") ? 240 : 0;
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("settles where one more fold narrows the chip enough to unfold it again", () => {
+    const views = [
+      "overview",
+      "todos",
+      "calendar",
+      "timeline",
+      "itinerary",
+      "expenses",
+      "reminders",
+      "files",
+      "people",
+      "notes",
+      "sharing",
+      "removed-links",
+    ] as const;
+    render(
+      <EventStrip
+        pages={[{ id: "page-1", name: "Plan", components: [] }]}
+        selectedPageId="page-1"
+        showingPages={false}
+        onSelectPage={() => undefined}
+        canAddPage={false}
+        onAddPage={() => undefined}
+        views={views.map((id) => ({ id, label: id }))}
+        activeView="calendar"
+        onSelectView={() => undefined}
+      />,
+      { wrapper },
+    );
+    // Ten folded leave no room with the wider "+10" chip, and eleven leave
+    // room with the narrower "+11": the strip keeps eleven rather than
+    // folding and unfolding the eleventh without end.
+    expect(
+      screen.getByRole("button", { name: "11 more tabs" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "calendar" })).toBeVisible();
+  });
+});
