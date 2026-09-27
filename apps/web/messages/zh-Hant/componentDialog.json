@@ -5,7 +5,7 @@
   "addTo": "新增到{page}。",
   "find": "尋找元件",
   "placeholder": "試試 /calendar 或 支出",
-  "noMatch": "沒有相符的元件。試試日曆、待辦或檔案。",
+  "noMatch": "沒有相符的元件。試試日曆、任務或檔案。",
   "clearSearch": "清除搜尋",
   "addNamed": "新增{component}",
   "refreshLatest": "重新整理至最新",

@@ -107,7 +107,7 @@ export async function createFirstPlan(page: Page, testInfo: TestInfo) {
   await page.keyboard.insertText("todos");
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("heading", { name: "To-dos", exact: true }),
+    page.getByRole("heading", { name: "Tasks", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".composition-hint")).toHaveCount(0);
   await choosePageOptionWithKeyboard(page, "Arrange components");

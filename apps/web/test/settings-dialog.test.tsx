@@ -111,7 +111,7 @@ const inShell = ({ children }: { readonly children: ReactNode }) => (
   </Providers>
 );
 
-/** Settings over an event's To-dos, opened at `section` by the address. */
+/** Settings over an event's Tasks, opened at `section` by the address. */
 function renderAt(section: SettingsSection, shell: typeof wrapper = wrapper) {
   window.history.replaceState(
     null,

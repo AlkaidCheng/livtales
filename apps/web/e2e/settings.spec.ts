@@ -10,6 +10,7 @@ import {
   focusAccountBlock,
   openCollection,
 } from "./helpers/quiet-chrome";
+import { showingFinished, showTasks } from "./helpers/view-options";
 
 // The Chinese strings the journey looks for, as escapes so the spec stays
 // ASCII like the rest of the suite.
@@ -244,20 +245,15 @@ test("opens Settings over an event's view and returns to it as it was left @webk
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/events$/u);
 
-  // The event's To-dos, narrowed by a filter, with a mark on its heading
+  // The event's Tasks, narrowed by a filter, with a mark on its heading
   // that a remount of the page would lose.
   await page.goto(`/events/${event.id}`);
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const eventUrl = page.url();
   expect(eventUrl).toMatch(/\?view=todos$/u);
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
-  const filter = page.getByRole("button", {
-    name: "Filter: 1 filter",
-    exact: true,
-  });
-  await expect(filter).toHaveClass(/is-active/);
+  await showTasks(page, "All");
+  const filter = showingFinished(page);
+  await expect(filter).toBeVisible();
   const heading = page.getByRole("heading", {
     level: 1,
     name: "Autumn gathering",
@@ -266,12 +262,12 @@ test("opens Settings over an event's view and returns to it as it was left @webk
   await heading.evaluate((element) => {
     element.dataset.probe = "kept";
   });
-  const todos = page.getByRole("tab", { name: "To-dos", exact: true });
+  const todos = page.getByRole("tab", { name: "Tasks", exact: true });
   async function expectLeftAsItWas() {
     await expect(settingsDialog(page)).toHaveCount(0);
     await expect(page).toHaveURL(eventUrl);
     await expect(todos).toHaveAttribute("aria-selected", "true");
-    await expect(filter).toHaveClass(/is-active/);
+    await expect(filter).toBeVisible();
     await expect(heading).toHaveAttribute("data-probe", "kept");
     await expect(
       page.getByText("Book the venue", { exact: true }),
@@ -319,7 +315,7 @@ test("opens Settings over an event's view and returns to it as it was left @webk
     path: testInfo.outputPath("settings-language.png"),
   });
 
-  // The close control returns to the event's To-dos as they were left,
+  // The close control returns to the event's Tasks as they were left,
   // with focus back on the account block (the menu control on a phone,
   // whose drawer closed as Settings opened).
   await settings

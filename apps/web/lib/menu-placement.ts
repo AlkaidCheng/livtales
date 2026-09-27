@@ -31,15 +31,23 @@ export function reservedBottom(): number {
     : 8;
 }
 
+/** What a list keeps clear of at the top: the app bar on a phone, nothing elsewhere. */
+export function reservedTop(): number {
+  return typeof window.matchMedia === "function" &&
+    window.matchMedia("(max-width: 760px)").matches
+    ? 52
+    : 0;
+}
+
 /**
  * Places a list of `height` against its control's box: below when it fits
  * there, above when it only fits there, and otherwise on the roomier side
- * capped to that room, so every entry stays inside the viewport and above
- * the phone's rail.
+ * capped to that room, so every entry stays inside the viewport, under
+ * the phone's app bar, and above the phone's rail.
  */
 export function fitMenu(anchor: DOMRect, height: number, gap: number): MenuFit {
   const below = viewportSize().height - reservedBottom() - anchor.bottom - gap;
-  const above = anchor.top - gap - menuEdge;
+  const above = anchor.top - gap - menuEdge - reservedTop();
   if (height <= below) return { side: "below", maxHeight: null };
   if (height <= above) return { side: "above", maxHeight: null };
   return above > below

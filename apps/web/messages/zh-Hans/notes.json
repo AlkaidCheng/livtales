@@ -13,5 +13,6 @@
     "history": "历史",
     "moveToTrash": "移到回收站"
   },
-  "actionsFor": "{name} 的操作"
+  "actionsFor": "{name} 的操作",
+  "sortedByTitle": "按标题排序"
 }

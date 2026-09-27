@@ -18,7 +18,7 @@ needed only to build the file. Moving the file does not transfer saved edits.
 
 ## Available interactions
 
-- Browse and create Events; edit Events, to-dos, expenses, and reminders.
+- Browse and create Events; edit Events, tasks, expenses, and reminders.
 - Create Events in a focused dialog without moving the collection. Turn on Set
   dates to choose a single day or a multi-day range, then use Done to collapse
   the calendar. Month and year open independent selection grids; arrow keys move

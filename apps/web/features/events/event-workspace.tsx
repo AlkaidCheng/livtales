@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { ErrorNotice, LoadingState } from "../../components/feedback";
 import { AccessLine } from "../../components/access-line";
@@ -30,11 +36,7 @@ import { useIsPhone } from "../../lib/use-media";
 import { useEventWorkspaceQueries, useSessionQuery } from "../../lib/queries";
 import { useForgetInaccessibleEventDrafts } from "../../lib/editor-draft-context";
 import { isTemporaryReadError } from "../../lib/query-errors";
-import {
-  type AccessSource,
-  eventComponentKindSchema,
-  type EventComponentView,
-} from "@livtales/schemas";
+import { type AccessSource, eventComponentKindSchema } from "@livtales/schemas";
 import { MoveToSpaceDialog } from "../spaces/move-to-space-dialog";
 import { EventAddSeal } from "./event-add-seal";
 import { EventBreadcrumb } from "./event-breadcrumb";
@@ -45,7 +47,7 @@ import { UndoMenuItems } from "../../components/undo-menu-items";
 import { HistoryButton } from "../history/history-button";
 import { useOpenLifecycle } from "../recovery/lifecycle-provider";
 import { RemovedLinksPanel } from "../recovery/removed-links-panel";
-import { eventViewLabel } from "../../lib/event-views";
+import { type EventView, eventViewLabel } from "../../lib/event-views";
 import {
   landOnEventPlace,
   useEventAddress,
@@ -55,6 +57,7 @@ import {
   rememberEventPlace,
   rememberedEventPlace,
 } from "../../lib/event-place";
+import { viewChoicesKey } from "../../lib/view-choices";
 import { EventOverview } from "./event-overview";
 import { EventPages } from "./event-pages";
 import { EventStrip } from "./event-strip";
@@ -63,6 +66,7 @@ import { EventViewGallery } from "./event-view-gallery";
 import { ManageTabsDialog } from "./manage-tabs-dialog";
 import { useEventPagesState } from "./use-event-pages";
 import { narrowedViews, useEventTabs } from "./use-event-tabs";
+import { type TabCount, type ViewTab, ViewTabProvider } from "./view-head";
 import {
   CommandScope,
   type ContextCommand,
@@ -94,11 +98,26 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   const sessionQuery = useSessionQuery();
   const session = sessionQuery.data;
   const phone = useIsPhone();
-  // A tab's view is chosen for the session; page components save theirs.
-  const [tabView, setTabView] = useState<{
-    tab: string;
-    view: EventComponentView;
+  // The shown view's controls and chips go on the strip and its count on
+  // its tab; its choices are kept per view in this browser.
+  const [controlsSlot, setControlsSlot] = useState<HTMLElement | null>(null);
+  const [chipsSlot, setChipsSlot] = useState<HTMLElement | null>(null);
+  const [tabCount, setTabCount] = useState<{
+    readonly view: EventView;
+    readonly count: TabCount;
   } | null>(null);
+  const countedView = useRef<EventView | null>(null);
+  const onCount = useCallback((count: TabCount | null) => {
+    const view = countedView.current;
+    if (view === null) return;
+    setTabCount((current) =>
+      count !== null
+        ? { view, count }
+        : current?.view === view
+          ? null
+          : current,
+    );
+  }, []);
   const editButton = useRef<HTMLButtonElement>(null);
   const shareButton = useRef<HTMLButtonElement>(null);
   const historyButton = useRef<HTMLButtonElement>(null);
@@ -306,6 +325,17 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
       ? queries.detail
       : undefined;
   const component = eventComponentKindSchema.safeParse(shownTab);
+  // The count a view reports belongs to the view shown as it reports it.
+  countedView.current = shownTab;
+  const viewTab: ViewTab = {
+    controls: controlsSlot,
+    chips: chipsSlot,
+    choicesKey:
+      session === undefined
+        ? null
+        : viewChoicesKey(session.user.id, eventId, shownTab),
+    onCount,
+  };
 
   function copyLink() {
     const href = window.location.href;
@@ -452,37 +482,42 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
         ) : null}
       </header>
 
-      <EventStrip
-        pages={stripPages}
-        selectedPageId={pagesState.selectedPage?.id}
-        showingPages={shownTab === "pages"}
-        onSelectPage={openPage}
-        // An event without pages starts at its views; its first page comes
-        // from the gallery, Manage tabs, or the Add page command.
-        canAddPage={pagesState.canAddPage && pagesState.pages.length > 0}
-        onAddPage={startNewPage}
-        addPageRef={pagesState.addPageButton}
-        pageMenu={pagesState.pageMenu}
-        pageDrop={pagesState.pageDrop}
-        onInsertComponent={
-          pagesState.canAddComponent && pagesState.selectedPage
-            ? () => {
-                setActiveTab("pages");
-                pagesState.setAdding({
-                  pageId: pagesState.selectedPage?.id ?? null,
-                });
-              }
-            : undefined
-        }
-        views={stripViews.map((view) => ({
-          id: view,
-          label: eventViewLabel(view),
-        }))}
-        activeView={shownTab}
-        onSelectView={setActiveTab}
-        onAddView={() => setTabsDialog("gallery")}
-        onManageTabs={() => setTabsDialog("manage")}
-      />
+      <div className="event-strip-block">
+        <EventStrip
+          pages={stripPages}
+          selectedPageId={pagesState.selectedPage?.id}
+          showingPages={shownTab === "pages"}
+          onSelectPage={openPage}
+          // An event without pages starts at its views; its first page comes
+          // from the gallery, Manage tabs, or the Add page command.
+          canAddPage={pagesState.canAddPage && pagesState.pages.length > 0}
+          onAddPage={startNewPage}
+          addPageRef={pagesState.addPageButton}
+          pageMenu={pagesState.pageMenu}
+          pageDrop={pagesState.pageDrop}
+          onInsertComponent={
+            pagesState.canAddComponent && pagesState.selectedPage
+              ? () => {
+                  setActiveTab("pages");
+                  pagesState.setAdding({
+                    pageId: pagesState.selectedPage?.id ?? null,
+                  });
+                }
+              : undefined
+          }
+          views={stripViews.map((view) => ({
+            id: view,
+            label: eventViewLabel(view),
+          }))}
+          activeView={shownTab}
+          onSelectView={setActiveTab}
+          onAddView={() => setTabsDialog("gallery")}
+          onManageTabs={() => setTabsDialog("manage")}
+          count={tabCount?.view === shownTab ? tabCount.count : undefined}
+          onControlsSlot={setControlsSlot}
+        />
+        <div className="event-strip-chips" ref={setChipsSlot} />
+      </div>
       <EventSwipe
         tabs={swipeTabs}
         current={shownKey}
@@ -520,7 +555,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
                 onRefresh={() => void activeProjection.refetch()}
               />
             ) : (
-              <>
+              <ViewTabProvider value={viewTab}>
                 {shownTab === "overview" && detail !== undefined ? (
                   <EventOverview detail={detail} onOpen={setActiveTab} />
                 ) : null}
@@ -530,12 +565,6 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
                     kind={component.data}
                     eventId={eventId}
                     canEdit={canEdit}
-                    view={
-                      tabView?.tab === component.data ? tabView.view : undefined
-                    }
-                    onChangeView={(view) =>
-                      setTabView({ tab: component.data, view })
-                    }
                   />
                 ) : null}
                 {shownTab === "sharing" && canShare && detail !== undefined ? (
@@ -544,7 +573,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
                 {shownTab === "removed-links" ? (
                   <RemovedLinksPanel objectId={eventId} />
                 ) : null}
-              </>
+              </ViewTabProvider>
             )}
           </div>
         )}

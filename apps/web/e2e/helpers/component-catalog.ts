@@ -15,7 +15,7 @@ export async function exerciseComponentCatalog(page: Page, testInfo: TestInfo) {
     await expect(dialog).toHaveCount(0);
     if (name === "Preparation") {
       await add.click();
-      await picker.getByRole("button", { name: "Add To-dos" }).click();
+      await picker.getByRole("button", { name: "Add Tasks" }).click();
       await expect(picker).toHaveCount(0);
     }
   }
@@ -26,7 +26,7 @@ export async function exerciseComponentCatalog(page: Page, testInfo: TestInfo) {
   const cards = picker.getByRole("button", { name: /^Add / });
   await expect(cards).toHaveCount(9);
   // A kind another page holds says so on its card; the rest say nothing.
-  const todos = picker.getByRole("button", { name: "Add To-dos", exact: true });
+  const todos = picker.getByRole("button", { name: "Add Tasks", exact: true });
   await expect(todos).toContainText("On another page");
   await expect(
     picker.getByRole("button", { name: "Add Calendar", exact: true }),
@@ -72,7 +72,7 @@ export async function exerciseComponentCatalog(page: Page, testInfo: TestInfo) {
   await expect(picker).toHaveCount(0);
   await expect(add).toBeFocused();
   await expect(
-    page.getByText(`To-dos added to ${destination}.`, { exact: true }),
+    page.getByText(`Tasks added to ${destination}.`, { exact: true }),
   ).toBeVisible();
   await add.click();
   await expect(todos).toContainText("On this page");
@@ -83,6 +83,6 @@ export async function exerciseComponentCatalog(page: Page, testInfo: TestInfo) {
     page.getByRole("heading", { name: destination, exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "To-dos component 1", exact: true }),
+    page.getByRole("region", { name: "Tasks component 1", exact: true }),
   ).toBeVisible();
 }

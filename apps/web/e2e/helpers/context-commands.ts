@@ -141,10 +141,10 @@ export async function exerciseContextCommands(
     picker.getByRole("searchbox", { name: "Find a component" }),
   ).toBeFocused();
   await expect(picker).toContainText(`Add to ${pageName}.`);
-  await picker.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await picker.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await expect(picker).toHaveCount(0);
   await expect(
-    page.getByRole("region", { name: "To-dos component 1", exact: true }),
+    page.getByRole("region", { name: "Tasks component 1", exact: true }),
   ).toBeVisible();
   await openCommands(page);
   await input.fill("Search");

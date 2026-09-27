@@ -226,7 +226,7 @@ describe("quick add", () => {
 
     // The list's row adds a task with no due date; by day, that task's
     // group and today's group each add to their own day.
-    const todos = panel("To-dos");
+    const todos = panel("Tasks");
     await user.click(
       todos.getByRole("button", { name: "Add a task to the list" }),
     );
@@ -314,8 +314,8 @@ describe("quick add", () => {
           .closest(".planning-panel") as HTMLElement,
       );
     // An empty collection shows its editor the quick row alone.
-    await screen.findByRole("heading", { name: "To-dos" });
-    const todos = panel("To-dos");
+    await screen.findByRole("heading", { name: "Tasks" });
+    const todos = panel("Tasks");
     expect(
       await todos.findByRole("button", { name: "Add a task to the list" }),
     ).toBeVisible();
@@ -395,7 +395,7 @@ describe("quick add", () => {
       );
     // By day from the start: the empty state's row is the No due date
     // group's row, so the field carries over when that group appears.
-    const todos = panel("To-dos");
+    const todos = panel("Tasks");
     await user.click(todos.getByRole("button", { name: /^Layout: / }));
     await user.click(todos.getByRole("menuitemradio", { name: "By day" }));
     await user.click(

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
 import { openEventView } from "./helpers/event-view";
 import { moveToTrash } from "./helpers/lifecycle";
+import { chooseViewOption } from "./helpers/view-options";
 import {
   openCollection,
   openSearchPage,
@@ -37,10 +38,10 @@ test("keeps notes with an event: the gallery card, the editor, opening in place,
   const eventLink = page.getByRole("link", { name: /Kyoto in November/u });
   await expect(eventLink).toHaveAttribute("href", `/events/${event.id}`);
   await eventLink.click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
 
   // The gallery offers Notes as a card; a new event's strip holds the
-  // Overview and To-dos, so the card, a switch, reads unpressed until it
+  // Overview and Tasks, so the card, a switch, reads unpressed until it
   // puts Notes on the strip.
   await page.getByRole("button", { name: "Add a view", exact: true }).click();
   const gallery = page.getByRole("dialog", {
@@ -117,10 +118,7 @@ test("keeps notes with an event: the gallery card, the editor, opening in place,
   // The list orders by title on request.
   const titles = page.locator(".note-card .note-toggle");
   await expect(titles).toHaveText(["What to bring", "Dinner with the Tanakas"]);
-  await page.getByRole("button", { name: "Sort", exact: true }).click();
-  await page
-    .getByRole("menuitemradio", { name: "By title", exact: true })
-    .click();
+  await chooseViewOption(page, "Sort", "By title");
   await expect(titles).toHaveText(["Dinner with the Tanakas", "What to bring"]);
 
   // Trash from the row menu; the Trash restores the note to the list.

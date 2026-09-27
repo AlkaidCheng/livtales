@@ -158,7 +158,7 @@ test("shows the events shared with an account beside its own, opens one in place
     await expect(
       page.getByText("Shared with you by Ana as viewer"),
     ).toBeVisible();
-  await page.getByRole("tab", { name: "To-dos", exact: true }).click();
+  await page.getByRole("tab", { name: "Tasks", exact: true }).click();
   await expect(page.getByText("Book the ryokan")).toBeVisible();
   // The chrome stays on Ben's own workspace: the block that names it still reads Personal.
   await expect(workspaceBlock(page)).toContainText("Personal");

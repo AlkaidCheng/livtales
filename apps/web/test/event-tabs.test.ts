@@ -24,7 +24,7 @@ describe("the event tab arrangement", () => {
     for (const view of fixedViews) expect(stripViews).toContain(view);
   });
 
-  it("starts a new event on the Overview and To-dos, with the other views in the gallery and fixed ones hidden", () => {
+  it("starts a new event on the Overview and Tasks, with the other views in the gallery and fixed ones hidden", () => {
     expect([...defaultViews]).toEqual(["overview", "todos"]);
     expect(arrangeEventTabs({}, known)).toEqual({
       order: ["overview", "todos", "sharing"],

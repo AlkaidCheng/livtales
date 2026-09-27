@@ -20,11 +20,11 @@ test("opens Settings over the page by its address in the fragment", async ({
   await context.setOffline(true);
   await page.goto(sandboxUrl);
   await page.getByRole("link", { name: /Autumn gathering/ }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const eventAddress = address(page);
   expect(eventAddress).toMatch(/\?view=todos$/u);
 
-  // From the account menu: an entry of its own over the event's To-dos.
+  // From the account menu: an entry of its own over the event's Tasks.
   await focusAccountBlock(page);
   await page.keyboard.press("Enter");
   await page
@@ -48,7 +48,7 @@ test("opens Settings over the page by its address in the fragment", async ({
   await expect(settings).toHaveCount(0);
   await expect.poll(() => address(page)).toBe(eventAddress);
   await expect(
-    page.getByRole("tab", { name: "To-dos", exact: true }),
+    page.getByRole("tab", { name: "Tasks", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await expect(accountReturn(page)).toBeFocused();
 

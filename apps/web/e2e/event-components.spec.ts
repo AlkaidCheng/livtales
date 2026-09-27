@@ -64,7 +64,7 @@ test("composes planning and private-file components with canonical updates and v
     "Expenses",
     "Reminders",
     "Files",
-    "To-dos",
+    "Tasks",
   ]) {
     await page
       .getByRole("button", { name: "Add component", exact: true })

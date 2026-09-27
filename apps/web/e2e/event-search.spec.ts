@@ -37,7 +37,7 @@ test("creates and retrieves one canonical Event at responsive widths", async ({
   const overviewTab = page.getByRole("tab", { name: "Overview" });
   await overviewTab.focus();
   await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("tab", { name: "To-dos" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "Tasks" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -53,7 +53,7 @@ test("creates and retrieves one canonical Event at responsive widths", async ({
   expect((await creation).status()).toBe(201);
   await expect(page.getByText("Confirm venue", { exact: true })).toBeVisible();
   await page.reload();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await expect(page.getByText("Confirm venue", { exact: true })).toBeVisible();
   await openEventView(page, "Sharing");
   await expect(

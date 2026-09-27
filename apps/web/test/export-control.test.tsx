@@ -137,7 +137,7 @@ describe("Export", () => {
     const user = userEvent.setup();
     renderTodos();
     await screen.findByText("Confirm the garden venue");
-    const tools = screen.getByRole("heading", { level: 2, name: "To-dos" })
+    const tools = screen.getByRole("heading", { level: 2, name: "Tasks" })
       .parentElement?.parentElement;
     assert(tools);
     const buttons = within(tools).getAllByRole("button");
@@ -170,7 +170,7 @@ describe("Export", () => {
     assert(file);
     expect(file.type).toBe("text/csv;charset=utf-8");
     expect(file.name).toMatch(
-      /^Autumn gathering - To-dos - \d{4}-\d{2}-\d{2}\.csv$/u,
+      /^Autumn gathering - Tasks - \d{4}-\d{2}-\d{2}\.csv$/u,
     );
     const lines = (await textOf(file.blob)).split("\r\n");
     expect(lines[0]).toBe(
@@ -183,9 +183,16 @@ describe("Export", () => {
       "",
     ]);
 
-    // Filter: All adds the done task; the file follows the list.
+    // Show: All adds the done task after the open one; the file follows
+    // the list.
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Filter" })).getByRole(
+        "radio",
+        { name: "All" },
+      ),
+    );
+    await user.keyboard("{Escape}");
     await screen.findByText("Send invitations");
     await exportAs(user, "Export data (CSV)");
     const second = saved.at(-1);
@@ -209,7 +216,7 @@ describe("Export", () => {
     expect(
       within(panel as HTMLElement).getByRole("heading", {
         level: 2,
-        name: "To-dos",
+        name: "Tasks",
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Sort: Manual. Show: Open.")).toHaveClass(

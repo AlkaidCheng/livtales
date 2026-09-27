@@ -40,7 +40,7 @@ async function openEvent(page: Page, name: string) {
   await expect(
     page.getByRole("heading", { level: 1, name, exact: true }),
   ).toBeVisible();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
 }
 
 test("names removals by what reverses them and never reports one that was refused @webkit-desktop", async ({
@@ -105,7 +105,7 @@ test("names removals by what reverses them and never reports one that was refuse
   await recovery.getByRole("checkbox").check();
   await recovery.getByRole("button", { name: "Confirm link recovery" }).click();
   await recovery.getByRole("button", { name: "Close", exact: true }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await expect(table).toBeVisible();
 
   // Removing a share says who loses what; the other account then has none.

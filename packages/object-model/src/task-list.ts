@@ -17,12 +17,15 @@ import {
   asc,
   desc,
   eq,
+  exists,
   gt,
   ilike,
   inArray,
   isNull,
   lt,
+  notExists,
   or,
+  type SQL,
   sql,
 } from "drizzle-orm";
 
@@ -112,6 +115,7 @@ export function taskListContext(
         input.dueFrom ?? null,
         input.dueTo ?? null,
         input.timezone,
+        input.event ?? null,
       ]),
     )
     .digest("hex");
@@ -228,6 +232,39 @@ export async function listTaskPage(
   const pattern = `%${input.query.replace(/[\\%_]/g, "\\$&")}%`;
 
   return withReadAuthorization(database, async (transaction, authorization) => {
+    // The Event that includes a task counts only while it is live and the
+    // caller may view it, as for the context the page names; the Events'
+    // own rows are read in a subquery, where `objects` is the Event.
+    let inclusion: SQL | undefined;
+    if (input.event !== undefined) {
+      const events = transaction
+        .select({ id: objects.id })
+        .from(objects)
+        .where(
+          and(
+            eq(objects.objectType, "event"),
+            isNull(objects.deletedAt),
+            authorization.resourcePredicate(principal, "view"),
+            input.event === "none" || input.event === "any"
+              ? undefined
+              : eq(objects.id, input.event),
+          ),
+        );
+      const included = transaction
+        .select({ id: objectRelations.id })
+        .from(objectRelations)
+        .where(
+          and(
+            eq(objectRelations.workspaceId, principal.workspaceId),
+            eq(objectRelations.relationType, "includes"),
+            isNull(objectRelations.deletedAt),
+            eq(objectRelations.targetObjectId, objects.id),
+            inArray(objectRelations.sourceObjectId, events),
+          ),
+        );
+      inclusion =
+        input.event === "none" ? notExists(included) : exists(included);
+    }
     const rows = await transaction
       .select({
         id: objects.id,
@@ -260,6 +297,7 @@ export async function listTaskPage(
             ? undefined
             : eq(tasks.assigneePersonId, input.assignee),
           dueRangePredicate(input),
+          inclusion,
           after,
         ),
       )

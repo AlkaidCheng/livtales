@@ -69,7 +69,7 @@ test("retries a lost Task creation response without duplicating its resource or 
   request,
 }) => {
   const { event, headers } = await openTaskEvent(page, request);
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await openTaskEditor(page);
   const dialog = page.getByRole("dialog", { name: "Add task", exact: true });
   const name = dialog.getByLabel("Task", { exact: true });

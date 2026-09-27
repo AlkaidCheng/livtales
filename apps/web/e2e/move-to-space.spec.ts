@@ -95,7 +95,7 @@ test("moves an event into a shared space after naming the links it removes @webk
   await expect(review).toBeVisible();
   await expect(
     review.getByRole("region", { name: "Moves with it" }),
-  ).toContainText("1 to-do");
+  ).toContainText("1 task");
   const removed = review.getByRole("region", {
     name: "Links the move removes",
   });

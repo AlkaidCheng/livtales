@@ -12,7 +12,7 @@ function dayFromToday(offset: number): string {
   return `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}`;
 }
 
-test("lays the To-dos out as a board of the days that hold tasks, Overdue and Today first @webkit-desktop", async ({
+test("lays the Tasks out as a board of the days that hold tasks, Overdue and Today first @webkit-desktop", async ({
   page,
   request,
 }) => {
@@ -59,7 +59,7 @@ test("lays the To-dos out as a board of the days that hold tasks, Overdue and To
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Wedding countdown/ }).click();
-  // A page's To-dos component keeps its layout with the page.
+  // A page's Tasks component keeps its layout with the page.
   await openAddPage(page);
   const addPage = page.getByRole("dialog", { name: "Add a page" });
   await addPage.getByLabel("Page name").fill("Preparation");
@@ -69,10 +69,10 @@ test("lays the To-dos out as a board of the days that hold tasks, Overdue and To
     .getByRole("button", { name: "Add component", exact: true })
     .click();
   const picker = page.getByRole("dialog", { name: "Add a component" });
-  await picker.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await picker.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await expect(picker).toHaveCount(0);
   const panel = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await chooseLayout(panel, "Board");
   await expect(page.getByText("Shown as a board.")).toBeAttached();
@@ -212,7 +212,7 @@ test("lays the To-dos out as a board of the days that hold tasks, Overdue and To
   // The layout is kept on the component: a reload opens the board.
   await page.reload();
   const reopened = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await expect(
     reopened.getByRole("button", { name: "Layout: Board", exact: true }),

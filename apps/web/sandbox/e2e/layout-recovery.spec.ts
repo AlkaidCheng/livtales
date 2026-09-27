@@ -28,7 +28,7 @@ test("recovers an offline layout across reloads and previews read-only history",
     .click();
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Add To-dos", exact: true })
+    .getByRole("button", { name: "Add Tasks", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
@@ -47,7 +47,7 @@ test("recovers an offline layout across reloads and previews read-only history",
     .getByRole("button", { name: "Undo layout change", exact: true })
     .click();
   await expect(
-    dialog.getByRole("button", { name: "Remove To-dos from Preparation" }),
+    dialog.getByRole("button", { name: "Remove Tasks from Preparation" }),
   ).toBeVisible();
   await expect(
     dialog.getByRole("button", { name: "Redo layout change", exact: true }),
@@ -80,7 +80,7 @@ test("recovers an offline layout across reloads and previews read-only history",
   await dialog
     .getByRole("button", { name: "Preview version 2", exact: true })
     .click();
-  await expect(dialog).toContainText("Preparation: To-dos");
+  await expect(dialog).toContainText("Preparation: Tasks");
   await dialog
     .getByRole("button", { name: "Restore layout", exact: true })
     .click();
@@ -96,7 +96,7 @@ test("recovers an offline layout across reloads and previews read-only history",
   await dialog
     .getByRole("button", { name: "Preview version 2", exact: true })
     .click();
-  await expect(dialog).toContainText("Preparation: To-dos");
+  await expect(dialog).toContainText("Preparation: Tasks");
   await expect(
     dialog.getByRole("button", { name: "Restore layout", exact: true }),
   ).toHaveCount(0);

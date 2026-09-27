@@ -5,7 +5,7 @@
   "addTo": "Add to {page}.",
   "find": "Find a component",
   "placeholder": "Try /calendar or expenses",
-  "noMatch": "No matching components. Try calendar, to-dos, or files.",
+  "noMatch": "No matching components. Try calendar, tasks, or files.",
   "clearSearch": "Clear search",
   "addNamed": "Add {component}",
   "refreshLatest": "Refresh latest",

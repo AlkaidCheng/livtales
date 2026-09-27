@@ -56,6 +56,7 @@ import { dueOnDay, formatTaskTime } from "../../lib/task-due";
 import type { TaskFields } from "../../lib/task-fields";
 import { groupBySection } from "../../lib/section-groups";
 import { dayGroupLabel } from "../../lib/day-groups";
+import { isOpenTask } from "../../lib/task-choices";
 import { groupTasksByDay } from "../../lib/task-groups";
 import { nestTasks } from "../../lib/task-tree";
 import type { Period } from "../../lib/use-period";
@@ -105,6 +106,8 @@ export function rowClasses(
 
 /** The one group of the list view; by day, groups carry their own keys. */
 const listGroup = "all";
+/** The group of the finished tasks listed apart, which no row moves into. */
+const finishedGroup = "finished";
 /** The group the sections of a sectioned list move within, and the prefix of their row ids. */
 const sectionsGroup = "sections";
 const sectionRow = "section:";
@@ -127,6 +130,8 @@ interface TaskTableMeta {
   /** The assignee and the labels, at the row's right. */
   readonly aside: (task: TaskResponse) => ReactNode;
   readonly present: ReadonlySet<string>;
+  /** The tasks listed apart, after the open ones. */
+  readonly finished: ReadonlySet<string>;
   readonly menu: (
     task: TaskResponse,
     rows: readonly TaskResponse[],
@@ -173,10 +178,12 @@ const taskColumns = [
   taskColumn.accessor("displayName", {
     header: () => tr("taskRow.columns")("task"),
     cell: ({ row, table }) => {
-      const { copy, present, press } = tableMeta(table);
+      const { copy, finished, present, press } = tableMeta(table);
+      const parent = row.original.parentTaskId;
       const nested =
-        row.original.parentTaskId !== null &&
-        present.has(row.original.parentTaskId);
+        parent !== null &&
+        present.has(parent) &&
+        finished.has(parent) === finished.has(row.original.id);
       return (
         <div className={`resource-copy${nested ? " task-nested" : ""}`}>
           {pressable(row.original, copy(row.original, true, nested), press)}
@@ -206,13 +213,17 @@ const taskColumns = [
  * composer; the add row at the end of the list, of a day group, or of a
  * section opens the composer empty. Under manual order a row can be
  * dragged to another place, day, or section, or moved a step from its
- * menu.
+ * menu. With `finishedAfter`, the list and by-day layouts list the tasks
+ * that are no longer open apart, after the others, under that heading;
+ * `foot` closes the list, in its column.
  */
 export function TaskListView({
   canEdit,
   composer,
   contexts,
   eventId,
+  finishedAfter,
+  foot,
   labelNames,
   manual = false,
   now,
@@ -234,6 +245,10 @@ export function TaskListView({
   /** The Event each task belongs to, by task ID, when the container spans Events. */
   readonly contexts?: Readonly<Record<string, TaskContext>> | undefined;
   readonly eventId?: string | undefined;
+  /** The heading of the finished tasks, listed after the open ones. */
+  readonly finishedAfter?: ReactNode;
+  /** The list's foot, after its rows: how many finished tasks it hides. */
+  readonly foot?: ReactNode;
   /** Label names by id; a label the container has not loaded shows nothing. */
   readonly labelNames?: ReadonlyMap<string, string> | undefined;
   /** The tasks arrive in manual order, so they may be reordered. */
@@ -261,7 +276,23 @@ export function TaskListView({
   readonly tasks: readonly TaskResponse[];
   readonly view: EventComponentView;
 }) {
-  const ordered = useMemo(() => nestTasks(tasks), [tasks]);
+  // Listed apart, the finished tasks leave the open ones' rows, days, and
+  // sections, and are never moved among them.
+  const apart =
+    finishedAfter !== undefined && (view === "list" || view === "by-day");
+  const leading = useMemo(
+    () => (apart ? tasks.filter(isOpenTask) : tasks),
+    [apart, tasks],
+  );
+  const finishedOrdered = useMemo(
+    () => (apart ? nestTasks(tasks.filter((task) => !isOpenTask(task))) : []),
+    [apart, tasks],
+  );
+  const finishedIds = useMemo(
+    () => new Set(finishedOrdered.map((task) => task.id)),
+    [finishedOrdered],
+  );
+  const ordered = useMemo(() => nestTasks(leading), [leading]);
   const present = useMemo(() => new Set(tasks.map((task) => task.id)), [tasks]);
   const byId = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
@@ -453,9 +484,9 @@ export function TaskListView({
   const groups = useMemo(
     () =>
       view === "by-day"
-        ? groupTasksByDay(tasks, new Date(), manual ? "manual" : "due")
+        ? groupTasksByDay(leading, new Date(), manual ? "manual" : "due")
         : [],
-    [manual, tasks, view],
+    [leading, manual, view],
   );
   const placed = useMemo(
     () =>
@@ -702,13 +733,13 @@ export function TaskListView({
   /** The grip in the gutter at a row's left edge, when the rows may be moved. */
   const grip = useCallback(
     (task: TaskResponse) =>
-      draggable ? (
+      draggable && !finishedIds.has(task.id) ? (
         <DragGrip
           label={sectionT("move", { name: task.displayName })}
           {...gripProps(task.id)}
         />
       ) : null,
-    [draggable, gripProps, sectionT],
+    [draggable, finishedIds, gripProps, sectionT],
   );
 
   const check = useCallback(
@@ -784,7 +815,7 @@ export function TaskListView({
               ),
           },
         );
-        if (reorder) {
+        if (reorder && !finishedIds.has(task.id)) {
           const step = (direction: -1 | 1) => {
             const rank = rankForStep(rows, task.id, direction);
             if (rank === null) return;
@@ -921,6 +952,7 @@ export function TaskListView({
       contexts,
       duplicateTask,
       eventId,
+      finishedIds,
       moveToDay,
       onAddSubtask,
       openEditor,
@@ -931,12 +963,26 @@ export function TaskListView({
     ],
   );
   const meta = useMemo<TaskTableMeta>(
-    () => ({ aside, check, copy, grip, menu, ordered, present, press }),
-    [aside, check, copy, grip, menu, ordered, present, press],
+    () => ({
+      aside,
+      check,
+      copy,
+      finished: finishedIds,
+      grip,
+      menu,
+      ordered,
+      present,
+      press,
+    }),
+    [aside, check, copy, finishedIds, grip, menu, ordered, present, press],
+  );
+  const tableData = useMemo(
+    () => (apart ? [...ordered, ...finishedOrdered] : ordered),
+    [apart, finishedOrdered, ordered],
   );
   const table = useReactTable({
     columns: taskColumns,
-    data: ordered,
+    data: tableData,
     getRowId: (task) => task.id,
     getCoreRowModel: getCoreRowModel(),
     meta,
@@ -1122,89 +1168,67 @@ export function TaskListView({
   // The board: a column per day that holds something, Overdue and Today
   // first, the undated last; a drop on a column writes its day, and
   // Overdue's head moves every overdue task to today at once.
+  // The list's foot keeps to the rows: past the grips' gutter when they
+  // have one; the grids take their full width.
+  const footRow =
+    foot === undefined ? null : (
+      <div className={`list-foot${reorder && !byDay ? " has-grips" : ""}`}>
+        {foot}
+      </div>
+    );
   if (view === "board")
     return (
-      <BoardView
-        columns={boardColumns({
-          overdue,
-          overdueAction:
-            canEdit && overdue.length > 0 ? (
-              <button
-                className="board-action"
-                onClick={() => void rescheduleOverdue()}
-                type="button"
-              >
-                {board("reschedule")}
-              </button>
-            ) : undefined,
-          overdueLabel: board("overdue"),
-          placed,
-          undated,
-          undatedLabel: t("groups.noDueDate"),
-        })}
-        notice={notice}
-        renderFooter={
-          canEdit
-            ? (column) =>
-                column.tone === "overdue" ? null : dayAddRow(column.day)
-            : undefined
-        }
-        renderList={placedRows}
-        rootProps={rootProps()}
-      />
+      <>
+        <BoardView
+          columns={boardColumns({
+            overdue,
+            overdueAction:
+              canEdit && overdue.length > 0 ? (
+                <button
+                  className="board-action"
+                  onClick={() => void rescheduleOverdue()}
+                  type="button"
+                >
+                  {board("reschedule")}
+                </button>
+              ) : undefined,
+            overdueLabel: board("overdue"),
+            placed,
+            undated,
+            undatedLabel: t("groups.noDueDate"),
+          })}
+          notice={notice}
+          renderFooter={
+            canEdit
+              ? (column) =>
+                  column.tone === "overdue" ? null : dayAddRow(column.day)
+              : undefined
+          }
+          renderList={placedRows}
+          rootProps={rootProps()}
+        />
+        {footRow}
+      </>
     );
   // By week each day's rows are cards in its column and a drop target of
   // its own, the strips above are lists; a drop on a day writes that day.
   if (view === "week" || view === "month")
     return (
-      <PeriodView
-        notice={notice}
-        overdue={overdue}
-        period={period}
-        placed={placed}
-        renderDayFooter={canEdit && view === "week" ? dayAddRow : undefined}
-        renderList={placedRows}
-        rootProps={rootProps()}
-        undated={undated}
-        undatedLabel={t("groups.noDueDate")}
-        view={view}
-      />
-    );
-  if (view === "by-day")
-    return (
-      <div className="day-groups" {...rootProps()}>
-        {notice}
-        {groups.map((group) => (
-          <section
-            aria-label={group.label.join(", ")}
-            className={`day-group day-group-${group.tone}`}
-            data-drop-zone=""
-            key={group.key}
-          >
-            <h3 className="day-group-heading">
-              {group.label.map((part) => (
-                <span key={part}>{part}</span>
-              ))}
-            </h3>
-            <ul
-              className={`resource-list${reorder ? " has-grips" : ""}`}
-              {...groupProps(group.key)}
-            >
-              {listRows(group.tasks, group.tone === "overdue", group.key)}
-            </ul>
-            {canEdit && group.tone !== "overdue" ? (
-              <div className="quick-add-item">
-                {addRow(
-                  group.key === "undated" ? null : group.key,
-                  group.key === "undated"
-                    ? todos("noDueDateGroup")
-                    : group.label[0],
-                )}
-              </div>
-            ) : null}
-          </section>
-        ))}
-      </div>
+      <>
+        <PeriodView
+          notice={notice}
+          overdue={overdue}
+          period={period}
+          placed={placed}
+          renderDayFooter={canEdit && view === "week" ? dayAddRow : undefined}
+          renderList={placedRows}
+          rootProps={rootProps()}
+          undated={undated}
+          undatedLabel={t("groups.noDueDate")}
+          view={view}
+        />
+        {footRow}
+      </>
     );
   const header = (
     <thead>
@@ -1255,6 +1279,69 @@ export function TaskListView({
       </tr>
     );
   };
+  const tableClass = `data-table task-table${reorder ? " has-grips" : ""}`;
+  // The finished tasks apart, after the open ones: in the list a table of
+  // the same columns, by day one list across the days.
+  const finishedList =
+    finishedOrdered.length === 0 ? null : (
+      <section className="finished-tasks">
+        {finishedAfter}
+        {view === "list" ? (
+          <div className="table-wrap">
+            <table className={tableClass}>
+              {header}
+              <tbody>
+                {finishedOrdered.map((task) => tableRow(task, finishedGroup))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <ul className={`resource-list${reorder ? " has-grips" : ""}`}>
+            {finishedOrdered.map((task) =>
+              row(task, true, finishedOrdered, finishedGroup),
+            )}
+          </ul>
+        )}
+      </section>
+    );
+  if (view === "by-day")
+    return (
+      <div className="day-groups" {...rootProps()}>
+        {notice}
+        {groups.map((group) => (
+          <section
+            aria-label={group.label.join(", ")}
+            className={`day-group day-group-${group.tone}`}
+            data-drop-zone=""
+            key={group.key}
+          >
+            <h3 className="day-group-heading">
+              {group.label.map((part) => (
+                <span key={part}>{part}</span>
+              ))}
+            </h3>
+            <ul
+              className={`resource-list${reorder ? " has-grips" : ""}`}
+              {...groupProps(group.key)}
+            >
+              {listRows(group.tasks, group.tone === "overdue", group.key)}
+            </ul>
+            {canEdit && group.tone !== "overdue" ? (
+              <div className="quick-add-item">
+                {addRow(
+                  group.key === "undated" ? null : group.key,
+                  group.key === "undated"
+                    ? todos("noDueDateGroup")
+                    : group.label[0],
+                )}
+              </div>
+            ) : null}
+          </section>
+        ))}
+        {finishedList}
+        {footRow}
+      </div>
+    );
   const columns = taskColumns.length;
   /** The gap a lifted row will fill, among a table's rows. */
   const tableGap = (height: number, key: string) => (
@@ -1264,7 +1351,6 @@ export function TaskListView({
       </td>
     </tr>
   );
-  const tableClass = `data-table task-table${reorder ? " has-grips" : ""}`;
   if (!sectioned)
     return (
       <div className="table-wrap" {...rootProps()}>
@@ -1285,6 +1371,8 @@ export function TaskListView({
         {canEdit ? (
           <div className="quick-add-item quick-add-table">{addRow(null)}</div>
         ) : null}
+        {finishedList}
+        {footRow}
       </div>
     );
 
@@ -1431,6 +1519,8 @@ export function TaskListView({
           sectionGap,
         )}
       </table>
+      {finishedList}
+      {footRow}
     </div>
   );
 }

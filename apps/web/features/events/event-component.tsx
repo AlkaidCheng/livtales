@@ -1,12 +1,17 @@
 "use client";
 
-import type {
-  EventComponentKind,
-  EventComponentView,
-  NoteListQuery,
+import {
+  type EventComponentKind,
+  type EventComponentView,
+  eventComponentViewSchema,
+  type NoteListQuery,
 } from "@livtales/schemas";
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import {
+  keepPreviousData,
+  useQuery,
+  type UseQueryResult,
+} from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { ErrorNotice, LoadingState } from "../../components/feedback";
 import { tr } from "../../i18n/active-locale";
 import { useApiClient } from "../../lib/api-context";
@@ -15,6 +20,7 @@ import { useForgetInaccessibleEventDrafts } from "../../lib/editor-draft-context
 import { componentKindLabel, viewOf } from "../../lib/event-components";
 import { queryKeys, useEventWorkspaceQueries } from "../../lib/queries";
 import { isTemporaryReadError } from "../../lib/query-errors";
+import { type StoredChoices, useViewChoices } from "../../lib/view-choices";
 import { DocumentsPanel } from "./documents-panel";
 import { ItineraryPanel } from "./itinerary-panel";
 import { NotesPanel } from "./notes-panel";
@@ -26,16 +32,19 @@ import {
   TasksPanel,
   TimelinePanel,
 } from "./planning-panels";
+import { useViewTab } from "./view-head";
 
 function useProjection<T>(
   queryKey: readonly string[],
   load: (signal: AbortSignal) => Promise<T>,
+  keepPrevious = false,
 ) {
   const { credential } = useAuthSession();
   return useQuery({
     queryKey,
     enabled: credential !== null,
     queryFn: ({ signal }) => load(signal),
+    ...(keepPrevious ? { placeholderData: keepPreviousData } : {}),
   });
 }
 
@@ -44,9 +53,11 @@ function Projection<T>(props: {
   readonly queryKey: readonly string[];
   readonly load: (signal: AbortSignal) => Promise<T>;
   readonly label: string;
+  /** Keeps the rows shown while another order of them loads. */
+  readonly keepPrevious?: boolean;
   readonly children: (projection: T) => ReactNode;
 }) {
-  const query = useProjection(props.queryKey, props.load);
+  const query = useProjection(props.queryKey, props.load, props.keepPrevious);
   return <ProjectionResult {...props} query={query} />;
 }
 
@@ -89,12 +100,31 @@ function ProjectionResult<T>({
   );
 }
 
+/** A component's own kept choices: its layout (null for the kind's default) and the Notes order. */
+type ComponentChoices = {
+  readonly layout: EventComponentView | null;
+  readonly noteSort: NoteListQuery["sort"];
+};
+
+const defaultComponentChoices: ComponentChoices = {
+  layout: null,
+  noteSort: "edited",
+};
+
+function readComponentChoices(stored: StoredChoices): ComponentChoices {
+  const layout = eventComponentViewSchema.safeParse(stored.layout);
+  return {
+    layout: layout.success ? layout.data : null,
+    noteSort: stored.noteSort === "title" ? "title" : "edited",
+  };
+}
+
 export function EventComponent({
   kind: storedKind,
   eventId,
   canEdit,
   view: storedView,
-  onChangeView,
+  onChangeView: onChangeLayout,
   isSavingView = false,
 }: {
   readonly kind: EventComponentKind;
@@ -108,10 +138,27 @@ export function EventComponent({
 }) {
   const client = useApiClient();
   useForgetInaccessibleEventDrafts(eventId, !canEdit);
-  // The Notes order is a reading choice, kept while the component is open.
-  const [noteSort, setNoteSort] = useState<NoteListQuery["sort"]>("edited");
+  // Shown as the event's tab, the layout and the Notes order are the
+  // view's kept choices; inside a page, the layout is the page's and the
+  // order lasts while the component is open.
+  const tab = useViewTab();
+  const [choices, change] = useViewChoices(
+    tab?.choicesKey ?? null,
+    defaultComponentChoices,
+    readComponentChoices,
+  );
+  const noteSort = choices.noteSort;
+  const setNoteSort = (sort: NoteListQuery["sort"]) =>
+    change({ noteSort: sort });
   const kind = storedKind;
-  const view = viewOf({ kind, view: storedView });
+  const view = viewOf({
+    kind,
+    view: tab === null ? storedView : (choices.layout ?? undefined),
+  });
+  const onChangeView =
+    tab === null
+      ? onChangeLayout
+      : (layout: EventComponentView) => change({ layout });
   const label = componentKindLabel(kind);
   switch (kind) {
     case "todos":
@@ -267,6 +314,7 @@ export function EventComponent({
       return (
         <Projection
           eventId={eventId}
+          keepPrevious
           label={label}
           queryKey={queryKeys.notes(eventId, noteSort)}
           load={(signal) =>

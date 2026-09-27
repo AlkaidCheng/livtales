@@ -16,6 +16,7 @@ import {
 } from "./quiet-chrome";
 import { openTaskEditor } from "./task-add";
 import { openEventView } from "./event-view";
+import { showingFinished, showTasks } from "./view-options";
 
 export async function exerciseWorkspaceCommands(
   page: Page,
@@ -27,7 +28,7 @@ export async function exerciseWorkspaceCommands(
   const results = dialog.getByRole("listbox", {
     name: "Commands",
   });
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await openTaskEditor(page);
   const draft = page.getByLabel("Task", { exact: true });
   await draft.fill("Unsaved command draft");
@@ -42,13 +43,8 @@ export async function exerciseWorkspaceCommands(
   await expect(
     page.getByRole("button", { name: "Add a task to the list", exact: true }),
   ).toBeFocused();
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
-  const filter = page.getByRole("button", {
-    name: "Filter: 1 filter",
-    exact: true,
-  });
+  await showTasks(page, "All");
+  const filter = showingFinished(page);
   await searchReturn(page).focus();
   await page.keyboard.press("Control+k");
   const input = dialog.getByRole("combobox", {
@@ -95,7 +91,7 @@ export async function exerciseWorkspaceCommands(
   }
   await page.keyboard.press("Escape");
   await expect(searchReturn(page)).toBeFocused();
-  await expect(filter).toHaveClass(/is-active/);
+  await expect(filter).toBeVisible();
 
   await page.setViewportSize({ width: 320, height: 568 });
   await pressSearchEntry(page);

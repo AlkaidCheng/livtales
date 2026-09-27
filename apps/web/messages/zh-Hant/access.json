@@ -1,7 +1,7 @@
 {
   "sharedBy": "{name} 與你共享（{role}）",
   "throughEvent": "透過{event}，由 {name} 分享",
-  "grants": "也包括此活動的頁面、待辦、支出、檔案和早期版本",
+  "grants": "也包括此活動的頁面、任務、支出、檔案和早期版本",
   "roles": {
     "viewer": "僅查看",
     "editor": "可編輯",

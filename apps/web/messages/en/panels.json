@@ -19,5 +19,6 @@
   "actionsFor": "Actions for {name}",
   "addReminderToList": "Add a reminder to the list",
   "addReminderFor": "Add a reminder for {day}",
-  "addExpenseTo": "Add an expense to {section}"
+  "addExpenseTo": "Add an expense to {section}",
+  "scheduledCount": "{count, plural, one {# scheduled} other {# scheduled}}"
 }

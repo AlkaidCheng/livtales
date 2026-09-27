@@ -22,7 +22,7 @@ import { usePersonConnections } from "../../lib/use-person-connections";
 import { useSessionDialog } from "../../lib/use-session-dialog";
 import { PersonInspector } from "../people/person-inspector";
 import { PersonListing } from "../people/person-row";
-import { PanelHeading } from "./component-frame";
+import { ViewHead } from "./view-head";
 import { ShareWithPeople, shareRows } from "./share-with-people";
 
 /**
@@ -66,7 +66,7 @@ export function PeoplePanel({
   );
   return (
     <section className="planning-panel">
-      <PanelHeading title={t("title")} />
+      <ViewHead title={t("title")} />
       {persons.length === 0 ? (
         canEdit ? null : (
           <EmptyState title={t("empty")} />

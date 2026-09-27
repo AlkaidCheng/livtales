@@ -38,7 +38,6 @@ import {
   eventDays,
   instantDay,
   placeByDay,
-  taskDay,
 } from "../../lib/day-placement";
 import { dayInWords, dueShortcuts } from "../../lib/due-choices";
 import {
@@ -59,7 +58,7 @@ import {
   timelineSheet,
 } from "../../lib/export/sheets";
 import type { ExpenseFields } from "../../lib/expense-fields";
-import { compareNames, formatDateTime, formatTime } from "../../lib/format";
+import { formatDateTime, formatTime } from "../../lib/format";
 import { formatMoney, sumMoneyByCurrency } from "../../lib/money";
 import {
   useLabelsQuery,
@@ -71,10 +70,18 @@ import {
 } from "../../lib/queries";
 import { recordComposerKey } from "../../lib/record-composers";
 import type { ReminderFields } from "../../lib/reminder-fields";
+import { personDisplayName } from "../../lib/person-fields";
+import {
+  chooseEventTasks,
+  defaultEventTaskChoices,
+  isOpenTask,
+  readEventTaskChoices,
+  standingChoices,
+} from "../../lib/task-choices";
 import { instantOnDay } from "../../lib/task-due";
 import type { TaskFields } from "../../lib/task-fields";
-import { sortTasks, type TaskSort } from "../../lib/task-sort";
 import { deriveTaskTree } from "../../lib/task-tree";
+import { useViewChoices } from "../../lib/view-choices";
 import { useOpenRow } from "../../lib/use-open-row";
 import { periodRange, usePeriod } from "../../lib/use-period";
 import {
@@ -95,12 +102,14 @@ import {
 } from "../sections/section-parts";
 import { useSectionEditing } from "../sections/use-sections";
 import { AddTaskRow } from "../tasks/add-task-row";
+import { FinishedFoot, FinishedHead } from "../tasks/finished-tasks";
 import {
   activeFilterCount,
-  defaultTaskFilters,
   TaskFilterControl,
-  type TaskFilters,
   TaskSortControl,
+  useTaskChips,
+  useTaskFilterOptions,
+  useTaskSortOption,
 } from "../tasks/task-controls";
 import {
   resourceListClass,
@@ -110,16 +119,17 @@ import {
 import { AddRecordRow, addRecordDraftId } from "./add-record-row";
 import {
   LayoutControl,
+  layoutOption,
   objectTypeLabel,
-  PanelHeading,
   StatusChip,
 } from "./component-frame";
 import { CreateScheduleDialog } from "./create-schedule-dialog";
 import { ExpenseComposer } from "./expense-composer";
 import { ExpenseForm } from "./expense-form";
 import { ExpenseInspector } from "./expense-inspector";
-import { ExportControl } from "./export-control";
-import { ShareControl, useCanShareEvent } from "./share-control";
+import { ExportControl, exportOption, useViewExport } from "./export-control";
+import { ShareControl, useCanShareEvent, useViewShare } from "./share-control";
+import { useViewTab, ViewHead } from "./view-head";
 import {
   BoardView,
   boardColumns,
@@ -139,25 +149,6 @@ import {
   TimelineEntryComposer,
   type TimelineMore,
 } from "./timeline-entry";
-
-function isOpen(task: TaskResponse): boolean {
-  return task.status !== "done" && task.status !== "cancelled";
-}
-
-/** Named choices in name order, for a filter over what the tasks carry. */
-function namedChoices(
-  ids: Iterable<string>,
-  names: ReadonlyMap<string, string> | undefined,
-): { readonly id: string; readonly name: string }[] {
-  const choices: { id: string; name: string }[] = [];
-  for (const id of new Set(ids)) {
-    const name = names?.get(id);
-    if (name !== undefined) choices.push({ id, name });
-  }
-  return choices.sort(
-    (a, b) => compareNames(a.name, b.name) || a.id.localeCompare(b.id),
-  );
-}
 
 /** Whether a view places its rows by day: the week, the board, and the calendar. */
 function placesByDay(view: EventComponentView): boolean {
@@ -182,7 +173,7 @@ export function TasksPanel({
   readonly eventId: string;
   readonly isSavingView?: boolean;
   readonly onChangeView?: ((view: EventComponentView) => void) | undefined;
-  /** The sections of the Event's To-dos in their order. */
+  /** The sections of the Event's Tasks in their order. */
   readonly sections?: readonly SectionResponse[] | undefined;
   readonly tasks: readonly TaskResponse[];
   readonly view?: EventComponentView;
@@ -190,12 +181,14 @@ export function TasksPanel({
   const t = useTranslations("todos");
   const controls = useTranslations("controls");
   const exports = useTranslations("export");
-  const [filters, setFilters] = useState<TaskFilters>({
-    ...defaultTaskFilters,
-    timed: false,
-    overdue: false,
-  });
-  const [sort, setSort] = useState<TaskSort>("manual");
+  // Shown as the event's tab, the choices are kept for the view; inside a
+  // page they last while the component is open.
+  const tab = useViewTab();
+  const [choices, change] = useViewChoices(
+    tab?.choicesKey ?? null,
+    defaultEventTaskChoices,
+    readEventTaskChoices,
+  );
   // The full editor for a new task opens from an add row's composer with
   // its fields, and for a task from its row's composer.
   const [adding, setAdding] = useState<Partial<TaskFields> | null>(null);
@@ -229,45 +222,13 @@ export function TasksPanel({
     (person) =>
       session.data !== undefined && person.userId === session.data.user.id,
   );
-  // The labels and people the tasks carry, so the filters offer only what
-  // can match; a choice the tasks no longer carry falls back to any.
-  const labelChoices = useMemo(
-    () =>
-      namedChoices(
-        tasks.flatMap((task) => task.labelIds),
-        labels.data?.names,
-      ),
-    [labels.data, tasks],
-  );
-  const assigneeChoices = useMemo(
-    () =>
-      namedChoices(
-        tasks.flatMap((task) =>
-          task.assigneeId === null || task.assigneeId === myPerson?.id
-            ? []
-            : [task.assigneeId],
-        ),
-        persons.data?.names,
-      ),
-    [myPerson?.id, persons.data, tasks],
-  );
-  const meAssigned =
-    myPerson !== undefined &&
-    tasks.some((task) => task.assigneeId === myPerson.id);
-  const activeLabel = labelChoices.some(({ id }) => id === filters.label)
-    ? filters.label
-    : "";
-  const activeAssignee =
-    (meAssigned && filters.assignee === myPerson?.id) ||
-    assigneeChoices.some(({ id }) => id === filters.assignee)
-      ? filters.assignee
-      : "";
-  const activeFilters: TaskFilters = {
-    ...filters,
-    label: activeLabel,
-    assignee: activeAssignee,
-  };
-  const filterCount = activeFilterCount(activeFilters);
+  const effective = standingChoices(choices, {
+    me: myPerson?.id,
+    people: persons.data?.names,
+    labels: labels.data?.names,
+  });
+  const { show, sort, assignee, label, timed, overdue } = effective;
+  const myPersonId = myPerson?.id;
   // Stable, so the row cells keep their identity and focus across renders.
   const addSubtask = useCallback(
     (task: TaskResponse) =>
@@ -280,52 +241,117 @@ export function TasksPanel({
   );
   // The projection lists by due; the component orders as Sort says, its
   // manual order unless another is chosen.
-  const filteredTasks = useMemo(() => {
-    const today = dayKeyOf(new Date());
-    const { status, timed, overdue } = filters;
-    return sortTasks(
-      tasks.filter((task) => {
-        if (activeLabel !== "" && !task.labelIds.includes(activeLabel))
-          return false;
-        if (activeAssignee !== "" && task.assigneeId !== activeAssignee)
-          return false;
-        if (timed === true && task.dueAt === null) return false;
-        if (overdue === true) {
-          const day = taskDay(task);
-          if (day === null || day >= today || !isOpen(task)) return false;
-        }
-        if (status === "open") return isOpen(task);
-        if (status === "done") return task.status === "done";
-        return true;
-      }),
-      sort,
-    );
-  }, [activeAssignee, activeLabel, filters, sort, tasks]);
-  const openCount = tasks.filter(isOpen).length;
-  const shownOpen = filteredTasks.filter(isOpen).length;
+  const chosen = useMemo(
+    () =>
+      chooseEventTasks(
+        tasks,
+        { show, sort, assignee, label, timed, overdue },
+        { me: myPersonId, today: dayKeyOf(new Date()) },
+      ),
+    [assignee, label, myPersonId, overdue, show, sort, tasks, timed],
+  );
+  const shownTasks = chosen.shown;
+  const openCount = tasks.filter(isOpenTask).length;
+  const shownOpen = shownTasks.filter(isOpenTask).length;
+  const filterCount = activeFilterCount(effective);
+  const people = (persons.data?.items ?? [])
+    .filter((person) => person.id !== myPersonId)
+    .map((person) => ({ id: person.id, name: personDisplayName(person) }));
+  const filterOptions = useTaskFilterOptions(
+    effective,
+    {
+      people,
+      labels: labels.data?.items ?? [],
+      me: myPerson !== undefined,
+      none: true,
+    },
+    change,
+  );
+  const sortOption = useTaskSortOption(sort, (next) => change({ sort: next }));
+  const chips = useTaskChips(
+    effective,
+    {
+      person: (id) => persons.data?.names.get(id),
+      label: (id) => labels.data?.names.get(id),
+    },
+    change,
+  );
+  const share = useViewShare(eventId, "todos", t("title"));
+  const formats = useViewExport({
+    eventId,
+    panel,
+    // The file lists the tasks as the list does, the finished ones last.
+    sheet: (event) =>
+      taskSheet(
+        show === "all"
+          ? [
+              ...shownTasks.filter(isOpenTask),
+              ...shownTasks.filter((task) => !isOpenTask(task)),
+            ]
+          : shownTasks,
+        {
+          event,
+          labels: labels.data?.names,
+          persons: persons.data?.names,
+        },
+      ),
+    view: "todos",
+    viewName: t("title"),
+  });
+  const clearFilters = () =>
+    change({
+      show: "open",
+      assignee: "",
+      label: "",
+      timed: false,
+      overdue: false,
+    });
+  const layout =
+    onChangeView === undefined
+      ? null
+      : layoutOption({
+          busy: isSavingView,
+          onChange: onChangeView,
+          view,
+          views: viewsOf("todos"),
+        });
   // The printed page names the sort and the filters the list is read with.
   const shownAs = [
-    controls(activeFilters.status),
-    ...(activeFilters.timed === true ? [controls("hasTime")] : []),
-    ...(activeFilters.overdue === true ? [controls("overdue")] : []),
-    ...(activeLabel === "" ? [] : [labels.data?.names.get(activeLabel) ?? ""]),
-    ...(activeAssignee === ""
-      ? []
-      : [persons.data?.names.get(activeAssignee) ?? ""]),
+    controls(`shows.${show}`),
+    ...(timed ? [controls("hasTime")] : []),
+    ...(overdue ? [controls("overdueOnly")] : []),
+    ...chips
+      .filter((chip) => chip.id === "label" || chip.id === "assignee")
+      .map((chip) => chip.label),
   ].join(", ");
+  const finishedShown = shownTasks.length - shownOpen;
+  // While Show hides them, the list's foot counts the finished tasks.
+  const finishedFoot =
+    show === "open" && chosen.finished > 0 ? (
+      <FinishedFoot
+        count={chosen.finished}
+        onShow={() => change({ show: "all" })}
+      />
+    ) : null;
 
   return (
     <section className={panelClasses(view)} ref={panel}>
-      <PanelHeading
+      <ViewHead
+        caption={exports("caption", {
+          sort: controls(`sorts.${sort}`),
+          filter: shownAs,
+        })}
+        chips={chips}
         controls={
           <div className="head-controls">
-            <TaskSortControl onChange={setSort} sort={sort} />
+            <TaskSortControl
+              onChange={(next) => change({ sort: next })}
+              sort={sort}
+            />
             <TaskFilterControl
-              assignees={assigneeChoices}
-              filters={activeFilters}
-              labels={labelChoices}
-              me={meAssigned ? myPerson : undefined}
-              onChange={setFilters}
+              filters={effective}
+              onClear={clearFilters}
+              options={filterOptions}
             />
             {onChangeView === undefined ? null : (
               <LayoutControl
@@ -335,35 +361,29 @@ export function TasksPanel({
                 views={viewsOf("todos")}
               />
             )}
-            <ExportControl
-              eventId={eventId}
-              panel={panel}
-              sheet={(event) =>
-                taskSheet(filteredTasks, {
-                  event,
-                  labels: labels.data?.names,
-                  persons: persons.data?.names,
-                })
-              }
-              view="todos"
-              viewName={t("title")}
-            />
-            <ShareControl
-              eventId={eventId}
-              view="todos"
-              viewName={t("title")}
-            />
+            <ExportControl formats={formats} />
+            <ShareControl share={share} />
           </div>
         }
-        caption={exports("caption", {
-          sort: controls(`sorts.${sort}`),
-          filter: shownAs,
-        })}
         count={
           filterCount === 0
             ? t("open", { count: openCount })
             : t("openOf", { shown: shownOpen, total: openCount })
         }
+        onClearChips={() => {
+          clearFilters();
+          change({ sort: "manual" });
+        }}
+        options={[
+          ...(layout === null ? [] : [layout]),
+          filterOptions.show,
+          sortOption,
+          { kind: "heading", id: "filter", label: controls("filter") },
+          ...filterOptions.filters,
+          exportOption(formats, exports("title")),
+        ]}
+        share={share}
+        tabCount={{ value: openCount, label: t("open", { count: openCount }) }}
         title={t("title")}
       />
       {canEdit && adding !== null ? (
@@ -383,12 +403,12 @@ export function TasksPanel({
           parent={parent}
         />
       ) : null}
-      {filteredTasks.length === 0 && (tasks.length > 0 || !canEdit) ? (
+      {shownTasks.length === 0 && (tasks.length > 0 || !canEdit) ? (
         <EmptyState
           title={tasks.length === 0 ? t("empty") : t("nothingInView")}
         />
       ) : null}
-      {filteredTasks.length === 0 && canEdit ? (
+      {shownTasks.length === 0 && canEdit ? (
         <div className="quick-add-item quick-add-empty">
           <AddTaskRow
             dayLabel={view === "by-day" ? t("noDueDateGroup") : undefined}
@@ -400,11 +420,20 @@ export function TasksPanel({
           />
         </div>
       ) : null}
-      {filteredTasks.length === 0 ? null : (
+      {shownTasks.length === 0 ? null : (
         <TaskListView
           canEdit={canEdit}
           composer={composer}
           eventId={eventId}
+          finishedAfter={
+            show === "all" && finishedShown > 0 ? (
+              <FinishedHead
+                count={finishedShown}
+                onHide={() => change({ show: "open" })}
+              />
+            ) : undefined
+          }
+          foot={finishedFoot ?? undefined}
           labelNames={labels.data?.names}
           manual={sort === "manual"}
           onAddDetails={setAdding}
@@ -416,10 +445,11 @@ export function TasksPanel({
           personNames={persons.data?.names}
           progress={tree.progress}
           sections={sections}
-          tasks={filteredTasks}
+          tasks={shownTasks}
           view={view}
         />
       )}
+      {shownTasks.length === 0 ? finishedFoot : null}
       {canEdit && editing !== null ? (
         <TaskInspector
           key={editing.id}
@@ -451,6 +481,7 @@ export function CalendarPanel({
 }) {
   const panels = useTranslations("panels");
   const views = useTranslations("views");
+  const exports = useTranslations("export");
   const composerT = useTranslations("composer");
   // The full editor: an item's, or a new item's when the add row's composer
   // hands over to it, each with the composer's fields.
@@ -612,9 +643,30 @@ export function CalendarPanel({
     eventCreationDraftKeys(eventId).schedule,
     null,
   );
+  // The items of the period shown, the undated last: what every export holds.
+  const shownItems = () =>
+    shownInPeriod(items, eventDays, periodRange(view, period.cursor));
+  const share = useViewShare(eventId, "calendar", views("calendar"));
+  const formats = useViewExport({
+    calendar: shownItems,
+    eventId,
+    panel,
+    sheet: () => scheduleSheet(shownItems()),
+    view: "calendar",
+    viewName: views("calendar"),
+  });
+  const layout =
+    onChangeView === undefined
+      ? null
+      : layoutOption({
+          busy: isSavingView ?? false,
+          onChange: onChangeView,
+          view,
+          views: viewsOf("calendar"),
+        });
   return (
     <section className={panelClasses(view)} ref={panel}>
-      <PanelHeading
+      <ViewHead
         controls={
           <div className="head-controls">
             {onChangeView === undefined ? null : (
@@ -625,28 +677,19 @@ export function CalendarPanel({
                 views={viewsOf("calendar")}
               />
             )}
-            <ExportControl
-              eventId={eventId}
-              panel={panel}
-              sheet={() =>
-                scheduleSheet(
-                  shownInPeriod(
-                    items,
-                    eventDays,
-                    periodRange(view, period.cursor),
-                  ),
-                )
-              }
-              view="calendar"
-              viewName={views("calendar")}
-            />
-            <ShareControl
-              eventId={eventId}
-              view="calendar"
-              viewName={views("calendar")}
-            />
+            <ExportControl formats={formats} />
+            <ShareControl share={share} />
           </div>
         }
+        options={[
+          ...(layout === null ? [] : [layout]),
+          exportOption(formats, exports("title")),
+        ]}
+        share={share}
+        tabCount={{
+          value: items.length,
+          label: panels("scheduledCount", { count: items.length }),
+        }}
         title={views("calendar")}
       />
       <p aria-live="polite" className="visually-hidden" role="status">
@@ -766,6 +809,7 @@ export function TimelinePanel({
 }) {
   const panels = useTranslations("panels");
   const views = useTranslations("views");
+  const exports = useTranslations("export");
   const openHistory = useOpenHistory();
   const panel = useRef<HTMLElement>(null);
   const refresh = useRefreshEvent(eventId);
@@ -782,18 +826,18 @@ export function TimelinePanel({
     close(open);
   }, [close, open, timeline.items]);
   const closeEditor = () => setMore(null);
+  const formats = useViewExport({
+    eventId,
+    panel,
+    sheet: () => timelineSheet(timeline.items),
+    view: "timeline",
+    viewName: views("timeline"),
+  });
   return (
     <section className="planning-panel panel-column" ref={panel}>
-      <PanelHeading
-        controls={
-          <ExportControl
-            eventId={eventId}
-            panel={panel}
-            sheet={() => timelineSheet(timeline.items)}
-            view="timeline"
-            viewName={views("timeline")}
-          />
-        }
+      <ViewHead
+        controls={<ExportControl formats={formats} />}
+        options={[exportOption(formats, exports("title"))]}
         title={views("timeline")}
       />
       {timeline.items.length === 0 ? (
@@ -934,6 +978,7 @@ export function ExpensesPanel({
 }) {
   const panels = useTranslations("panels");
   const views = useTranslations("views");
+  const exports = useTranslations("export");
   const sectionT = useTranslations("sections");
   const composerT = useTranslations("composer");
   // The full editor: an expense's, or a new expense's when an add row's
@@ -1337,9 +1382,43 @@ export function ExpensesPanel({
     </>
   );
 
+  const share = useViewShare(eventId, "expenses", views("expenses"));
+  const formats = useViewExport({
+    eventId,
+    panel,
+    sheet: () =>
+      expenseSheet(
+        sectioned
+          ? [
+              bySection.loose,
+              ...bySection.groups.map((group) => group.items),
+            ].flatMap((items) =>
+              view === "by-day"
+                ? dayGroupsOf(items).flatMap((group) => group.items)
+                : items,
+            )
+          : shownInPeriod(
+              expenses,
+              (expense) => [expenseDay(expense)],
+              periodRange(view, period.cursor),
+            ),
+      ),
+    view: "expenses",
+    viewName: views("expenses"),
+  });
+  const layout =
+    onChangeView === undefined
+      ? null
+      : layoutOption({
+          busy: isSavingView ?? false,
+          onChange: onChangeView,
+          view,
+          views: viewsOf("expenses"),
+        });
+
   return (
     <section className={panelClasses(view)} ref={panel}>
-      <PanelHeading
+      <ViewHead
         controls={
           <div className="head-controls">
             {onChangeView === undefined ? null : (
@@ -1350,37 +1429,15 @@ export function ExpensesPanel({
                 views={viewsOf("expenses")}
               />
             )}
-            <ExportControl
-              eventId={eventId}
-              panel={panel}
-              sheet={() =>
-                expenseSheet(
-                  sectioned
-                    ? [
-                        bySection.loose,
-                        ...bySection.groups.map((group) => group.items),
-                      ].flatMap((items) =>
-                        view === "by-day"
-                          ? dayGroupsOf(items).flatMap((group) => group.items)
-                          : items,
-                      )
-                    : shownInPeriod(
-                        expenses,
-                        (expense) => [expenseDay(expense)],
-                        periodRange(view, period.cursor),
-                      ),
-                )
-              }
-              view="expenses"
-              viewName={views("expenses")}
-            />
-            <ShareControl
-              eventId={eventId}
-              view="expenses"
-              viewName={views("expenses")}
-            />
+            <ExportControl formats={formats} />
+            <ShareControl share={share} />
           </div>
         }
+        options={[
+          ...(layout === null ? [] : [layout]),
+          exportOption(formats, exports("title")),
+        ]}
+        share={share}
         title={views("expenses")}
       />
       {sectioned ? notice : null}
@@ -1540,6 +1597,7 @@ export function RemindersPanel({
 }) {
   const panels = useTranslations("panels");
   const views = useTranslations("views");
+  const exports = useTranslations("export");
   const t = useTranslations("reminderRow");
   const composerT = useTranslations("composer");
   const board = useTranslations("board");
@@ -1988,9 +2046,36 @@ export function RemindersPanel({
     <div aria-hidden="true" className="row-gap" key={key} style={{ height }} />
   );
 
+  const share = useViewShare(eventId, "reminders", views("reminders"));
+  const formats = useViewExport({
+    eventId,
+    panel,
+    sheet: () =>
+      reminderSheet(
+        view === "by-day"
+          ? groups.flatMap((group) => group.items)
+          : shownInPeriod(
+              reminders,
+              (reminder) => [reminderDay(reminder)],
+              periodRange(view, period.cursor),
+            ),
+      ),
+    view: "reminders",
+    viewName: views("reminders"),
+  });
+  const layout =
+    onChangeView === undefined
+      ? null
+      : layoutOption({
+          busy: isSavingView ?? false,
+          onChange: onChangeView,
+          view,
+          views: viewsOf("reminders"),
+        });
+
   return (
     <section className={panelClasses(view)} ref={panel}>
-      <PanelHeading
+      <ViewHead
         controls={
           <div className="head-controls">
             {onChangeView === undefined ? null : (
@@ -2001,30 +2086,15 @@ export function RemindersPanel({
                 views={viewsOf("reminders")}
               />
             )}
-            <ExportControl
-              eventId={eventId}
-              panel={panel}
-              sheet={() =>
-                reminderSheet(
-                  view === "by-day"
-                    ? groups.flatMap((group) => group.items)
-                    : shownInPeriod(
-                        reminders,
-                        (reminder) => [reminderDay(reminder)],
-                        periodRange(view, period.cursor),
-                      ),
-                )
-              }
-              view="reminders"
-              viewName={views("reminders")}
-            />
-            <ShareControl
-              eventId={eventId}
-              view="reminders"
-              viewName={views("reminders")}
-            />
+            <ExportControl formats={formats} />
+            <ShareControl share={share} />
           </div>
         }
+        options={[
+          ...(layout === null ? [] : [layout]),
+          exportOption(formats, exports("title")),
+        ]}
+        share={share}
         title={views("reminders")}
       />
       {placesByDay(view) ? null : notice}

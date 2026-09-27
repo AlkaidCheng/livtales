@@ -23,7 +23,7 @@ test("saves composed pages through the API and keeps canonical tasks after layou
   await page.getByRole("button", { name: "Create event", exact: true }).click();
   await expect(page).toHaveURL(/\/events\/[0-9a-f-]+\?view=overview$/u);
   const eventId = new URL(page.url()).pathname.split("/").at(-1);
-  // A new event opens on its Overview, with Overview and To-dos alone on
+  // A new event opens on its Overview, with Overview and Tasks alone on
   // the strip; its first page starts from the gallery.
   await expect(
     page.getByRole("tab", { name: "Overview", exact: true }),
@@ -37,7 +37,7 @@ test("saves composed pages through the API and keeps canonical tasks after layou
   await page
     .getByRole("button", { name: "Add component", exact: true })
     .click();
-  await page.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await page.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await openTaskEditor(page);
   await page.getByLabel("Task", { exact: true }).fill("Pack for the trip");
   const created = page.waitForResponse(

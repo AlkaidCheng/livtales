@@ -9581,6 +9581,603 @@ html:has(.event-create-dialog[open]) {
   content: none;
 }
 
+/* The strip and the chips of the view on it stay under the top of the
+   screen while the view scrolls: at the window's top on a wide screen,
+   under the app bar on a phone. */
+.event-strip-block {
+  background: var(--canvas);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* What scrolls into view on the event page, a focused row among them,
+   stops clear of the pinned strip and its chips. */
+html:has(.event-strip-block) {
+  scroll-padding-top: 96px;
+}
+
+@media (max-width: 760px) {
+  .event-strip-block {
+    top: calc(52px + env(safe-area-inset-top, 0px));
+  }
+
+  html:has(.event-strip-block) {
+    scroll-padding-top: calc(148px + env(safe-area-inset-top, 0px));
+  }
+}
+
+/* The current view's count, faint beside its name. */
+.event-tab-count {
+  color: var(--faint);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  margin-left: 5px;
+}
+
+/* The view's controls at the strip's right end: the words on a wide
+   screen, the options button on a phone. */
+.event-strip-options {
+  align-items: center;
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+}
+
+.event-strip-options:empty {
+  display: none;
+}
+
+.event-strip-controls {
+  align-items: center;
+  display: inline-flex;
+  gap: 2px;
+}
+
+.event-strip .head-controls {
+  flex-wrap: nowrap;
+}
+
+.event-strip .head-menu-button {
+  min-height: 34px;
+}
+
+.event-strip-chips:empty {
+  display: none;
+}
+
+.view-options-host {
+  display: inline-flex;
+  position: relative;
+}
+
+.view-options-button {
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  height: 34px;
+  place-items: center;
+  position: relative;
+  width: 36px;
+}
+
+.view-options-button:hover,
+.view-options-button[aria-expanded="true"] {
+  background: var(--surface-subtle);
+  color: var(--ink);
+}
+
+.view-options-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.view-options-icon {
+  height: 19px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.7;
+  width: 19px;
+}
+
+/* A choice is on: the accent's dot on the options button. */
+.view-options-dot {
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--canvas);
+  height: 7px;
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 7px;
+}
+
+/* A view's options on a phone: a pop-up in the middle of the screen,
+   titled with the view, over a scrim. */
+.view-options-dialog {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-raised);
+  color: var(--ink);
+  height: fit-content;
+  inset: 0;
+  margin: auto;
+  max-height: min(82dvh, 640px);
+  max-width: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px 10px;
+  position: fixed;
+  width: min(360px, calc(100% - 32px));
+}
+
+.view-options-dialog::backdrop {
+  background: var(--scrim);
+}
+
+/* The Filter's rows on a wide screen, in a panel under its word. */
+.picker-panel.view-options-popover {
+  overflow-y: auto;
+  padding: 6px 14px 8px;
+}
+
+.view-options {
+  display: grid;
+  gap: 8px;
+}
+
+.view-options-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.view-options-head h2,
+.view-options-pick-head h2 {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.view-options-done,
+.view-options-back {
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 6px 2px;
+}
+
+.view-option-rows {
+  display: grid;
+}
+
+.view-option {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  display: flex;
+  font: inherit;
+  font-size: 0.86rem;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 4px 0;
+  text-align: start;
+  width: 100%;
+}
+
+.view-option-rows > :first-child,
+.view-option-heading + .view-option {
+  border-top: 0;
+}
+
+.view-option-press {
+  cursor: pointer;
+}
+
+.view-option-press:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.view-options-done:focus-visible,
+.view-options-back:focus-visible,
+.view-option-press:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.view-option-value {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 0.84rem;
+  gap: 2px;
+  min-width: 0;
+}
+
+.view-option-value.is-set {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.view-option-chevron {
+  flex: none;
+  height: 14px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  width: 14px;
+}
+
+.view-option-heading {
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 12px 0 2px;
+  text-transform: uppercase;
+}
+
+/* Three choices side by side, the chosen one raised on the track. */
+.view-option-segments {
+  background: var(--surface-subtle);
+  border-radius: 9px;
+  display: flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  width: 196px;
+}
+
+.view-option-segments button {
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  flex: 1;
+  font: inherit;
+  font-size: 0.78rem;
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-option-segments button[aria-checked="true"] {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.view-option-segments button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.view-option-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.view-option-buttons button {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 5px 10px;
+}
+
+.view-option-buttons button:hover,
+.view-option-buttons button:focus-visible {
+  background: var(--surface-subtle);
+  outline: none;
+}
+
+.view-option-buttons button:focus-visible {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+
+/* An option's list in the rows' place: the way back, the name, a search,
+   and the choices. */
+.view-options-pick-head {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto 1fr;
+  min-height: 36px;
+}
+
+.view-options-back {
+  align-items: center;
+  display: inline-flex;
+  justify-self: start;
+}
+
+.view-options-back-icon {
+  height: 16px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  width: 16px;
+}
+
+.view-options-search {
+  align-items: center;
+  display: flex;
+  position: relative;
+}
+
+.view-options-search-icon {
+  height: 15px;
+  left: 10px;
+  pointer-events: none;
+  position: absolute;
+  stroke: var(--faint);
+  stroke-linecap: round;
+  stroke-width: 2;
+  width: 15px;
+}
+
+.view-options-search-input {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.88rem;
+  padding: 8px 10px 8px 32px;
+  width: 100%;
+}
+
+.view-options-search-input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.view-options-search-input:focus {
+  border-color: transparent;
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.view-options-list {
+  align-content: start;
+  display: grid;
+  margin: 0 -6px;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.view-options-list [role="group"] {
+  display: grid;
+}
+
+.view-options-group {
+  color: var(--faint);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding: 10px 8px 4px;
+  text-transform: uppercase;
+}
+
+.view-options-choice {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 9px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.88rem;
+  gap: 10px;
+  min-height: 42px;
+  padding: 4px 8px;
+  text-align: start;
+}
+
+.view-options-choice:hover,
+.view-options-choice:focus-visible {
+  background: var(--surface-subtle);
+  outline: none;
+}
+
+.view-options-choice:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--focus);
+}
+
+.view-options-choice-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-options-choice[aria-selected="true"] .view-options-choice-label {
+  font-weight: 600;
+}
+
+.view-options-initials {
+  background: var(--surface-subtle);
+  border-radius: 50%;
+  color: var(--muted);
+  display: grid;
+  flex: none;
+  font-size: 0.66rem;
+  font-weight: 700;
+  height: 26px;
+  place-items: center;
+  width: 26px;
+}
+
+.view-options-check {
+  flex: none;
+  height: 16px;
+  opacity: 0;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  width: 16px;
+}
+
+.view-options-choice[aria-selected="true"] .view-options-check {
+  opacity: 1;
+}
+
+.view-options-empty {
+  color: var(--muted);
+  font-size: 0.84rem;
+  margin: 0;
+  padding: 10px 2px;
+}
+
+/* What is on, under the strip or the toolbar: a chip each that sets it
+   back, and Clear all. */
+.view-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 6px;
+}
+
+.view-chip {
+  align-items: center;
+  background: var(--accent-soft);
+  border: 0;
+  border-radius: 999px;
+  color: var(--accent);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  gap: 5px;
+  padding: 3px 8px 3px 10px;
+}
+
+.view-chip-x {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.view-chip-clear {
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 500;
+  padding: 3px 6px;
+}
+
+.view-chip-clear:hover {
+  color: var(--ink);
+}
+
+.view-chip:focus-visible,
+.view-chip-clear:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The finished tasks: a quiet foot that counts them while they are
+   hidden, and a heading with Hide over them once shown. */
+.finished-foot {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.8rem;
+  justify-content: space-between;
+  padding: 12px 2px;
+  text-align: start;
+  width: 100%;
+}
+
+.finished-foot-show {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.finished-foot:focus-visible,
+.finished-head button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.finished-tasks {
+  margin-top: 18px;
+}
+
+.finished-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.finished-head-title {
+  color: var(--faint);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.finished-head button {
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 2px;
+}
+
 .event-pages {
   border: 0;
   border-radius: 0;

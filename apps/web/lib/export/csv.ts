@@ -22,7 +22,7 @@ function csvField(value: string): string {
 /**
  * A file name from its parts joined with " - ", the characters a file
  * system refuses replaced by a space and runs of spaces collapsed:
- * "Kyoto in November - To-dos - 2026-09-19".
+ * "Kyoto in November - Tasks - 2026-09-19".
  */
 export function exportFileName(parts: readonly string[]): string {
   return parts

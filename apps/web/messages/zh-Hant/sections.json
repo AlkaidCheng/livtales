@@ -16,7 +16,7 @@
   "moveSection": "調整分組 {name} 的位置",
   "field": "分組",
   "none": "未分組",
-  "open": "{count} 項待辦",
+  "open": "{count} 項未完成",
   "total": "合計 {total}",
   "said": {
     "added": "已新增分組 {name}。",

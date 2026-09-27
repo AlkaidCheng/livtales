@@ -1,9 +1,14 @@
 {
-  "title": "To-dos",
+  "title": "Tasks",
   "open": "{count, plural, one {# open} other {# open}}",
   "openOf": "{shown} of {total} open",
   "addTask": "Add task",
   "empty": "No tasks yet",
   "nothingInView": "Nothing in this view",
-  "noDueDateGroup": "no due date"
+  "noDueDateGroup": "no due date",
+  "finished": "{count} finished",
+  "finishedMore": "{count}+ finished",
+  "showFinished": "Show",
+  "finishedHeading": "Finished · {count}",
+  "hideFinished": "Hide"
 }

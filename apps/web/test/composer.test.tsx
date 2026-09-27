@@ -422,7 +422,7 @@ describe("the composer on the add row", () => {
     });
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
-    await screen.findByRole("heading", { name: "To-dos" });
+    await screen.findByRole("heading", { name: "Tasks" });
     await user.click(
       screen.getByRole("button", { name: "Add a task to the list" }),
     );
@@ -484,7 +484,7 @@ describe("the composer on the add row", () => {
     await screen.findByText("Greet the guests");
     const todos = within(
       screen
-        .getByRole("heading", { name: "To-dos" })
+        .getByRole("heading", { name: "Tasks" })
         .closest(".planning-panel") as HTMLElement,
     );
     await user.click(todos.getByRole("button", { name: /^Layout: / }));

@@ -126,10 +126,10 @@ describe("the Share control", () => {
     renderTodos();
     const share = await screen.findByRole("button", { name: /^Share$/ });
     await user.click(share);
-    const sheet = screen.getByRole("dialog", { name: "Share To-dos" });
+    const sheet = screen.getByRole("dialog", { name: "Share Tasks" });
     expect(sheet).toHaveTextContent("Only you see this so far.");
     expect(sheet).toHaveTextContent(
-      "Everyone here sees To-dos of this event, and its sections unless a section is shared on its own.",
+      "Everyone here sees Tasks of this event, and its sections unless a section is shared on its own.",
     );
 
     // Add people unfolds the picker; a friend is shared at once.
@@ -173,7 +173,7 @@ describe("the Share control", () => {
 
     // Done closes the sheet and returns focus to the control.
     await user.click(within(sheet).getByRole("button", { name: "Done" }));
-    expect(screen.queryByRole("dialog", { name: "Share To-dos" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: "Share Tasks" })).toBeNull();
     expect(share).toHaveFocus();
   });
 

@@ -62,7 +62,7 @@ export async function exerciseEditorSubmit(page: Page, testInfo: TestInfo) {
   await expect(
     page.getByRole("heading", { name: "Editor shortcut plan", exact: true }),
   ).toBeVisible();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await openTaskEditor(page);
   const task = page.getByLabel("Task", { exact: true });
   const save = page.getByRole("button", { name: "Create task", exact: true });

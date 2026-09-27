@@ -29,7 +29,7 @@ describe("describeLayoutChanges", () => {
           ["c3", "expenses"],
         ]),
       ]),
-    ).toEqual({ sentences: ["Moved Calendar above To-dos"], more: 0 });
+    ).toEqual({ sentences: ["Moved Calendar above Tasks"], more: 0 });
     expect(
       describeLayoutChanges(before, [
         page("p1", "Plan", [
@@ -51,7 +51,7 @@ describe("describeLayoutChanges", () => {
           ["c4", "todos"],
         ]),
       ]),
-    ).toEqual({ sentences: ["Added To-dos to Plan"], more: 0 });
+    ).toEqual({ sentences: ["Added Tasks to Plan"], more: 0 });
   });
 
   it("counts the sentences past the first three", () => {

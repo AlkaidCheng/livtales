@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { chooseLayout } from "../../e2e/helpers/component-views";
 import { openEventView } from "../../e2e/helpers/event-view";
 import { openCollection } from "../../e2e/helpers/quiet-chrome";
 
@@ -31,10 +32,7 @@ test("standalone screens work offline and preserve browser edits", async ({
   await expect(
     page.getByText("Welcome and coffee", { exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Layout", exact: false }).click();
-  await page
-    .getByRole("menuitemradio", { name: "Agenda", exact: true })
-    .click();
+  await chooseLayout(page.locator("main"), "Agenda");
   await expect(
     page.getByText("Welcome and coffee", { exact: true }),
   ).toBeVisible();

@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 // The chip and its menu by their place in the strip, whatever the language.
 const foldChip = (page: Page) =>
@@ -70,7 +70,7 @@ async function putOnStrip(page: Page, name: string): Promise<void> {
  * Opens one of the event's views: through its tab when the strip shows it,
  * else from the chip that lists the tabs folded away when the width runs
  * out, else by putting it on the strip first, since a new event's strip
- * starts with the Overview and To-dos alone.
+ * starts with the Overview and Tasks alone.
  */
 export async function openEventView(page: Page, name: string): Promise<void> {
   const tab = page.getByRole("tab", { name, exact: true });
@@ -82,12 +82,9 @@ export async function openEventView(page: Page, name: string): Promise<void> {
         (await addViewButton(page).isVisible()),
     )
     .toBe(true);
-  if (await tab.isVisible()) await tab.click();
-  else if (!(await pickFoldedTab(page, name))) {
+  if (!(await tab.isVisible()) && !(await pickFoldedTab(page, name)))
     await putOnStrip(page, name);
-    if (await tab.isVisible()) await tab.click();
-    else await pickFoldedTab(page, name);
-  }
+  await openTab(page, tab, name);
   // The chosen view's tab is current, and a current tab never folds.
   await expect(tab).toHaveAttribute("aria-selected", "true");
 }
@@ -118,12 +115,19 @@ export async function openEventPage(page: Page, name: string): Promise<void> {
   const tab = page
     .getByRole("navigation", { name: "Pages", exact: true })
     .getByRole("button", { name, exact: true });
-  await expect
-    .poll(
-      async () => (await tab.isVisible()) || (await foldChip(page).isVisible()),
-    )
-    .toBe(true);
-  if (await tab.isVisible()) await tab.click();
-  else await pickFoldedTab(page, name);
+  await openTab(page, tab, name);
   await expect(tab).toHaveAttribute("aria-current", "page");
+}
+
+/**
+ * Presses a tab where the strip shows it, else picks it from the fold
+ * chip. The strip folds again as a view's controls arrive at its end, so
+ * a tab seen a moment ago may have folded away: then it tries again.
+ */
+async function openTab(page: Page, tab: Locator, name: string) {
+  await expect(async () => {
+    if (await tab.isVisible()) await tab.click({ timeout: 2_000 });
+    else if (!(await pickFoldedTab(page, name)))
+      throw new Error(`${name} is neither on the strip nor folded`);
+  }).toPass();
 }

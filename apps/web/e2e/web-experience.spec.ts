@@ -119,7 +119,7 @@ test("organizes events and keeps navigation usable across reloads and screen siz
   ).toBeVisible();
   expect(viewRequests.some((path) => path.endsWith("/calendar"))).toBe(true);
   expect(viewRequests.some((path) => path.endsWith("/detail"))).toBe(false);
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await page.goBack();
   await expect(page.getByRole("tab", { name: "Calendar" })).toHaveAttribute(
     "aria-selected",

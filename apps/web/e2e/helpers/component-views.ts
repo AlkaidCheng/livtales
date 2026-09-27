@@ -8,18 +8,51 @@ import { setDue } from "./date-rows";
 import { today } from "./today";
 import { openTaskEditor } from "./task-add";
 import { openAddPage } from "./event-view";
+import { showTasks } from "./view-options";
 
-/** Opens a panel's Layout menu and chooses a template by its name. */
+/**
+ * Chooses a template by its name: from the panel's own Layout menu (a
+ * component on a page, the Tasks page), the tab's Layout menu at the
+ * strip's end, or the tab's options on a phone.
+ */
 export async function chooseLayout(panel: Locator, name: string) {
-  await panel.getByRole("button", { name: "Layout" }).click();
-  await panel.getByRole("menuitemradio", { name, exact: true }).click();
+  const page = panel.page();
+  const strip = page.locator(".event-strip-options");
+  const options = strip.getByRole("button", { name: / options$/ });
+  const control = panel
+    .getByRole("button", { name: /^Layout/ })
+    .or(strip.getByRole("button", { name: /^Layout/ }))
+    .or(options)
+    .first();
+  await expect(control).toBeVisible();
+  if (await options.isVisible()) {
+    await options.click();
+    const popup = page.getByRole("dialog", { name: / options$/ });
+    const segments = popup.getByRole("radiogroup", { name: "Layout" });
+    if (await segments.isVisible())
+      await segments.getByRole("radio", { name, exact: true }).click();
+    else {
+      await popup.getByRole("button", { name: /^Layout/ }).click();
+      await popup.getByRole("option", { name, exact: true }).click();
+      await expect(
+        popup.getByRole("button", { name: /^Layout/ }),
+      ).toContainText(name);
+    }
+    await popup.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(popup).toHaveCount(0);
+    return;
+  }
+  await control.click();
+  await page.getByRole("menuitemradio", { name, exact: true }).click();
   await expect(
-    panel.getByRole("button", { name: `Layout: ${name}` }),
+    panel
+      .getByRole("button", { name: `Layout: ${name}` })
+      .or(strip.getByRole("button", { name: `Layout: ${name}` })),
   ).toBeVisible();
 }
 
 /**
- * Adds a To-dos component with two tasks due on one far day and one due
+ * Adds a Tasks component with two tasks due on one far day and one due
  * today, walks it through the by-day, by-week, and calendar layouts, and
  * checks each chosen layout survives a reload while moving the period
  * does not.
@@ -34,10 +67,10 @@ export async function exerciseComponentViews(page: Page) {
     .getByRole("button", { name: "Add component", exact: true })
     .click();
   const picker = page.getByRole("dialog", { name: "Add a component" });
-  await picker.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await picker.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await expect(picker).toHaveCount(0);
   const todos = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await openTaskEditor(page, todos);
   const editor = page.getByRole("dialog", { name: "Add task", exact: true });
@@ -93,7 +126,7 @@ export async function exerciseComponentViews(page: Page) {
 
   await page.reload();
   const reopened = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await expect(reopened.getByRole("region", { name: /Mar 5/ })).toBeVisible();
   await expect(
@@ -114,11 +147,7 @@ export async function exerciseComponentViews(page: Page) {
   await period.getByRole("button", { name: "This week" }).click();
   await expect(todayColumn.getByText("Confirm the caterer")).toBeVisible();
   // A column's row completes the task like the list's; every status shown.
-  await reopened.getByRole("button", { name: /^Filter/ }).click();
-  await reopened
-    .getByRole("menuitemradio", { name: "All", exact: true })
-    .click();
-  await page.keyboard.press("Escape");
+  await showTasks(page, "All", reopened);
   await todayColumn
     .getByRole("button", { name: "Complete Confirm the caterer" })
     .click();
@@ -153,11 +182,7 @@ export async function exerciseComponentViews(page: Page) {
   await expect(
     reopened.getByRole("button", { name: "Layout: Calendar", exact: true }),
   ).toBeVisible();
-  await reopened.getByRole("button", { name: /^Filter/ }).click();
-  await reopened
-    .getByRole("menuitemradio", { name: "All", exact: true })
-    .click();
-  await page.keyboard.press("Escape");
+  await showTasks(page, "All", reopened);
   await expect(reopened.locator(".month-day.is-today")).toContainText(
     "Confirm the caterer",
   );

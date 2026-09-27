@@ -1,7 +1,7 @@
 {
   "sharedBy": "Shared with you by {name} as {role}",
   "throughEvent": "Through {event}, shared by {name}",
-  "grants": "Also this event's pages, to-dos, expenses, files, and earlier versions",
+  "grants": "Also this event's pages, tasks, expenses, files, and earlier versions",
   "roles": {
     "viewer": "viewer",
     "editor": "editor",

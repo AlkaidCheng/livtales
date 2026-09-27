@@ -19,5 +19,6 @@
   "actionsFor": "{name} 的操作",
   "addReminderToList": "向列表添加提醒",
   "addReminderFor": "为 {day} 添加提醒",
-  "addExpenseTo": "向分组 {section} 添加支出"
+  "addExpenseTo": "向分组 {section} 添加支出",
+  "scheduledCount": "已安排 {count} 项"
 }

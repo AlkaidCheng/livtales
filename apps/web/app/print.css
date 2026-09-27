@@ -13,6 +13,19 @@
   display: none;
 }
 
+/* The title of a view whose tab names it on the screen: on paper, and for
+   a screen reader finding its way by headings. */
+.panel-heading.off-screen {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 @media print {
   @page {
     margin: 16mm;
@@ -72,6 +85,17 @@
     flex-basis: 100%;
   }
 
+  :root[data-printing] .panel-heading.off-screen {
+    clip: auto;
+    clip-path: none;
+    height: auto;
+    margin-bottom: 18px;
+    overflow: visible;
+    position: static;
+    white-space: normal;
+    width: auto;
+  }
+
   /* What is not the view: the sidebar, the page tabs, the other components
      on the page, and every control that only acts on the screen. */
   :root[data-printing] .skip-link,
@@ -81,6 +105,9 @@
   :root[data-printing] .event-actions,
   :root[data-printing] .access-line,
   :root[data-printing] .event-strip,
+  :root[data-printing] .view-chips,
+  :root[data-printing] .finished-foot,
+  :root[data-printing] .finished-head button,
   :root[data-printing] .composition-actions,
   :root[data-printing] .component-toolbar,
   :root[data-printing] .event-component-block:not(:has([data-printing="true"])),

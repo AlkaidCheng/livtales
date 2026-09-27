@@ -90,7 +90,7 @@ export async function exercisePageNavigation(page: Page, testInfo: TestInfo) {
     .getByRole("button", { name: "Close event editor", exact: true })
     .click();
   await page.getByRole("button", { name: "Discard", exact: true }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   await openEventPage(page, navigationPageNames[2]);
   await expect(
     page.getByRole("heading", { name: navigationPageNames[2], exact: true }),

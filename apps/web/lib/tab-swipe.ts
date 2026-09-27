@@ -94,12 +94,15 @@ const overlaySelector =
  * than to a swipe: a field; an element that turns its own content with a
  * swipe (marked `data-own-swipe`); a grip or handle that refuses the
  * browser's touch gestures; or content that scrolls sideways itself, such
- * as a wide grid or table.
+ * as a wide grid or table. A press outside `surface` belongs elsewhere
+ * too: a view shows its options on the strip and its chips under it, and
+ * a press there still reaches the surface through the view's own tree.
  */
 export function swipeBelongsElsewhere(
   target: Element,
   surface: Element,
 ): boolean {
+  if (!surface.contains(target)) return true;
   const view = surface.ownerDocument.defaultView;
   for (
     let element: Element | null = target;

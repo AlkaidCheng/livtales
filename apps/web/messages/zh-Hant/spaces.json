@@ -53,7 +53,7 @@
     "moves": "隨之移動",
     "count": {
       "scheduleItems": "{count, plural, other {# 個日程項目}}",
-      "todos": "{count, plural, other {# 項待辦}}",
+      "todos": "{count, plural, other {# 項任務}}",
       "subtasks": "{count, plural, other {# 項子任務}}",
       "expenses": "{count, plural, other {# 筆支出}}",
       "reminders": "{count, plural, other {# 則提醒}}",

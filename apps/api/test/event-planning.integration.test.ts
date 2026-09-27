@@ -723,9 +723,15 @@ describe.sequential("event-planning API", () => {
       await ranged("dueTo=2026-11-01&timezone=Pacific%2FHonolulu"),
     ).toEqual([timed]);
     expect(await ranged("dueFrom=2026-11-03")).toEqual([]);
+    // By the Event that includes them: none, any, or that one.
+    expect(await ranged("event=none")).toEqual([timed, undated]);
+    expect(await ranged("event=any")).toEqual([inEvent]);
+    expect(await ranged(`event=${event.id}`)).toEqual([inEvent]);
+    expect(await ranged(`event=${undated}`)).toEqual([]);
     for (const invalid of [
       "dueFrom=2026-11-03&dueTo=2026-11-02",
       "dueFrom=2026-11-02&timezone=Mars%2FOlympus",
+      "event=standalone",
     ]) {
       const refused = await app.inject({
         method: "GET",

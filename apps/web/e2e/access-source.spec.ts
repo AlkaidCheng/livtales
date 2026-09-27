@@ -124,7 +124,7 @@ test("names where a grantee's access comes from, and nothing on the owner's own 
     await expect(accessLine(page)).toHaveText(
       "Shared with you by Ana as editor",
     );
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const row = page.getByRole("row", { name: /Book the counter seats/ });
   // The row's Edit opens it in place; More reaches the full editor.
   await chooseRowAction(page, row, "Edit");
@@ -147,7 +147,7 @@ test("names where a grantee's access comes from, and nothing on the owner's own 
   await page.goto(`/events/${dinner.id}?view=sharing`);
   const accessRow = page.locator(".share-list article", { hasText: "Ben" });
   await expect(accessRow).toContainText(
-    "Also this event's pages, to-dos, expenses, files, and earlier versions",
+    "Also this event's pages, tasks, expenses, files, and earlier versions",
   );
   await page.goto("/events");
   await page.getByRole("link", { name: /Kyoto in November/ }).click();

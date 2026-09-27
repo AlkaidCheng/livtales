@@ -13,5 +13,6 @@
     "history": "History",
     "moveToTrash": "Move to Trash"
   },
-  "actionsFor": "Actions for {name}"
+  "actionsFor": "Actions for {name}",
+  "sortedByTitle": "Sorted by title"
 }

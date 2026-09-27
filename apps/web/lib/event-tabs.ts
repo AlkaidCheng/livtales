@@ -20,7 +20,7 @@ export const fixedViews: ReadonlySet<EventView> = new Set<EventView>([
 
 /**
  * The views a new event's strip shows before the account arranges it: the
- * Overview and To-dos. The other views wait in the gallery; Sharing and
+ * Overview and Tasks. The other views wait in the gallery; Sharing and
  * Removed links, which cannot be removed, start hidden.
  */
 export const defaultViews: ReadonlySet<EventView> = new Set<EventView>([

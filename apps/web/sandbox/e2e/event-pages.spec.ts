@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { openAddPage, openEventPage } from "../../e2e/helpers/event-view";
+import { showTasks } from "../../e2e/helpers/view-options";
 
 const sandboxUrl = new URL(
   "../../../../.livtales/sandbox/livtales.html",
@@ -49,9 +50,9 @@ test("composes named pages with canonical tasks and preserves the layout offline
   await page
     .getByRole("button", { name: "Add component", exact: true })
     .click();
-  await page.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await page.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "To-dos", exact: true }),
+    page.getByRole("heading", { name: "Tasks", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText("Confirm the garden venue", { exact: true }),
@@ -72,7 +73,7 @@ test("composes named pages with canonical tasks and preserves the layout offline
   await page
     .getByRole("button", { name: "Add component", exact: true })
     .click();
-  await page.getByRole("button", { name: "Add To-dos", exact: true }).click();
+  await page.getByRole("button", { name: "Add Tasks", exact: true }).click();
   await page
     .getByRole("button", {
       name: "Complete Confirm the garden venue",
@@ -80,9 +81,7 @@ test("composes named pages with canonical tasks and preserves the layout offline
     })
     .click();
   await openEventPage(page, "Preparation");
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await showTasks(page, "All");
   await expect(
     page.getByRole("button", {
       name: "Reopen Confirm the garden venue",
@@ -93,9 +92,7 @@ test("composes named pages with canonical tasks and preserves the layout offline
   await expect(
     page.getByRole("heading", { name: "Preparation", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
+  await showTasks(page, "All");
   await expect(
     page.getByRole("button", {
       name: "Reopen Confirm the garden venue",

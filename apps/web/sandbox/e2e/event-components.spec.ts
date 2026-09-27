@@ -27,7 +27,7 @@ test("inserts mixed components offline and edits one schedule across three proje
     "Expenses",
     "Reminders",
     "Files",
-    "To-dos",
+    "Tasks",
   ]) {
     await page
       .getByRole("button", { name: "Add component", exact: true })

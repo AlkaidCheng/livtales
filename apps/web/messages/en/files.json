@@ -20,5 +20,8 @@
   "attach": "Attach a file",
   "uploading": "Uploading {name}...",
   "choose": "Choose a private file",
-  "uploadingLabel": "Uploading attachment"
+  "uploadingLabel": "Uploading attachment",
+  "count": "{count, plural, one {# file} other {# files}}",
+  "findTarget": "Find a task or expense",
+  "noTarget": "Nothing by that name"
 }

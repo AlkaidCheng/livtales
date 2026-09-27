@@ -3,6 +3,7 @@ import { openCommands } from "./context-commands";
 import { expectHorizontalReflow } from "./page-navigation";
 import { choosePageOption, pageOptions } from "./quiet-chrome";
 import { openAddPage } from "./event-view";
+import { showTasks } from "./view-options";
 
 export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
   await openAddPage(page);
@@ -10,7 +11,7 @@ export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
   await addPage.getByLabel("Page name").fill("Preparation");
   await addPage.getByRole("button", { name: "Add page", exact: true }).click();
   await expect(addPage).toHaveCount(0);
-  for (const label of ["To-dos", "Calendar"]) {
+  for (const label of ["Tasks", "Calendar"]) {
     await page
       .getByRole("button", { name: "Add component", exact: true })
       .click();
@@ -20,10 +21,8 @@ export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
       .click();
     await expect(picker).toHaveCount(0);
   }
-  await page.getByRole("button", { name: /^Filter/ }).click();
-  await page.getByRole("menuitemradio", { name: "All", exact: true }).click();
-  await page.keyboard.press("Escape");
-  // The filter is session state of the To-dos component: arranging must
+  await showTasks(page, "All");
+  // The filter is session state of the Tasks component: arranging must
   // keep the component mounted, so the choice survives every toggle.
   const filter = page.getByRole("button", {
     name: "Filter: 1 filter",
@@ -102,7 +101,7 @@ export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
     recovery.getByRole("button", { name: "Layout history", exact: true }),
   ).toBeVisible();
   await recovery
-    .getByRole("button", { name: "Remove To-dos from Preparation" })
+    .getByRole("button", { name: "Remove Tasks from Preparation" })
     .click();
   await recovery.getByRole("button", { name: "Remove from layout" }).click();
   await expect(recovery.getByRole("status")).toHaveText(
@@ -110,11 +109,11 @@ export async function exerciseEventArrange(page: Page, testInfo: TestInfo) {
   );
   await recovery.getByRole("button", { name: "Undo layout change" }).click();
   await expect(
-    recovery.getByRole("button", { name: "Remove To-dos from Preparation" }),
+    recovery.getByRole("button", { name: "Remove Tasks from Preparation" }),
   ).toBeVisible();
   await recovery.getByRole("button", { name: "Close", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "To-dos", exact: true }),
+    page.getByRole("heading", { name: "Tasks", exact: true }),
   ).toBeVisible();
   await expect(controls).toHaveCount(0);
 }

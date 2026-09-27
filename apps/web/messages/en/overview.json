@@ -3,7 +3,7 @@
   "transactions": "{count, plural, one {# transaction} other {# transactions}}",
   "privateTitle": "Private related items",
   "privateNote": "{count, plural, one {# related item is} other {# related items are}} outside your permission scope.",
-  "openTodos": "Open to-dos",
+  "openTodos": "Open tasks",
   "scheduled": "Scheduled items",
   "expenses": "Expenses",
   "reminders": "Reminders",

@@ -15,11 +15,11 @@ import { formatMoment } from "../../lib/format";
 import { notePreview } from "../../lib/note-fields";
 import { useOpenHistory } from "../history/history-provider";
 import { useOpenLifecycle } from "../recovery/lifecycle-provider";
-import { PanelHeading } from "./component-frame";
-import { ExportControl } from "./export-control";
-import { ShareControl } from "./share-control";
+import { ExportControl, exportOption, useViewExport } from "./export-control";
+import { ShareControl, useViewShare } from "./share-control";
 import { NoteForm } from "./note-form";
 import { NoteInspector } from "./note-inspector";
+import { ViewHead } from "./view-head";
 
 const noteSorts: readonly NoteListQuery["sort"][] = ["edited", "title"];
 
@@ -99,9 +99,30 @@ export function NotesPanel({
     );
   };
 
+  const share = useViewShare(eventId, "notes", views("notes"));
+  const formats = useViewExport({
+    eventId,
+    panel,
+    sheet: () => noteSheet(notes),
+    view: "notes",
+    viewName: views("notes"),
+  });
+
   return (
     <section className="planning-panel panel-column" ref={panel}>
-      <PanelHeading
+      <ViewHead
+        caption={exports("sortOnly", { sort: t(`sorts.${sort}`) })}
+        chips={
+          sort === "edited"
+            ? []
+            : [
+                {
+                  id: "sort",
+                  label: t("sortedByTitle"),
+                  onClear: () => onChangeSort("edited"),
+                },
+              ]
+        }
         controls={
           <div className="head-controls">
             <HeadMenu
@@ -118,24 +139,34 @@ export function NotesPanel({
               label={controls("sort")}
               name={sort === "edited" ? undefined : t(`sorts.${sort}`)}
             />
-            <ExportControl
-              eventId={eventId}
-              panel={panel}
-              sheet={() => noteSheet(notes)}
-              view="notes"
-              viewName={views("notes")}
-            />
-            <ShareControl
-              eventId={eventId}
-              view="notes"
-              viewName={views("notes")}
-            />
+            <ExportControl formats={formats} />
+            <ShareControl share={share} />
           </div>
         }
-        caption={exports("sortOnly", { sort: t(`sorts.${sort}`) })}
         count={
           notes.length === 0 ? undefined : t("count", { count: notes.length })
         }
+        options={[
+          {
+            kind: "list",
+            id: "sort",
+            label: controls("sort"),
+            value: sort,
+            changed: sort !== "edited",
+            groups: [
+              {
+                choices: noteSorts.map((choice) => ({
+                  value: choice,
+                  label: t(`sorts.${choice}`),
+                })),
+              },
+            ],
+            onChange: (value) =>
+              onChangeSort(value === "title" ? "title" : "edited"),
+          },
+          exportOption(formats, exports("title")),
+        ]}
+        share={share}
         title={views("notes")}
       />
       {notes.length === 0 && !canEdit ? (

@@ -44,7 +44,7 @@ test("edits a task row in place: chips, Save, Cancel, a stale save, and the row 
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Garden evening/ }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const row = page.getByRole("row", { name: /Book the ryokan/ });
   await expect(row).toBeVisible();
 

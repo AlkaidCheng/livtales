@@ -3,7 +3,7 @@
   "transactions": "{count} 笔交易",
   "privateTitle": "私密的相关项目",
   "privateNote": "{count} 个相关项目在你的权限范围之外。",
-  "openTodos": "未完成的待办",
+  "openTodos": "未完成的任务",
   "scheduled": "已安排的项目",
   "expenses": "支出",
   "reminders": "提醒",

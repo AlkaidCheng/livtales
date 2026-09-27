@@ -124,7 +124,7 @@ test("adds to an event from the phone's add button, the view's kind nearest @web
   }
 
   // The keyboard reaches the menu too: the arrow keys walk the pills, and
-  // a task added from it joins the event's To-dos.
+  // a task added from it joins the event's Tasks.
   await page.goto(`${eventPath}?view=todos`);
   await seal.focus();
   await page.keyboard.press("Enter");

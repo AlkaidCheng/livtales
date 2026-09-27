@@ -53,9 +53,9 @@ test("lays a week's tasks out as cards that drag between days, each day with its
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("link", { name: /Wedding countdown/ }).click();
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const panel = page.locator(".planning-panel").filter({
-    has: page.getByRole("heading", { name: "To-dos", exact: true }),
+    has: page.getByRole("heading", { name: "Tasks", exact: true }),
   });
   await chooseLayout(panel, "By week");
 

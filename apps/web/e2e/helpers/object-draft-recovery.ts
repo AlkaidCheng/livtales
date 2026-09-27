@@ -19,7 +19,7 @@ export const planningEditors = {
   task: {
     field: "Task",
     timeRow: /^(Set due date|Due date)/,
-    view: "To-dos",
+    view: "Tasks",
     projection: "todos",
     addRow: "Add a task to the list",
     form: "New task",
@@ -107,7 +107,7 @@ async function expectDialogMoment(dialog: Locator, kind: Kind) {
  */
 async function exerciseTaskComposerRecovery(page: Page) {
   await openEventView(page, "Overview");
-  await openEventView(page, "To-dos");
+  await openEventView(page, "Tasks");
   const addRow = page.getByRole("button", {
     name: "Add a task to the list",
     exact: true,
