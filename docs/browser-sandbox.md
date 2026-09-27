@@ -28,7 +28,10 @@ needed only to build the file. Moving the file does not transfer saved edits.
 - Compare the Overview, Calendar (list, agenda, week, month), and Timeline
   projections of the same canonical sample objects. Search the sample workspace.
 - Preview Owner and Viewer controls. Viewer mutations are rejected by the sample
-  adapter, but this is not authentication or a security boundary.
+  adapter, but this is not authentication or a security boundary. The two
+  previews are one sample account, so its own view of each event (place, tabs,
+  page order, component layouts, choices) and the Events, Tasks, and People
+  pages' choices are kept for both, as the full application keeps a viewer's.
 - Reset fictional data with confirmation. Reset cannot be undone.
 
 Real sign-in, sharing, file transfers, object recovery/history, trash mutations,

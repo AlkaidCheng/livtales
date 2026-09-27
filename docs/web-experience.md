@@ -227,8 +227,10 @@ filter takes the whole second, and the add button stands in for New event. Under
 Shared with me, Upcoming, and Past, each with its count for the typed name
 (the counts come with the list's first page); one chip is pressed at a
 time, All meaning no scope and no period, and Clear filters resets the
-chips with the name. The count of loaded events is announced to assistive
-technology and not shown.
+chips with the name. The layout, the pressed chip, the Filter, and the Sort
+are kept on the account, so the page opens as it was left on every device;
+the name typed is not kept. The count of loaded events is announced to
+assistive technology and not shown.
 
 The list holds the events shared with the account beside its own, from
 whichever space they live in, so a share needs no space switch to
@@ -259,8 +261,8 @@ group to that one line and opens it again, its chevron turned while
 folded; a folded year hides its months and shows its own count. In Past
 and in All (with Mine and Shared with me, which share its folds) the years
 before this one start folded, so the list opens near the present. The
-folds are kept in this browser for the account, each list (All, Upcoming,
-Past, Unscheduled) its own; while a name is typed every heading starts
+folds are kept on the account, the same on every device, each list (All,
+Upcoming, Past, Unscheduled) its own; while a name is typed every heading starts
 open and a fold lasts for that name alone, so no match is hidden. Name A-Z
 and Recently updated keep one list without headings.
 
@@ -319,8 +321,8 @@ list's foot counts them ("3 finished", "50+ finished" past a page) with
 Show, which switches to All; with All the finished tasks follow the open
 ones apart, under "Finished · 3" with Hide, in the List and By day
 layouts (the week, the board, and the calendar keep them in their days).
-Show, Sort, and the filters are kept for the account in this browser, as
-the view's choices of an event's tab are (see Component views).
+The layout, Show, Sort, and the filters are kept on the account, the same
+on every device, as an event's tabs keep theirs (see Component views).
 
 The page offers the same List, By day, By week, Board, and Calendar layouts
 as the Tasks component, from the same rows: the completion check, the name and its
@@ -351,8 +353,7 @@ which is selected as soon as it exists. Rows show labels as chips under the
 title in both views. The Tasks page filters by one label from the toolbar and
 opens Manage labels, where labels are renamed, added, or deleted; a deleted
 label leaves its tasks. Anyone with access to the space sees label names;
-owners and editors change them. The view is a device preference, kept in browser storage like the
-event collection's grid or list choice, and applies to the loaded tasks. The
+owners and editors change them. The layout applies to the loaded tasks. The
 name query belongs to the tab.
 
 ## People
@@ -366,9 +367,10 @@ the rail is a collection like Tasks: one heading row with an inline name
 search (asked of the server after a typing pause), Filter (Account: everyone,
 friends, invited, those with an account, those without; then any label),
 Sort (by name, the
-default, or by the latest change), Layout (List or Namecards, a device
-preference kept in browser storage), Refresh, and the filled plus for New
-person, which opens the person editor (on a phone the add button does).
+default, or by the latest change), Layout (List or Namecards), Refresh, and
+the filled plus for New person, which opens the person editor (on a phone
+the add button does). The layout, the sort, and the filters are kept on the
+account, the same on every device; the name typed is not.
 The list shows one row per person:
 initials (the first character of a name written in Han, kana, or Hangul), the
 nickname over the full name (or the name alone) as the link to the person's
@@ -1026,22 +1028,27 @@ not yet reviewed the two Chinese catalogs; wording may change.
   cache; after cache eviction, the list starts with one page and does not
   automatically download the remaining collection. Refresh starts at page one.
   Search waits for committed input when using an input method editor.
-- Collection criteria and return references stay in memory, not URLs or browser
-  storage. Reload, sign-out, identity replacement, and space changes reset
-  them. These temporary preferences are not saved views or shared bookmarks.
-- Choose grid or list layout. This preference and the folded year and month
-  headings (keyed by the account and the list) are saved in local browser
-  storage; no object data, search text, or permissions are persisted there.
-  Storage restrictions do not prevent using either layout or folding a
-  heading for the visit.
+- The name typed and the return reference stay in memory, not URLs or
+  browser storage. Reload, sign-out, identity replacement, and space
+  changes reset them.
+- Choose grid or list layout. The layout, the scope, the period, the sort,
+  and the folded year and month headings (per list) are kept on the account
+  as the Events page's choices, only those that differ from the defaults.
+  The page holds its loading state until they arrive, so it never shows the
+  defaults first; a change shows at once, and a refused one is taken back
+  with a notice. The Tasks and People pages keep theirs the same way. What
+  an earlier version kept in the browser instead (the places, the tabs'
+  choices, the folds, and the three layouts) is saved to the account once,
+  where the account keeps nothing for it yet, and the browser then forgets
+  it.
 - Event views have bookmarkable URLs, such as `/events/OBJECT_ID?view=calendar`.
   Reload and browser Back/Forward preserve the selected view. An event
   opened at an address that names neither a view nor a page returns to
-  where the account left it in this browser (a view, or a page while it
+  where the account left it, on any device (a view, or a page while it
   still exists), else to its Overview, and the address is replaced to name
-  that place. The browser keeps only the event's id and the view key or
-  page id, under the account's id, for the 50 most recent events; blocked
-  or full storage keeps nothing, and the event then opens on its Overview.
+  that place. The place is kept once the account has stayed on a view or
+  page for a moment, so moving through the tabs does not keep each one,
+  and at once when it leaves the event or the browser tab.
   The Pages view without a page reads `?view=pages`. A phone keeps
   the strip, folded past its width into the chip, with no separate view
   select. A view reached by its address shows even while hidden from or
@@ -1115,11 +1122,22 @@ not yet reviewed the two Chinese catalogs; wording may change.
   links can be hidden but not removed; pages are removed through their own
   options (the dialog's help says so; the list itself carries no notes).
   New page opens the Add page dialog; Add view opens the gallery.
-  Page order is the event's layout, shared by everyone with access and undone
-  like any layout change; the views' order and the hidden and removed sets
-  are the account's own, kept per event with the account preferences and
-  applied on every device. A hidden view is still reached from the Overview
-  rows and from its address.
+  Everything here is the account's own: the pages' order and the views',
+  and the hidden and removed sets, kept on the account and the same on
+  every device, so someone else rearranging their tabs never rearranges
+  yours. Anyone who may open the event orders its pages for themselves; an
+  editor's order becomes the event's too, the order someone opening the
+  event for the first time starts from, and undoes like any layout change.
+  A hidden view is still reached from the Overview rows and from its
+  address.
+- The account's view of an event (where it was left, the tabs, the page
+  order, each page component's layout, and each tab's and component's
+  choices) keeps a copy of the event's page order and component layouts
+  from its first save, a place kept included; an editor's later change to
+  them reaches newcomers, not those who already keep a view. A page added
+  since joins the order right after the nearest page before it, else at
+  the end; what is removed drops out. What a page holds, its components and
+  their order, stays the event's, shared by everyone.
 - The Overview lists what the event holds as rows (Open tasks, Scheduled
   items, Expenses, Reminders, Files, People), each with its count and a way
   into that view, then Next up as one row; there is no introduction above
@@ -1159,7 +1177,8 @@ reveals page ordering, component move buttons, cross-page moves, and drag
 handles, including dropping a component on another page in the strip; from the
 More menu it also brings the Pages view forward. Done arranging, in the page heading,
 hides these tools without saving again and returns focus to the page menu;
-each move saves immediately through the existing versioned layout API. Page
+each move saves immediately through the existing versioned layout API, and a
+page moved there moves in the editor's own order too. Page
 options (Layout history for viewers) stays in the same menu for removal,
 undo/redo, and saved layout history. Add page, Add component, and insertion
 shortcuts work in either mode. An event with no pages offers Add a page; a
@@ -1643,9 +1662,8 @@ Clear all when there are several; while any is on, the options button
 carries a small dot in the accent. The strip and its chips stay pinned
 under the top of the screen (under the app bar on a phone) as the view
 scrolls. Each tab's choices (its layout, Show, Sort, and filters, and the
-Notes' order) are kept for the account and the event in this browser, per
-view, for the most recent two hundred views; storage that is blocked keeps
-nothing, and the defaults return on the next visit. The view's title
+Notes' order) are kept in the account's view of the event, the same on
+every device, only those that differ from the defaults. The view's title
 stays among the headings a screen reader lists, and on paper the view
 still prints its title, count, and the line naming its sort and filter.
 
@@ -1820,8 +1838,7 @@ start at the earliest day with content, Today among their columns. The
 Itinerary offers Day and All days (below).
 The event's own tabs (Tasks, Calendar,
 and the rest) offer the same Layout control; a tab's choice is kept with
-the tab's other choices in this browser, while a page component's is saved
-with the layout. Above a week or
+the tab's other choices, and a page component's as described below. Above a week or
 a calendar, open tasks whose due has passed sit in an Overdue strip and tasks
 with no due date or unscheduled items in a second strip, since neither has a
 cell. The period's title sits at the left of the grid, the month in bold
@@ -1851,10 +1868,12 @@ finished tasks follow the open ones apart in the List and By day layouts,
 under "Finished · 3" with Hide, out of the sections and never dragged
 among the open rows (the week, the board, and the calendar keep them in
 their days). A choice other than Open shows as a chip ("Showing finished",
-"Finished only"). Inside a page these choices last while the component is
-open rather than being saved with the layout. On a page, the choice of layout is part of
-the layout: it saves at once for everyone on the Event, shows in layout
-history, and undo covers it. Viewers see the saved layout without a control.
+"Finished only"). Inside a page these choices are kept per component in
+the account's view of the event, as a tab's are. On a page, a component's
+layout is the account's own too, and a viewer chooses it as an editor
+does; an editor's choice also becomes the event's layout, the one someone
+opening the event for the first time starts from: it saves at once, shows
+in layout history, and undo covers it.
 
 ### Export
 
