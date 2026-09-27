@@ -1,6 +1,6 @@
 "use client";
 
-import type { EventLayoutResponse } from "@livtales/schemas";
+import type { EventPage } from "@livtales/schemas";
 import { useTranslations } from "next-intl";
 import {
   type DragEvent,
@@ -12,12 +12,12 @@ import { EditorDialogHeader } from "../../components/editor-dialog-controls";
 import { ErrorNotice } from "../../components/feedback";
 import { EyeIcon, EyeOffIcon, GripIcon } from "../../components/icons";
 import { ViewMark } from "../../components/view-marks";
-import { useUpdateEventLayout } from "../../lib/event-layout-queries";
 import { fixedViews } from "../../lib/event-tabs";
 import { type EventView, eventViewLabel } from "../../lib/event-views";
 import { moveKey, placeKey } from "../../lib/key-order";
 import { useDialogHelp } from "../../lib/use-dialog-help";
 import { useSessionDialog } from "../../lib/use-session-dialog";
+import { usePageOrder } from "./use-event-pages";
 import type { EventTabsState } from "./use-event-tabs";
 
 interface Row {
@@ -33,12 +33,13 @@ interface Row {
  * Manage tabs: one list per side of the strip's bar, each capped in
  * height and scrolling. A row drags to reorder (its grip moves it with the
  * arrow keys too); the eye hides the tab but keeps it listed; the cross
- * takes a view off the event. Pages reorder through the event's layout,
- * which every account shares; the views through the account's own tabs.
+ * takes a view off the event. Everything here is the account's own: the
+ * pages' order and the views' (an editor's page order becomes the event's
+ * too, the one a newcomer starts from), and what the strip leaves out.
  */
 export function ManageTabsDialog({
   eventId,
-  layout,
+  pages,
   canEdit,
   tabs,
   onClose,
@@ -46,8 +47,8 @@ export function ManageTabsDialog({
   onAddView,
 }: {
   readonly eventId: string;
-  /** The event's pages; absent while the layout has not loaded. */
-  readonly layout: EventLayoutResponse | undefined;
+  /** The event's pages in the account's order; none while the layout loads. */
+  readonly pages: readonly EventPage[];
   readonly canEdit: boolean;
   readonly tabs: EventTabsState;
   readonly onClose: () => void;
@@ -57,17 +58,8 @@ export function ManageTabsDialog({
   const t = useTranslations("manageTabs");
   const dialog = useSessionDialog(onClose);
   const help = useDialogHelp("tabs");
-  const save = useUpdateEventLayout(eventId);
-  const pages = layout?.pages ?? [];
-  const pageOrder = pages.map((page) => page.id);
-
-  function reorderPages(order: readonly string[]) {
-    if (layout === undefined || save.isPending) return;
-    const next = order
-      .map((id) => pages.find((page) => page.id === id))
-      .filter((page) => page !== undefined);
-    save.mutate({ expectedVersion: layout.version, pages: next });
-  }
+  const pageOrder = usePageOrder(eventId, canEdit);
+  const pageIds = pages.map((page) => page.id);
 
   const pageRows: Row[] = pages.map((page) => ({
     key: page.id,
@@ -106,14 +98,18 @@ export function ManageTabsDialog({
           action={canEdit ? { label: t("newPage"), onSelect: onNewPage } : null}
           rows={pageRows}
           empty={t("noPages")}
-          canReorder={canEdit && !save.isPending}
-          onMove={(key, delta) => reorderPages(moveKey(pageOrder, key, delta))}
+          canReorder={!pageOrder.isSaving}
+          onMove={(key, delta) =>
+            pageOrder.reorder(moveKey(pageIds, key, delta))
+          }
           onPlace={(key, before) =>
-            reorderPages(placeKey(pageOrder, key, before))
+            pageOrder.reorder(placeKey(pageIds, key, before))
           }
           onToggleHidden={tabs.toggleHidden}
         />
-        {save.isError ? <ErrorNotice error={save.error} /> : null}
+        {pageOrder.error === null ? null : (
+          <ErrorNotice error={pageOrder.error} />
+        )}
         <TabList
           heading={t("views")}
           action={{ label: t("addView"), onSelect: onAddView }}

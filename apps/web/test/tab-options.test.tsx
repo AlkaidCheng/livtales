@@ -2,7 +2,13 @@
 
 import { LivTalesApiClient } from "@livtales/api-client";
 import type { EventResponse } from "@livtales/schemas";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   afterEach,
@@ -16,7 +22,6 @@ import {
 import { Providers } from "../app/providers";
 import { EventWorkspace } from "../features/events/event-workspace";
 import { phoneQuery } from "../lib/use-media";
-import { viewChoicesStorageKey } from "../lib/view-choices";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
 
 vi.mock("next/navigation", () => ({
@@ -25,8 +30,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 let store: SandboxStore;
+let client: LivTalesApiClient;
 let event: EventResponse;
-let stored: Record<string, string>;
 
 /** Answers the phone's media query, as a phone or a wide screen. */
 function onPhone(phone: boolean) {
@@ -46,7 +51,7 @@ beforeEach(async () => {
       snapshot = value;
     },
   });
-  const client = new LivTalesApiClient({
+  client = new LivTalesApiClient({
     getCredential: () => ({
       accessToken: "sample",
       workspaceId: sandboxWorkspaceId,
@@ -59,16 +64,6 @@ beforeEach(async () => {
   );
   assert(found);
   event = found;
-  stored = {};
-  vi.stubGlobal("localStorage", {
-    getItem: (key: string) => stored[key] ?? null,
-    setItem: (key: string, value: string) => {
-      stored[key] = value;
-    },
-    removeItem: (key: string) => {
-      delete stored[key];
-    },
-  });
   window.sessionStorage.setItem(
     "chronelle.session",
     JSON.stringify({ accessToken: "sample", workspaceId: sandboxWorkspaceId }),
@@ -136,7 +131,7 @@ describe("a tab's options on the strip", () => {
     );
   });
 
-  it("keeps the tab's choices for the account and the event, and shows them as chips", async () => {
+  it("keeps the tab's choices in the account's view of the event, and shows them as chips", async () => {
     onPhone(false);
     const user = userEvent.setup();
     const first = renderEvent();
@@ -160,7 +155,11 @@ describe("a tab's options on the strip", () => {
       "Sorted by name, remove",
     ]);
     expect(screen.getByRole("button", { name: "Clear all" })).toBeVisible();
-    expect(stored[viewChoicesStorageKey]).toContain(`:${event.id}:todos`);
+    await waitFor(async () =>
+      expect(
+        (await client.getEventLayoutWithView(event.id)).yours.choices,
+      ).toEqual({ todos: { sort: "name", show: "all" } }),
+    );
     first.unmount();
 
     // Opened again, the tab is as it was left.

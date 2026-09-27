@@ -129,7 +129,7 @@ import { ExpenseForm } from "./expense-form";
 import { ExpenseInspector } from "./expense-inspector";
 import { ExportControl, exportOption, useViewExport } from "./export-control";
 import { ShareControl, useCanShareEvent, useViewShare } from "./share-control";
-import { useViewTab, ViewHead } from "./view-head";
+import { ViewHead } from "./view-head";
 import {
   BoardView,
   boardColumns,
@@ -181,11 +181,8 @@ export function TasksPanel({
   const t = useTranslations("todos");
   const controls = useTranslations("controls");
   const exports = useTranslations("export");
-  // Shown as the event's tab, the choices are kept for the view; inside a
-  // page they last while the component is open.
-  const tab = useViewTab();
+  // The choices are kept for the tab or the page component.
   const [choices, change] = useViewChoices(
-    tab?.choicesKey ?? null,
     defaultEventTaskChoices,
     readEventTaskChoices,
   );

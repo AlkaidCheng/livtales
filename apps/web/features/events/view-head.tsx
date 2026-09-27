@@ -16,16 +16,14 @@ import {
 
 /**
  * What the event page gives the view shown as its tab: the places on the
- * strip for the view's controls and its chips, the key its choices are
- * kept under, and a way to show its count on the tab.
+ * strip for the view's controls and its chips, and a way to show its
+ * count on the tab.
  */
 export interface ViewTab {
   /** The strip's end, where the view's controls (or its options button) go. */
   readonly controls: HTMLElement | null;
   /** The line under the strip, where the view's chips go. */
   readonly chips: HTMLElement | null;
-  /** The key the view's choices are kept under; null until the account is known. */
-  readonly choicesKey: string | null;
   /** Shows the view's count on its tab, or nothing for null. */
   readonly onCount: (count: TabCount | null) => void;
 }

@@ -5,6 +5,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -12,11 +13,15 @@ import type { ContextCommand } from "../../components/context-commands";
 import { MoreIcon } from "../../components/icons";
 import { MenuItem, QuietMenu } from "../../components/quiet-menu";
 import { useForgetInaccessibleEventDrafts } from "../../lib/editor-draft-context";
+import { pagesInOrder } from "../../lib/event-layout";
 import {
+  useChangeEventView,
   useEventLayout,
+  useEventViewState,
   useIsLayoutSaving,
   useLayoutUndo,
   useRestoreEventLayout,
+  useUpdateEventLayout,
 } from "../../lib/event-layout-queries";
 import { undoDirection } from "../../lib/keyboard";
 import { isTemporaryReadError } from "../../lib/query-errors";
@@ -35,6 +40,44 @@ export interface LayoutUndoControls {
   readonly canRedo: boolean;
   readonly onUndo: () => void;
   readonly onRedo: () => void;
+}
+
+/**
+ * The account's order of the event's pages, and a change to it. Anyone
+ * who may open the event orders its pages for themselves; an editor's
+ * order is saved as the event's first, the order someone opening the
+ * event for the first time starts from, and then as the editor's own, so
+ * a refused save changes neither.
+ */
+export function usePageOrder(eventId: string, canEdit: boolean) {
+  const layout = useEventLayout(eventId);
+  const changeView = useChangeEventView(eventId);
+  const save = useUpdateEventLayout(eventId);
+  function reorder(order: readonly string[]) {
+    const keep = () => changeView(() => ({ pages: [...order] }));
+    const shared = layout.data;
+    const pages =
+      canEdit && shared !== undefined
+        ? pagesInOrder(shared.pages, order)
+        : undefined;
+    if (
+      shared === undefined ||
+      pages === undefined ||
+      pages.every((page, index) => page === shared.pages[index])
+    )
+      keep();
+    else
+      save.mutate(
+        { expectedVersion: shared.version, pages: [...pages] },
+        { onSuccess: keep },
+      );
+  }
+  return {
+    reorder,
+    /** True while the event's own order is being saved. */
+    isSaving: save.isPending,
+    error: save.isError ? save.error : null,
+  };
 }
 
 /**
@@ -128,7 +171,13 @@ export function useEventPagesState(
   const addPageButton = useRef<HTMLButtonElement>(null);
   /** The canvas registers how a dragged component lands on a page button. */
   const pageDrop = useRef<PageDrop | null>(null);
-  const pages = layout.data?.pages ?? [];
+  // The pages in the account's order.
+  const order = useEventViewState(eventId)?.pages;
+  const eventPages = layout.data?.pages;
+  const pages = useMemo(
+    () => pagesInOrder(eventPages ?? [], order),
+    [eventPages, order],
+  );
   const selectedPage =
     pages.find((page) => page.id === selectedPageId) ?? pages[0];
   const canAddPage = canEdit && layout.data !== undefined && pages.length < 20;

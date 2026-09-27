@@ -8,6 +8,8 @@ import { canInsertComponent } from "../lib/keyboard";
 const save = { isPending: false, mutate: vi.fn(), isError: false };
 vi.mock("../lib/event-layout-queries", () => ({
   useUpdateEventLayout: () => save,
+  useEventViewState: () => undefined,
+  useChangeEventView: () => vi.fn(),
 }));
 vi.mock("../features/events/event-component", () => ({
   EventComponent: () => <input aria-label="Component draft" />,

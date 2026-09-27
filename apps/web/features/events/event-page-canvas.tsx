@@ -33,15 +33,21 @@ import {
 } from "../../lib/event-components";
 import {
   moveEventComponent,
-  moveEventPage,
+  pagesInOrder,
   setEventComponentView,
 } from "../../lib/event-layout";
-import { useUpdateEventLayout } from "../../lib/event-layout-queries";
+import {
+  useChangeEventView,
+  useEventViewState,
+  useUpdateEventLayout,
+} from "../../lib/event-layout-queries";
 import { canInsertComponent } from "../../lib/keyboard";
+import { moveKey } from "../../lib/key-order";
 import {
   componentShortcuts,
   useComponentShortcut,
 } from "../../lib/use-component-shortcut";
+import { ViewChoicesScope } from "../../lib/view-choices";
 import { EventComponent } from "./event-component";
 import type { LayoutUndoControls, PageDrop } from "./use-event-pages";
 
@@ -75,6 +81,10 @@ export function EventPageCanvas({
   const tc = useTranslations("canvas");
   const tl = useTranslations("layoutRecovery");
   const save = useUpdateEventLayout(layout.eventId);
+  // The account's own view: its page order and each component's layout.
+  const yours = useEventViewState(layout.eventId);
+  const changeYours = useChangeEventView(layout.eventId);
+  const pages = pagesInOrder(layout.pages, yours?.pages);
   const shortcut = useComponentShortcut();
   const locked = useRef(false);
   const drag = useRef<{
@@ -171,15 +181,20 @@ export function EventPageCanvas({
       description: tc("addComponentDescription", { name: selected.name }),
       target: addComponentButton,
     });
-  const selectedIndex = layout.pages.findIndex(
-    (page) => page.id === selected?.id,
-  );
+  const selectedIndex = pages.findIndex((page) => page.id === selected?.id);
 
   function persist(
     source: EventLayoutResponse,
     pages: EventPage[],
     message: string,
-    targetPageId?: string,
+    {
+      targetPageId,
+      onSaved,
+    }: {
+      readonly targetPageId?: string | undefined;
+      /** Runs once the layout is saved. */
+      readonly onSaved?: () => void;
+    } = {},
   ) {
     if (!isArranging || locked.current || pages === source.pages) return;
     locked.current = true;
@@ -195,6 +210,7 @@ export function EventPageCanvas({
       {
         onSuccess: (saved) => {
           version = saved.version;
+          onSaved?.();
           setAnnouncement(message);
           if (selected) onSelect(targetPageId ?? selected.id);
           if (targetPageId) {
@@ -212,18 +228,46 @@ export function EventPageCanvas({
     );
   }
 
-  // A view is part of the page's composition and saves like a move, but it
-  // is chosen while reading, so Arrange mode is not required.
-  function changeView(componentId: string, view: EventComponentView) {
+  // Moves the selected page in the account's order. An editor's order
+  // is the event's first, saved like a move, and then the account's, so a
+  // refused save changes neither.
+  function movePage(delta: number, message: string) {
+    if (!isArranging || locked.current || selected === undefined) return;
+    const order = moveKey(
+      pages.map((page) => page.id),
+      selected.id,
+      delta,
+    );
+    const keep = () => changeYours(() => ({ pages: [...order] }));
+    const next = [...pagesInOrder(layout.pages, order)];
+    if (next.every((page, index) => page === layout.pages[index])) {
+      keep();
+      setAnnouncement(message);
+    } else persist(layout, next, message, { onSaved: keep });
+  }
+
+  // A component's layout is chosen while reading, so Arrange mode is not
+  // required. It is the account's own; an editor's choice is the event's
+  // first, saved like a move, and then the account's.
+  function chooseView(componentId: string, view: EventComponentView) {
     if (locked.current) return;
-    const pages = setEventComponentView(layout.pages, componentId, view);
-    if (pages === layout.pages) return;
+    const keep = () =>
+      changeYours(() => ({ layouts: { [componentId]: view } }));
+    const next = setEventComponentView(layout.pages, componentId, view);
+    if (!canEdit || next === layout.pages) {
+      keep();
+      setAnnouncement(describeShownView(view));
+      return;
+    }
     locked.current = true;
     setAnnouncement("");
     save.mutate(
-      { expectedVersion: layout.version, pages },
+      { expectedVersion: layout.version, pages: next },
       {
-        onSuccess: () => setAnnouncement(describeShownView(view)),
+        onSuccess: () => {
+          keep();
+          setAnnouncement(describeShownView(view));
+        },
         onSettled: () => {
           locked.current = false;
         },
@@ -242,7 +286,9 @@ export function EventPageCanvas({
       source,
       moveEventComponent(source.pages, componentId, targetPageId, beforeId),
       tc("componentMoved", { name: target?.name ?? tc("page") }),
-      targetPageId !== selected?.id ? targetPageId : undefined,
+      {
+        targetPageId: targetPageId !== selected?.id ? targetPageId : undefined,
+      },
     );
   }
 
@@ -357,23 +403,13 @@ export function EventPageCanvas({
           <div className="panel-heading">
             <h2>{selected.name}</h2>
             <div className="composition-actions">
-              {isArranging && layout.pages.length > 1 ? (
+              {isArranging && pages.length > 1 ? (
                 <>
                   <button
                     type="button"
                     className="button button-quiet"
                     disabled={save.isPending || selectedIndex === 0}
-                    onClick={() =>
-                      persist(
-                        layout,
-                        moveEventPage(
-                          layout.pages,
-                          selected.id,
-                          layout.pages[selectedIndex - 1]?.id ?? null,
-                        ),
-                        tc("pageEarlier"),
-                      )
-                    }
+                    onClick={() => movePage(-1, tc("pageEarlier"))}
                   >
                     {tc("movePageEarlier")}
                   </button>
@@ -381,20 +417,9 @@ export function EventPageCanvas({
                     type="button"
                     className="button button-quiet"
                     disabled={
-                      save.isPending ||
-                      selectedIndex === layout.pages.length - 1
+                      save.isPending || selectedIndex === pages.length - 1
                     }
-                    onClick={() =>
-                      persist(
-                        layout,
-                        moveEventPage(
-                          layout.pages,
-                          selected.id,
-                          layout.pages[selectedIndex + 2]?.id ?? null,
-                        ),
-                        tc("pageLater"),
-                      )
-                    }
+                    onClick={() => movePage(1, tc("pageLater"))}
                   >
                     {tc("movePageLater")}
                   </button>
@@ -545,7 +570,7 @@ export function EventPageCanvas({
                           }}
                         >
                           <option value="">{tc("moveToPage")}</option>
-                          {layout.pages
+                          {pages
                             .filter((page) => page.id !== selected.id)
                             .map((page) => (
                               <option
@@ -562,18 +587,25 @@ export function EventPageCanvas({
                       ) : null}
                     </fieldset>
                   ) : null}
-                  <EventComponent
-                    kind={component.kind}
+                  <ViewChoicesScope
                     eventId={layout.eventId}
-                    canEdit={canEdit}
-                    view={viewOf(component)}
-                    onChangeView={
-                      canEdit
-                        ? (view) => changeView(component.id, view)
-                        : undefined
-                    }
-                    isSavingView={save.isPending}
-                  />
+                    choicesKey={component.id}
+                  >
+                    <EventComponent
+                      kind={component.kind}
+                      eventId={layout.eventId}
+                      canEdit={canEdit}
+                      view={viewOf({
+                        kind: component.kind,
+                        view:
+                          yours === undefined
+                            ? component.view
+                            : (yours.layouts[component.id] ?? undefined),
+                      })}
+                      onChangeView={(view) => chooseView(component.id, view)}
+                      isSavingView={canEdit && save.isPending}
+                    />
+                  </ViewChoicesScope>
                 </section>
               );
             })}

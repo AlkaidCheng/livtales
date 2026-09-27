@@ -59,6 +59,11 @@ async function showInFilter(
 import { openTaskEditor } from "./quick-add-support";
 import { chooseRowAction } from "./row-menu-support";
 
+/** A read or write of the event's layout itself, not of its history. */
+function isLayoutRequest(input: Parameters<typeof fetch>[0]): boolean {
+  return /\/layout(\?|$)/.test(String(input));
+}
+
 let store: SandboxStore;
 let client: LivTalesApiClient;
 let eventId: string;
@@ -707,7 +712,7 @@ describe("insertable event components", () => {
       vi.stubGlobal(
         "fetch",
         vi.fn<typeof globalThis.fetch>((input, options) => {
-          if (fail && String(input).endsWith("/layout"))
+          if (fail && isLayoutRequest(input))
             return Promise.resolve(
               Response.json(
                 {
@@ -848,7 +853,7 @@ describe("insertable event components", () => {
     ).toBeDisabled();
   });
 
-  it("saves a chosen view with the layout and offers none to a viewer", async () => {
+  it("saves an editor's chosen view with the layout and the account's own, a viewer's with its own alone", async () => {
     await client.updateEventLayout(eventId, {
       expectedVersion: 0,
       pages: [page("Plan", ["todos", "calendar"])],
@@ -884,6 +889,13 @@ describe("insertable event components", () => {
     expect(
       layout.pages[0]?.components.map((component) => component.view),
     ).toEqual(["by-day", undefined]);
+    const [tasksId = "", calendarId = ""] =
+      layout.pages[0]?.components.map((component) => component.id) ?? [];
+    await waitFor(async () =>
+      expect(
+        (await client.getEventLayoutWithView(eventId)).yours.layouts,
+      ).toEqual({ [tasksId]: "by-day", [calendarId]: null }),
+    );
     // Calendar offers its own layouts: list, agenda, week, board, calendar.
     const layouts = screen.getAllByRole("button", { name: /^Layout: / });
     expect(layouts).toHaveLength(2);
@@ -894,11 +906,24 @@ describe("insertable event components", () => {
     await user.keyboard("{Escape}");
     unmount();
 
+    // A viewer chooses a layout for themselves; the page stays as it is.
     render(<PagesHarness eventId={eventId} canEdit={false} />, {
       wrapper: Providers,
     });
     await screen.findByRole("region", { name: dayHeading });
-    expect(screen.queryByRole("button", { name: /^Layout: / })).toBeNull();
+    await user.click(
+      screen.getAllByRole("button", { name: /^Layout: / })[1] as HTMLElement,
+    );
+    await user.click(screen.getByRole("menuitemradio", { name: "Agenda" }));
+    expect(
+      await screen.findByRole("button", { name: "Layout: Agenda" }),
+    ).toBeVisible();
+    await waitFor(async () =>
+      expect(
+        (await client.getEventLayoutWithView(eventId)).yours.layouts,
+      ).toEqual({ [tasksId]: "by-day", [calendarId]: "agenda" }),
+    );
+    expect(await client.getEventLayout(eventId)).toEqual(layout);
   });
 
   it("shows Tasks and Calendar by week and by month around today without saving the period", async () => {
@@ -1551,9 +1576,7 @@ describe("insertable event components", () => {
     expect(trigger).toHaveFocus();
     await waitFor(() =>
       expect(
-        vi
-          .mocked(fetch)
-          .mock.calls.filter(([input]) => String(input).endsWith("/layout"))
+        vi.mocked(fetch).mock.calls.filter(([input]) => isLayoutRequest(input))
           .length,
       ).toBeGreaterThan(2),
     );

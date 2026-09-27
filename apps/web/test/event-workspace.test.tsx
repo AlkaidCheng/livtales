@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 
-import type { EventResponse } from "@livtales/schemas";
+import type {
+  EventResponse,
+  EventViewState,
+  EventViewStateUpdate,
+} from "@livtales/schemas";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   act,
@@ -21,6 +25,7 @@ import {
 } from "../components/context-commands";
 import { EventWorkspace } from "../features/events/event-workspace";
 import { personEmail } from "../lib/person-fields";
+import { applyEventViewUpdate, defaultEventView } from "../lib/personal-views";
 import { queryKeys } from "../lib/queries";
 import { openTaskEditor } from "./quick-add-support";
 import { setSpanChip } from "./record-composers";
@@ -240,7 +245,10 @@ describe("EventWorkspace", () => {
           id: "019d6e7d-0000-7000-8000-000000000050",
           name: "Plan",
           components: [
-            { id: "019d6e7d-0000-7000-8000-000000000051", kind: "todos" },
+            {
+              id: "019d6e7d-0000-7000-8000-000000000051",
+              kind: "todos" as const,
+            },
           ],
         },
       ],
@@ -256,8 +264,8 @@ describe("EventWorkspace", () => {
             source: { kind: "own" },
           });
         if (path === `/api/events/${eventId}`) return jsonResponse(rootEvent);
-        if (path === `/api/events/${eventId}/layout`)
-          return jsonResponse(layout);
+        if (path === `/api/events/${eventId}/layout?include=yours`)
+          return jsonResponse({ ...layout, yours: defaultEventView(layout) });
         return jsonResponse({ sourceEventId: eventId, items: [] });
       }),
     );
@@ -575,7 +583,7 @@ describe("EventWorkspace", () => {
           expect.arrayContaining([
             `/api/events/${eventId}`,
             `/api/events/${eventId}/${view}`,
-            `/api/events/${eventId}/layout`,
+            `/api/events/${eventId}/layout?include=yours`,
             `/api/objects/${eventId}/access`,
           ]),
         ),
@@ -860,7 +868,7 @@ describe("EventWorkspace", () => {
       "/api/auth/session",
       `/api/events/${eventId}`,
       `/api/events/${eventId}/detail`,
-      `/api/events/${eventId}/layout`,
+      `/api/events/${eventId}/layout?include=yours`,
       `/api/objects/${eventId}/access`,
     ]);
     overviewTab.focus();
@@ -1764,7 +1772,7 @@ describe("EventWorkspace", () => {
     ).toBeVisible();
   });
 
-  it("keeps the account's tabs for the event: the gallery adds and removes a view, Manage tabs hides and reorders", async () => {
+  it("keeps the account's tabs in its view of the event: the gallery adds and removes a view, Manage tabs hides and reorders", async () => {
     window.history.replaceState(null, "", "/events/plan?view=todos");
     const session = {
       principal: { type: "user", userId, workspaceId },
@@ -1778,26 +1786,7 @@ describe("EventWorkspace", () => {
         hourCycle: null,
         weekStart: null,
         rail: {},
-        // A strip the account arranged: every view but Files, which it
-        // took off the event.
-        eventTabs: {
-          [eventId]: {
-            order: [
-              "overview",
-              "todos",
-              "calendar",
-              "timeline",
-              "itinerary",
-              "expenses",
-              "reminders",
-              "people",
-              "notes",
-              "sharing",
-              "removed-links",
-            ],
-            removed: ["files"],
-          },
-        },
+        eventTabs: {},
       },
       workspace: { id: workspaceId, displayName: "Personal" },
       availableWorkspaces: [
@@ -1822,22 +1811,42 @@ describe("EventWorkspace", () => {
         },
       ],
     };
+    // A strip the account arranged: every view but Files, which it took
+    // off the event.
+    let yours: EventViewState = {
+      ...defaultEventView(layout),
+      stored: true,
+      tabs: {
+        order: [
+          "overview",
+          "todos",
+          "calendar",
+          "timeline",
+          "itinerary",
+          "expenses",
+          "reminders",
+          "people",
+          "notes",
+          "sharing",
+          "removed-links",
+        ],
+        removed: ["files"],
+      },
+    };
     const patches: unknown[] = [];
     vi.stubGlobal(
       "fetch",
       vi.fn<typeof globalThis.fetch>(async (input, init) => {
         const path = requestPath(input);
         if (path === "/api/auth/session") return jsonResponse(session);
-        if (path === "/api/auth/me" && init?.method === "PATCH") {
-          const body = JSON.parse(String(init.body)) as {
-            eventTabs: Record<string, unknown>;
-          };
-          patches.push(body.eventTabs[eventId]);
-          session.user.eventTabs = {
-            ...session.user.eventTabs,
-            ...(body.eventTabs as Record<string, { removed: string[] }>),
-          };
-          return jsonResponse(session.user);
+        if (
+          path === `/api/events/${eventId}/view` &&
+          init?.method === "PATCH"
+        ) {
+          const change = JSON.parse(String(init.body)) as EventViewStateUpdate;
+          patches.push(change.tabs);
+          yours = applyEventViewUpdate(layout, yours, change);
+          return jsonResponse(yours);
         }
         if (path.endsWith("/access"))
           return jsonResponse({
@@ -1846,8 +1855,8 @@ describe("EventWorkspace", () => {
             source: { kind: "own" },
           });
         if (path === `/api/events/${eventId}`) return jsonResponse(rootEvent);
-        if (path === `/api/events/${eventId}/layout`)
-          return jsonResponse(layout);
+        if (path === `/api/events/${eventId}/layout?include=yours`)
+          return jsonResponse({ ...layout, yours });
         return jsonResponse({ sourceEventId: eventId, items: [] });
       }),
     );
@@ -1857,7 +1866,7 @@ describe("EventWorkspace", () => {
     const tabNames = () =>
       screen.getAllByRole("tab").map((tab) => tab.firstChild?.textContent);
     await screen.findByRole("tab", { name: "Tasks", selected: true });
-    // The stored preference leaves Files off the strip.
+    // The kept arrangement leaves Files off the strip.
     await waitFor(() => expect(tabNames()).not.toContain("Files"));
     expect(tabNames()).toEqual([
       "Overview",
