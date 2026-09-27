@@ -68,10 +68,12 @@ test("reads each event as one compact card with its own Share and menu, in the g
   await expect(
     page.getByRole("heading", { level: 2, name: "2030" }),
   ).toBeVisible();
-  await expect(kyoto).toContainText("Nov 2, 2030 to Nov 6, 2030 · Kyoto");
+  // The year is the heading's, so the dates leave it out.
+  await expect(kyoto.locator("p").first()).toHaveText("Nov 2 – 6 · Kyoto");
   await expect(
     kyoto.getByRole("heading", { level: 4, name: "Kyoto in November" }),
   ).toBeVisible();
+  await expect(kyoto.locator(".event-card-share-line")).toHaveCount(0);
   await expect(kyoto).not.toContainText("Scheduled");
   await expect(kyoto.locator(".card-arrow")).toHaveCount(0);
   await expect(page.locator(".event-date-mark")).toHaveCount(0);
@@ -95,7 +97,9 @@ test("reads each event as one compact card with its own Share and menu, in the g
     .evaluateAll((cards) =>
       cards.map((card) => card.getBoundingClientRect().height),
     );
+  // An unshared card is its name and its dates, no empty line kept.
   expect(new Set(heights.map(Math.round)).size).toBe(1);
+  expect(Math.max(...heights)).toBeLessThan(64);
 
   // Share on the card opens the sheet for the whole event.
   const card = page.locator(".event-card-shell", {
@@ -127,6 +131,11 @@ test("reads each event as one compact card with its own Share and menu, in the g
   expect(grants.items).toMatchObject([
     { principal: { displayName: "Ben" }, role: "viewer", scope: null },
   ]);
+  // Once shared, the card gains its sharing line.
+  await page.getByRole("button", { name: "Refresh events" }).click();
+  await expect(kyoto.locator(".event-card-share-line")).toHaveText(
+    "Shared with 1",
+  );
 
   // The list layout: the same object as rows in one column.
   if (!phone) {

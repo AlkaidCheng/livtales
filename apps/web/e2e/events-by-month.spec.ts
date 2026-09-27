@@ -68,13 +68,11 @@ test("groups the Events list by year and month, folds each heading, and keeps th
     ),
   );
 
-  // All: forward by year and month, the undated event last.
+  // All: forward by year and month, the undated event last; the years
+  // before this one start folded, so the list opens near the present.
   await expect(headings(page)).toHaveText([
-    `${earlier}`,
-    "June 1 event",
-    `${before}`,
-    "October 1 event",
-    "December 1 event",
+    `${earlier} 1 event`,
+    `${before} 2 events`,
     `${thisYear}`,
     `${thisMonth} 1 event`,
     `${ahead}`,
@@ -85,14 +83,25 @@ test("groups the Events list by year and month, folds each heading, and keeps th
     "No date yet 1 event",
   ]);
   await expect(
+    page.getByRole("button", { name: `${before} 2 events` }),
+  ).toHaveAttribute("aria-expanded", "false");
+  await expect(
     page.getByRole("heading", { level: 2, name: `${ahead}` }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { level: 3, name: "November 1 event" }),
   ).toBeVisible();
+  // Under its year's heading a card's dates leave the year out: a day with
+  // its weekday and the place, a span of days.
+  const dateLine = (name: RegExp) =>
+    page.getByRole("link", { name }).locator("p").first();
+  await expect(dateLine(/Autumn gathering/)).toHaveText(
+    /^\w{3}, Oct 10 · Garden$/,
+  );
+  await expect(dateLine(/Kyoto in November/)).toHaveText("Nov 14 – 20");
   await expect(
     page.getByRole("link", { name: /Autumn gathering/ }),
-  ).toContainText(`Oct 10, ${ahead} · Garden`);
+  ).not.toContainText(`${ahead}`);
 
   // Upcoming: from today onward, no undated group.
   await chip(page, "Upcoming").click();
@@ -153,11 +162,14 @@ test("groups the Events list by year and month, folds each heading, and keeps th
   await page.screenshot({ path: testInfo.outputPath("past.png") });
 
   // A reload keeps each list's folds; the chips start over at All, whose
-  // own headings stay open.
+  // own folds are its defaults.
   await page.reload();
   await expect(
     page.getByRole("button", { name: "October 2 events" }),
   ).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    page.getByRole("button", { name: `${before} 2 events` }),
+  ).toHaveAttribute("aria-expanded", "false");
   await chip(page, "Upcoming").click();
   await expect(headings(page)).toHaveText([
     `${ahead}`,

@@ -147,14 +147,18 @@ for (const display of [
         { ...display, timestamp },
       );
       // The Events list places the card under the month its start falls in
-      // the zone, and the undated one under No date yet.
+      // the zone, its day with the weekday and the time, and the undated
+      // one under No date yet. A year before this one starts folded.
+      const year = page.getByRole("button", { name: /^2026/ });
+      if ((await year.getAttribute("aria-expanded")) === "false")
+        await year.click();
       const card = page
         .locator(".event-month", {
           has: page.getByRole("button", { name: `${monthName} 1 event` }),
         })
         .getByRole("link", { name: /Month boundary/ });
       await expect(card.locator("p").first()).toHaveText(
-        new RegExp(`^${month} ${Number(display.day)}, 2026`),
+        new RegExp(`^\\w{3}, ${month} ${Number(display.day)} · `),
       );
       const undated = page
         .locator(".event-month", {
@@ -163,8 +167,8 @@ for (const display of [
         .getByRole("link", { name: /Unscheduled plan/ });
       await expect(undated).toContainText("Date to be decided");
       // The Calendar and Reminders rows read the moment on their meta line,
-      // in the same month and day the card shows; the separator before the
-      // time differs between engines (", " or " at ").
+      // in the same month and day the card shows, with the year; the
+      // separator before the time differs between engines (", " or " at ").
       const onTheDay = new RegExp(
         `^${month} ${Number(display.day)}, 2026(,| at) `,
       );
