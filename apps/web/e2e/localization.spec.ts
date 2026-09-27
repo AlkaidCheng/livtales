@@ -26,6 +26,8 @@ const hans = {
   overview: "\u6982\u89c8",
   loaded: /\u5df2\u52a0\u8f7d \d+ \u4e2a\u6d3b\u52a8/,
   range: "2030\u5e747\u67083\u65e5 \u81f3 2030\u5e747\u670812\u65e5",
+  // The same span on the Events list, under its year's heading.
+  listRange: "7\u67083\u65e5\u81f312\u65e5",
   newTask: "\u65b0\u5efa\u4efb\u52a1",
   addTask: "\u6dfb\u52a0\u4efb\u52a1",
   setDue: /^\u8bbe\u7f6e\u622a\u6b62\u65e5\u671f/,
@@ -181,7 +183,7 @@ test("switches the workspace to Simplified and Traditional Chinese and back @web
   await expect(
     page.getByRole("status").filter({ hasText: hans.loaded }),
   ).toBeVisible();
-  await expect(page.getByText(hans.range)).toBeVisible();
+  await expect(page.getByText(hans.listRange, { exact: true })).toBeVisible();
 
   // The editors and pages read in the language too: the Due row of a new
   // task opens the date panel, which takes "tomorrow" typed in Chinese, and
