@@ -4,7 +4,10 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AccountMenu } from "../components/account-menu";
-import { workspaceIdentity } from "../lib/workspace-identity";
+import {
+  canAddToWorkspace,
+  workspaceIdentity,
+} from "../lib/workspace-identity";
 import { groupWorkspaces, matchWorkspaces } from "../lib/workspace-recency";
 
 const ids = {
@@ -151,6 +154,21 @@ describe("workspaceIdentity", () => {
       detail: "Ana Souza",
       mark: { kind: "initials", text: "AT" },
     });
+  });
+});
+
+describe("canAddToWorkspace", () => {
+  it("lets an Owner or Editor of the current space add, and no one else", () => {
+    expect(canAddToWorkspace(sessionWith(workspaces, ids.personal))).toBe(true);
+    expect(canAddToWorkspace(sessionWith(workspaces, ids.kai))).toBe(true);
+    expect(canAddToWorkspace(sessionWith(workspaces, ids.ana))).toBe(false);
+    expect(canAddToWorkspace(sessionWith(workspaces, ids.mei))).toBe(false);
+    // A space reached through a share alone is not on the list.
+    expect(
+      canAddToWorkspace(
+        sessionWith([personal], "019d6e7d-0000-7000-8000-000000000099"),
+      ),
+    ).toBe(false);
   });
 });
 

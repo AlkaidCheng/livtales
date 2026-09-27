@@ -187,12 +187,36 @@ shortcuts on a keyboard device), so the arrow keys walk the whole list.
 Theme opens its own sheet with the same controls as the rail's panel, and
 Customize sidebar opens the drawer customizing.
 
+A phone also has an add button: a seal about 60px across, fixed 18px from
+the bottom right corner and clear of the home indicator, drawn in the shape
+and style Appearance keeps (see Appearance) and in the palette's accent. It
+shows on an event, on Events, on Tasks, and on People, only to an account
+that may add there (one that may edit the event, or an Owner or Editor of
+the space; a Viewer, or an account reaching a space through a share alone,
+sees none), and it stands in for the page's own add control: the Events,
+Tasks, and People headers drop their New event, New task, and New person
+controls on a phone, so there is one. The page keeps room at its foot so
+its last row never sits under the button, passing notices rise above it,
+and it hides while a dialog is open. A press presses the seal briefly (a
+still press when motion is reduced). On Events, Tasks, and People it opens
+New event, New task, or New person at once. On an event it is a menu button
+named "Add to" the event: its menu rises above it over a scrim as pills,
+Task, Schedule item, Expense, Reminder, and Note, the kind the current view
+lists nearest the button (Task on To-dos; Schedule item on Calendar,
+Timeline, and Itinerary; Expense, Reminder, and Note on their own views; the
+usual order elsewhere), and the plus turns into a close mark while it is
+open. Focus starts on the nearest pill and the arrow keys move through
+them; Escape, the scrim, or the button closes the menu with focus back on
+the button. Each pill opens the editor that kind uses on its own view (the
+task and expense editors with the event's sections), and closing that
+editor returns focus to the button.
+
 The Events page is one row: the title with the inline name filter beside
 it at the left, then, at the right edge, quiet Filter (All, Upcoming &
 ongoing, Unscheduled, Past), Sort (Event date, Recently updated, Name A-Z),
 and Layout (Grid, List) menus, Refresh, and the single filled New event
 control; on a phone the title and the controls share the first row and the
-filter takes the whole second. Under the head one row of chips, All, Mine,
+filter takes the whole second, and the add button stands in for New event. Under the head one row of chips, All, Mine,
 Shared with me, Upcoming, and Past, each with its count for the typed name
 (the counts come with the list's first page); one chip is pressed at a
 time, All meaning no scope and no period, and Clear filters resets the
@@ -236,8 +260,8 @@ to the viewport, so a strip that clips its overflow never cuts a tip.
 ## Tasks
 
 Tasks lists every task the user may view in the space: tasks that live on
-their own and tasks inside any event, in one place. New task creates a task
-that belongs to no event and owns its own permission scope; tasks added inside
+their own and tasks inside any event, in one place. New task (the add button
+on a phone) creates a task that belongs to no event and owns its own permission scope; tasks added inside
 an event keep that event's scope and appear here as well. The toolbar filters
 by name and carries the three quiet controls every task collection shares:
 Sort (Manual, the default, the order tasks are kept in; By due, a date-only
@@ -294,7 +318,8 @@ friends, invited, those with an account, those without; then any label),
 Sort (by name, the
 default, or by the latest change), Layout (List or Namecards, a device
 preference kept in browser storage), Refresh, and the filled plus for New
-person, which opens the person editor. The list shows one row per person:
+person, which opens the person editor (on a phone the add button does).
+The list shows one row per person:
 initials (the first character of a name written in Han, kana, or Hangul), the
 nickname over the full name (or the name alone) as the link to the person's
 page, the contacts (an email as a mail link, a phone as a call link), the

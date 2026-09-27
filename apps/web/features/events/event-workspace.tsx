@@ -26,6 +26,7 @@ import {
 } from "../../components/quiet-menu";
 import { usePageCommandHistory } from "../../lib/command-history";
 import { formatEventSchedule } from "../../lib/event-schedule";
+import { useIsPhone } from "../../lib/use-media";
 import { useEventWorkspaceQueries, useSessionQuery } from "../../lib/queries";
 import { useForgetInaccessibleEventDrafts } from "../../lib/editor-draft-context";
 import { isTemporaryReadError } from "../../lib/query-errors";
@@ -35,6 +36,7 @@ import {
   type EventComponentView,
 } from "@livtales/schemas";
 import { MoveToSpaceDialog } from "../spaces/move-to-space-dialog";
+import { EventAddSeal } from "./event-add-seal";
 import { EventBreadcrumb } from "./event-breadcrumb";
 import { EventComponent } from "./event-component";
 import { EventInspector } from "./event-inspector";
@@ -90,6 +92,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   const [moving, setMoving] = useState(false);
   const sessionQuery = useSessionQuery();
   const session = sessionQuery.data;
+  const phone = useIsPhone();
   // A tab's view is chosen for the session; page components save theirs.
   const [tabView, setTabView] = useState<{
     tab: string;
@@ -556,6 +559,13 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
             startNewPage();
           }}
           onAddView={() => setTabsDialog("gallery")}
+        />
+      ) : null}
+      {phone && canEdit ? (
+        <EventAddSeal
+          eventId={eventId}
+          eventName={event.displayName}
+          view={shownTab}
         />
       ) : null}
     </main>

@@ -1,5 +1,6 @@
 @import "./tokens.css";
 @import "./appearance.css";
+@import "./seal.css";
 
 * {
   box-sizing: border-box;

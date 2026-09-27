@@ -6,7 +6,7 @@ import {
 } from "@playwright/test";
 import { selectLeapDayRange } from "./calendar-keyboard";
 import { closeDatePanel, expectDates } from "./date-rows";
-import { openThemePanel } from "./quiet-chrome";
+import { isPhone, openThemePanel } from "./quiet-chrome";
 
 export async function expectReadablePalette(page: Page) {
   const checks = await page.evaluate(() => {
@@ -40,6 +40,9 @@ export async function expectReadablePalette(page: Page) {
       ["on-accent", "accent-hover", 4.5],
       ["danger", "danger-soft", 4.5],
       ["warning", "warning-soft", 4.5],
+      // The add button's plus is a graphic on the seal's gradient.
+      ["seal-ink", "seal-top", 3],
+      ["seal-ink", "seal-bottom", 3],
     );
     return pairs.map(([foreground, background, minimum]) => {
       const a = luminance(foreground);
@@ -88,7 +91,10 @@ export async function exerciseAppearance(
     path: testInfo.outputPath("events.png"),
   });
   const trigger = page.getByRole("button", { name: "New event", exact: true });
-  await expectToken(trigger, "color", "on-accent");
+  // A phone's New event is the add button: its plus is drawn in the seal's ink.
+  if (isPhone(page))
+    await expectToken(trigger.locator(".seal-glyph"), "stroke", "seal-ink");
+  else await expectToken(trigger, "color", "on-accent");
   await expectToken(page.locator("html"), "background-color", "canvas");
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Create an event" });

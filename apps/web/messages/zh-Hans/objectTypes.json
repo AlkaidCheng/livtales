@@ -13,5 +13,6 @@
   "documents": "文件",
   "people": "伙伴",
   "notes": "笔记",
-  "scheduledEvent": "已安排的活动"
+  "scheduledEvent": "已安排的活动",
+  "scheduleItem": "日程项"
 }
