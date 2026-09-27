@@ -5,5 +5,10 @@
   "addTask": "添加任务",
   "empty": "还没有任务",
   "nothingInView": "此视图中没有内容",
-  "noDueDateGroup": "无截止日期"
+  "noDueDateGroup": "无截止日期",
+  "finished": "{count} 项已完成",
+  "finishedMore": "{count}+ 项已完成",
+  "showFinished": "显示",
+  "finishedHeading": "已完成 · {count}",
+  "hideFinished": "隐藏"
 }

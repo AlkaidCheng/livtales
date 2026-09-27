@@ -37,10 +37,11 @@ import { itinerarySheet } from "../../lib/export/sheets";
 import { formatTime } from "../../lib/format";
 import { usePersonsQuery, useUpdateTask } from "../../lib/queries";
 import { deriveTaskTree } from "../../lib/task-tree";
-import { LayoutControl, PanelHeading } from "./component-frame";
+import { LayoutControl, layoutOption } from "./component-frame";
 import { CreateScheduleDialog } from "./create-schedule-dialog";
-import { ExportControl } from "./export-control";
-import { ShareControl } from "./share-control";
+import { ExportControl, exportOption, useViewExport } from "./export-control";
+import { ShareControl, useViewShare } from "./share-control";
+import { ViewHead } from "./view-head";
 
 /** How far a finger travels across the sheet to turn a day. */
 const swipeDistance = 48;
@@ -78,6 +79,7 @@ export function ItineraryPanel({
   const t = useTranslations("itinerary");
   const panels = useTranslations("panels");
   const views = useTranslations("views");
+  const exports = useTranslations("export");
   const days = useMemo(() => itineraryDays(event, items), [event, items]);
   const [chosen, setChosen] = useState<DayKey | null>(null);
   const shown =
@@ -135,9 +137,27 @@ export function ItineraryPanel({
   const viewLabel = (option: EventComponentView) =>
     option === "list" ? t("allDays") : t("day");
   const panel = useRef<HTMLElement>(null);
+  const share = useViewShare(eventId, "itinerary", views("itinerary"));
+  const formats = useViewExport({
+    eventId,
+    panel,
+    sheet: () => itinerarySheet(sheets),
+    view: "itinerary",
+    viewName: views("itinerary"),
+  });
+  const layout =
+    onChangeView === undefined
+      ? null
+      : layoutOption({
+          busy: isSavingView ?? false,
+          labelOf: viewLabel,
+          onChange: onChangeView,
+          view,
+          views: viewsOf("itinerary"),
+        });
   return (
     <section className="planning-panel panel-column" ref={panel}>
-      <PanelHeading
+      <ViewHead
         action={
           <button
             className="button button-quiet button-small"
@@ -158,20 +178,21 @@ export function ItineraryPanel({
                 views={viewsOf("itinerary")}
               />
             )}
-            <ExportControl
-              eventId={eventId}
-              panel={panel}
-              sheet={() => itinerarySheet(sheets)}
-              view="itinerary"
-              viewName={views("itinerary")}
-            />
-            <ShareControl
-              eventId={eventId}
-              view="itinerary"
-              viewName={views("itinerary")}
-            />
+            <ExportControl formats={formats} />
+            <ShareControl share={share} />
           </div>
         }
+        options={[
+          ...(layout === null ? [] : [layout]),
+          exportOption(formats, exports("title")),
+          {
+            kind: "action",
+            id: "copy-day",
+            label: t("copyDay"),
+            onPress: () => void copyDay(),
+          },
+        ]}
+        share={share}
         count={
           view === "list"
             ? undefined

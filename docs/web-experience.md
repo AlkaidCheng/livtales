@@ -299,12 +299,28 @@ on a phone) creates a task that belongs to no event and owns its own permission 
 an event keep that event's scope and appear here as well. The toolbar filters
 by name and carries the three quiet controls every task collection shares:
 Sort (Manual, the default, the order tasks are kept in; By due, a date-only
-due leading its day and undated tasks last; By name; By updated), Filter
-(Open, All, or Done, then any label and any person the space knows, with
-Clear filters; the button counts the choices that differ from Open, Any
-label, and Anyone), and Layout. The sort, status, label, and assignee are
-applied by the server, so a page holds only what matches. Load more tasks
-extends the list page by page.
+due leading its day and undated tasks last; By name; By updated), Filter,
+and Layout. Filter opens a panel of rows under its word: Show (Open, All,
+or Finished, side by side), From (Anywhere, Standalone, Any event, or one
+event found by typing part of its name), Assigned to (Anyone, You, then
+the space's people, found by typing part of a name), and Label (Any, then
+the space's labels, searchable too), with Clear filters while any is on;
+a row with a list opens it in the panel's place, with a way back, and each
+choice applies at once. The button counts the choices that differ from
+their defaults. Each choice that differs, and a sort other than Manual,
+shows as a chip under the toolbar ("From Autumn gathering ×", "Sorted by
+name ×") that sets it back, with Clear all when there are several. The
+sort, what shows, where the tasks come from, the label, and the assignee
+are applied by the server, so a page holds only what matches. Load more
+tasks extends the list page by page.
+
+The list opens on the open tasks. While the finished ones are hidden, the
+list's foot counts them ("3 finished", "50+ finished" past a page) with
+Show, which switches to All; with All the finished tasks follow the open
+ones apart, under "Finished · 3" with Hide, in the List and By day
+layouts (the week, the board, and the calendar keep them in their days).
+Show, Sort, and the filters are kept for the account in this browser, as
+the view's choices of an event's tab are (see Component views).
 
 The page offers the same List, By day, By week, Board, and Calendar layouts
 as the Tasks component, from the same rows: the completion check, the name and its
@@ -337,7 +353,7 @@ opens Manage labels, where labels are renamed, added, or deleted; a deleted
 label leaves its tasks. Anyone with access to the space sees label names;
 owners and editors change them. The view is a device preference, kept in browser storage like the
 event collection's grid or list choice, and applies to the loaded tasks. The
-filter, sort, name query, label, and assignee belong to the tab.
+name query belongs to the tab.
 
 ## People
 
@@ -492,10 +508,10 @@ waiting ("Access follows when they join"), each with Remove. A whole
 space is shared by making a friend a member (see Settings).
 
 A share can be narrowed to one view of the event, or to one section of
-Tasks or Expenses. Share ends the head row of Tasks, Calendar, Timeline,
+Tasks or Expenses. Share ends the controls of Tasks, Calendar, Timeline,
 Itinerary, Expenses, Reminders, and Notes for whoever may share the event,
-after Export (on a phone, its symbol alone like the other head-row
-controls). It opens a sheet under the control named "Share Tasks" (or the
+after Export (on a tab's phone options, the last row). It opens a sheet
+under the control named "Share Tasks" (or the
 view's name): a line saying that everyone here sees that view of the event,
 and its sections unless a section is shared on its own; the people who see
 it, each with an avatar, a role (Viewer or Editor) that changes in place,
@@ -1592,13 +1608,47 @@ view.
 
 ## Component views
 
-The seven Event components share one frame. In a tab view it has no box of
-its own (the tabs frame it); on an event page it keeps its card. Each opens
-on one head line: its title in body type, a faint count where the component
-keeps one, and its Layout, Sort, Filter, and Export controls as quiet words
-at the right, each with its symbol; on a phone (under 600px) the symbols
-show alone, a touch larger, and the words stay as the buttons' names. A
-component that lists records (Tasks, Timeline, Itinerary,
+The seven Event components share one frame. On an event page it keeps its
+card and opens on one head line: its title in body type, a faint count
+where the component keeps one, and its Layout, Sort, Filter, and Export
+controls as quiet words at the right, each with its symbol; on a phone
+(under 600px) the symbols show alone, a touch larger, and the words stay as
+the buttons' names.
+
+Shown as one of the event's tabs, a component has no box and no head line
+of its own: the tab names it, and the current tab carries the view's count
+faint after its name ("Tasks 9", the open tasks; "Calendar 6", the
+scheduled items; the Files' files), read as the tab's description. The
+view's controls sit at the strip's right end, after the tabs and the plus:
+on a wide screen the same quiet words (Sort, Filter, Layout, Export, Share,
+and the Itinerary's Copy day), each opening its own menu or panel; on a
+phone (760px and under) one options button with the sliders mark, which
+opens the view's options as a pop-up in the middle of the screen, titled
+with the view, with Done. The pop-up is a short list of rows, each a name
+and its control: Layout and Show as three choices side by side (Layout
+past three templates, as Sort, reads its value and opens its list in the
+pop-up's place, with the view's name as the way back); for the Tasks a
+Filter group of Assigned to and Label, each a value that opens a
+searchable list, and the Has a time and Overdue only switches; Export as
+one row of small buttons (PDF and CSV, and Calendar on the Calendar tab);
+then Share, for whoever may share the event, and the Itinerary's Copy day.
+A choice applies at once; Escape in a list goes back to the rows, and
+Escape or Done closes the pop-up and returns focus to the button. The
+Overview, People, Sharing, and Removed links have no options, so no
+button shows there. Each choice that differs from its default shows as a
+chip under the strip ("Assigned to Mei ×", "Sorted by name ×"; for Files
+the task or expense whose files are shown), a press setting it back, with
+Clear all when there are several; while any is on, the options button
+carries a small dot in the accent. The strip and its chips stay pinned
+under the top of the screen (under the app bar on a phone) as the view
+scrolls. Each tab's choices (its layout, Show, Sort, and filters, and the
+Notes' order) are kept for the account and the event in this browser, per
+view, for the most recent two hundred views; storage that is blocked keeps
+nothing, and the defaults return on the next visit. The view's title
+stays among the headings a screen reader lists, and on paper the view
+still prints its title, count, and the line naming its sort and filter.
+
+A component that lists records (Tasks, Timeline, Itinerary,
 Expenses, Reminders, Files, Notes, and the Calendar in its list and by-day
 layouts) keeps to one 800px column, heading and rows alike, so a name and
 what sits at the row's end stay close; the week and month grids and the
@@ -1631,8 +1681,9 @@ dialog. Viewers see only History.
 Files is its rows: the file's name, its size and the day it was added, a
 Download icon, and a row menu (Actions for the file's name) with Download,
 History, and, for members who can edit, Move to Trash, which opens the
-Actions dialog with Remove from this event beside it. The heading's Attached to menu chooses
-whose files are shown (the event, or one of its tasks or expenses). The row at
+Actions dialog with Remove from this event beside it. The Attached to menu (in the options on a
+phone, a list found by typing once there are many) chooses whose files are
+shown (the event, or one of its tasks or expenses). The row at
 the end, Attach a file, opens the file picker; a chosen file is sent at once,
 the row reads Uploading with the file's name until the upload settles, and a
 refused file leaves a notice with the limit (25 MB) and the checks a file
@@ -1678,7 +1729,8 @@ name): its arrow keys move the gap a place, Enter or Space drops the row
 there, and Escape puts it back; Move up and Move down in the menu do the
 same one step at a time, announcing the new position, and a status line
 reads out every move, due change, and copied link. Under another sort on the
-Tasks page rows do not drag and the steps are not offered.
+Tasks page rows do not drag and the steps are not offered. Finished tasks
+listed apart after the open ones (Show: All) do not drag and offer no steps.
 
 ### Sections
 
@@ -1766,8 +1818,9 @@ Reschedule moving them to today; the Calendar's and the Expenses' boards
 start at the earliest day with content, Today among their columns. The
 Itinerary offers Day and All days (below).
 The event's own tabs (Tasks, Calendar,
-and the rest) offer the same Layout control; a tab's choice lasts for the
-session, while a page component's is saved with the layout. Above a week or
+and the rest) offer the same Layout control; a tab's choice is kept with
+the tab's other choices in this browser, while a page component's is saved
+with the layout. Above a week or
 a calendar, open tasks whose due has passed sit in an Overdue strip and tasks
 with no due date or unscheduled items in a second strip, since neither has a
 cell. The period's title sits at the left of the grid, the month in bold
@@ -1779,23 +1832,37 @@ filters apply to every layout.
 
 Beside Layout, the Tasks component carries Sort and Filter. Sort orders the
 tasks by Manual (their kept order), By due, By name, or By updated, and the
-button reads the chosen order when it is not the default. Filter opens one
-menu: Open, All, or Done; Has a time and Overdue; the labels the event's
-tasks carry (Any label and the labels on at least one task); the people
-assigned (Anyone, Me when the user's person is assigned, and the assigned
-people by name); and Clear filters. Choices keep the menu open and combine,
-the button counts the choices that differ from the defaults, the count
-beside the title reads "2 of 7 open" while any are on, a choice the tasks no
-longer carry falls back to any, and these choices last for the session rather
-than being saved with the layout. On a page, the choice of layout is part of
+button reads the chosen order when it is not the default. Filter opens a
+panel of rows under its word, the same rows the phone's options hold: Show
+(Open, All, or Finished, side by side; Open keeps the tasks neither done
+nor cancelled, Finished the done ones); Assigned to (Anyone, You when the
+user has a person, Unassigned, then everyone in the space who can be
+assigned, found by typing part of a name, each with their initials);
+Label (Any, No label, then the space's labels, searchable too); the Has a
+time and Overdue only switches; and Clear filters while any is on. Each
+choice applies at once and combines with the others, the button counts
+the choices that differ from the defaults, the count beside a page
+component's title reads "2 of 7 open" while any are on, and a kept person
+or label that has since gone falls back to any. The list opens on the open
+tasks; while the finished ones are hidden, its foot reads how many there
+are ("3 finished") with Show, which switches to All, and with All the
+finished tasks follow the open ones apart in the List and By day layouts,
+under "Finished · 3" with Hide, out of the sections and never dragged
+among the open rows (the week, the board, and the calendar keep them in
+their days). A choice other than Open shows as a chip ("Showing finished",
+"Finished only"). Inside a page these choices last while the component is
+open rather than being saved with the layout. On a page, the choice of layout is part of
 the layout: it saves at once for everyone on the Event, shows in layout
 history, and undo covers it. Viewers see the saved layout without a control.
 
 ### Export
 
-Export ends the head row of Tasks, Calendar, Timeline, Itinerary, Expenses,
-Reminders, and Notes, a quiet word with the download mark beside Sort, Filter,
-and Layout, for editors and viewers alike. It opens two plain items. Export
+Export sits among the controls of Tasks, Calendar, Timeline, Itinerary,
+Expenses, Reminders, and Notes (on the strip's end for a tab, the head row
+for a page component), a quiet word with the download mark beside Sort,
+Filter, and Layout, for editors and viewers alike; in a phone's options it
+is one row of small buttons. It opens plain items: Export as PDF, Export
+data (CSV), and on the Calendar Export to a calendar (.ics). Export
 as PDF prints the view as it is shown, through the browser's print dialog
 (which offers Save as PDF): the page holds the event's name and dates, the
 view's title and count, a line naming the sort and filter where the view
@@ -1807,7 +1874,8 @@ named "Event - View - date" (a character a file system refuses becomes a
 space), opening with a byte-order mark so a spreadsheet reads it as UTF-8,
 its column headings in the shown language, dates as YYYY-MM-DD and times on
 the 24-hour clock in the shown time zone. What is exported is what is shown:
-the Tasks file follows Sort and Filter, and names the assignee and the
+the Tasks file follows Sort and Filter (the finished tasks last, as the
+list shows them), and names the assignee and the
 labels; the Calendar, Expenses, and Reminders files hold the list, by-day, or
 the shown week or month (with the undated rows the grid lists apart); the
 Itinerary file holds the shown day, or every day in All days, each day in
@@ -1816,6 +1884,14 @@ with their start and end, the tasks due, then the items without a time);
 the Timeline file holds each record's kind, name, and moment; the Notes file
 holds each note's title, whole text, last edit, and editor. A description on
 a task or a schedule item is a column once the record carries one.
+
+The Calendar's calendar file holds the same items as its CSV, as an
+iCalendar file (RFC 5545) named after the event ("Autumn gathering.ics")
+that another calendar app imports: one entry per dated item, with the
+item's id as its UID so importing the file again updates the same entries,
+its name, place, and description; an all-day item spans its dates, a timed
+one starts and ends at its moments in UTC, which the importing calendar
+shows in its own zone, and an item without a date is left out.
 
 ## Recorded reminders
 

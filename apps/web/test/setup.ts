@@ -15,6 +15,18 @@ if (typeof window !== "undefined" && typeof ResizeObserver === "undefined")
     },
   });
 
+// jsdom has the dialog element without its modal methods; a dialog opened
+// as a modal shows by its open attribute. A test may define its own.
+if (typeof HTMLDialogElement !== "undefined")
+  for (const method of ["showModal", "close"] as const)
+    if (typeof HTMLDialogElement.prototype[method] !== "function")
+      Object.defineProperty(HTMLDialogElement.prototype, method, {
+        configurable: true,
+        value(this: HTMLDialogElement) {
+          this.toggleAttribute("open", method === "showModal");
+        },
+      });
+
 // Components read their strings from the provider; render and renderHook
 // supply it with English so existing assertions keep their wording.
 vi.mock("@testing-library/react", async (importOriginal) => {

@@ -183,9 +183,16 @@ describe("Export", () => {
       "",
     ]);
 
-    // Filter: All adds the done task; the file follows the list.
+    // Show: All adds the done task after the open one; the file follows
+    // the list.
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Filter" })).getByRole(
+        "radio",
+        { name: "All" },
+      ),
+    );
+    await user.keyboard("{Escape}");
     await screen.findByText("Send invitations");
     await exportAs(user, "Export data (CSV)");
     const second = saved.at(-1);

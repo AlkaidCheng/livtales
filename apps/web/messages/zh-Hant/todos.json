@@ -5,5 +5,10 @@
   "addTask": "新增任務",
   "empty": "尚無任務",
   "nothingInView": "此檢視中沒有內容",
-  "noDueDateGroup": "無到期日"
+  "noDueDateGroup": "無到期日",
+  "finished": "{count} 項已完成",
+  "finishedMore": "{count}+ 項已完成",
+  "showFinished": "顯示",
+  "finishedHeading": "已完成 · {count}",
+  "hideFinished": "隱藏"
 }

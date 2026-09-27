@@ -536,7 +536,10 @@ export function useDeleteSection() {
 }
 
 /** The workspace Task collection: every task the user may view, page by page. */
-export function useTasksQuery(input: Omit<TaskListQueryInput, "cursor">) {
+export function useTasksQuery(
+  input: Omit<TaskListQueryInput, "cursor">,
+  enabled = true,
+) {
   const client = useApiClient();
   const { credential } = useAuthSession();
   const queryClient = useQueryClient();
@@ -547,7 +550,7 @@ export function useTasksQuery(input: Omit<TaskListQueryInput, "cursor">) {
     credential?.workspaceId,
   ];
   const result = useInfiniteQuery({
-    enabled: credential !== null,
+    enabled: enabled && credential !== null,
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam, signal }) =>
       client.withSignal(signal).listTasks({

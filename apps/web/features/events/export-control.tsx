@@ -9,23 +9,37 @@ import { HeadMenu } from "../../components/head-menu";
 import { DownloadIcon } from "../../components/icons";
 import { dayKeyOf } from "../../lib/day-placement";
 import { csvFile, exportFileName, saveFile } from "../../lib/export/csv";
+import { type CalendarItem, icsFile } from "../../lib/export/ics";
 import { printPanel } from "../../lib/export/print";
 import type { ExportSheet } from "../../lib/export/sheets";
 import { queryKeys } from "../../lib/queries";
+import type { ViewOption } from "./view-options";
+
+/** One way a view is exported: a short label for a button, a full name for a menu. */
+export interface ExportFormat {
+  readonly id: "pdf" | "csv" | "ics";
+  readonly label: string;
+  readonly name: string;
+  readonly run: () => void;
+}
 
 /**
- * Export, at the end of a view's head row: the view as it is shown, with
- * its sort, filter, and layout applied, as a PDF (the browser's print
- * dialog over the view alone) or as data (a CSV file named after the
- * event, the view, and the day).
+ * The ways a view is exported, as it is shown, with its sort, filter, and
+ * layout applied: as a PDF (the browser's print dialog over the view
+ * alone), as data (a CSV file named after the event, the view, and the
+ * day), and, for a view of scheduled items, as a calendar file (.ics)
+ * named after the event.
  */
-export function ExportControl({
+export function useViewExport({
+  calendar,
   eventId,
   panel,
   sheet,
   view,
   viewName,
 }: {
+  /** The scheduled items the view shows, for a view that offers a calendar file. */
+  readonly calendar?: (() => readonly CalendarItem[]) | undefined;
   readonly eventId: string;
   readonly panel: RefObject<HTMLElement | null>;
   /**
@@ -37,7 +51,7 @@ export function ExportControl({
   readonly view: string;
   /** The view as people read it: the file's name and the printed heading. */
   readonly viewName: string;
-}) {
+}): readonly ExportFormat[] {
   const t = useTranslations("export");
   const cache = useQueryClient();
   const eventName = () =>
@@ -62,14 +76,65 @@ export function ExportControl({
     printPanel(panel.current, view);
   }
 
+  function exportCalendar(items: () => readonly CalendarItem[]) {
+    const name = eventName();
+    saveFile(
+      `${exportFileName([name === "" ? viewName : name])}.ics`,
+      icsFile(items(), { name, now: new Date() }),
+      "text/calendar;charset=utf-8",
+    );
+  }
+
+  return [
+    { id: "pdf", label: t("short.pdf"), name: t("pdf"), run: exportPdf },
+    { id: "csv", label: t("short.csv"), name: t("csv"), run: exportCsv },
+    ...(calendar === undefined
+      ? []
+      : [
+          {
+            id: "ics" as const,
+            label: t("short.ics"),
+            name: t("ics"),
+            run: () => exportCalendar(calendar),
+          },
+        ]),
+  ];
+}
+
+/** Export among a view's controls: one quiet control whose menu lists the formats. */
+export function ExportControl({
+  formats,
+}: {
+  readonly formats: readonly ExportFormat[];
+}) {
+  const t = useTranslations("export");
   return (
     <HeadMenu
-      entries={[
-        { kind: "item", label: t("pdf"), onSelect: exportPdf },
-        { kind: "item", label: t("csv"), onSelect: exportCsv },
-      ]}
+      entries={formats.map((format) => ({
+        kind: "item",
+        label: format.name,
+        onSelect: format.run,
+      }))}
       icon={<DownloadIcon />}
       label={t("title")}
     />
   );
+}
+
+/** Export as a row of the phone's options: one small button per format. */
+export function exportOption(
+  formats: readonly ExportFormat[],
+  label: string,
+): ViewOption {
+  return {
+    kind: "buttons",
+    id: "export",
+    label,
+    buttons: formats.map((format) => ({
+      id: format.id,
+      label: format.label,
+      name: format.name,
+      onPress: format.run,
+    })),
+  };
 }

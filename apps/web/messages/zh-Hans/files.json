@@ -20,5 +20,8 @@
   "attach": "附加文件",
   "uploading": "正在上传 {name}…",
   "choose": "选择私密文件",
-  "uploadingLabel": "正在上传附件"
+  "uploadingLabel": "正在上传附件",
+  "count": "{count} 个文件",
+  "findTarget": "查找任务或支出",
+  "noTarget": "没有这个名称的项目"
 }

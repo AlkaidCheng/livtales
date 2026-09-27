@@ -1853,8 +1853,9 @@ describe("EventWorkspace", () => {
     );
     const user = userEvent.setup();
     render(<EventWorkspace eventId={eventId} />, { wrapper: Providers });
+    // A tab's name is its first text; the current one's count follows it.
     const tabNames = () =>
-      screen.getAllByRole("tab").map((tab) => tab.textContent);
+      screen.getAllByRole("tab").map((tab) => tab.firstChild?.textContent);
     await screen.findByRole("tab", { name: "Tasks", selected: true });
     // The stored preference leaves Files off the strip.
     await waitFor(() => expect(tabNames()).not.toContain("Files"));

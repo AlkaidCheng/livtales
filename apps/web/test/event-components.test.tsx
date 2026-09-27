@@ -44,6 +44,18 @@ import {
 import { queryKeys } from "../lib/queries";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
 import { PagesHarness } from "./pages-harness";
+
+/** Chooses what the open Filter shows: Open, All, or Finished. */
+async function showInFilter(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+) {
+  await user.click(
+    within(screen.getByRole("dialog", { name: "Filter" })).getByRole("radio", {
+      name,
+    }),
+  );
+}
 import { openTaskEditor } from "./quick-add-support";
 import { chooseRowAction } from "./row-menu-support";
 
@@ -253,7 +265,7 @@ describe("insertable event components", () => {
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
     const filter = await screen.findByRole("button", { name: "Filter" });
     await user.click(filter);
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    await showInFilter(user, "All");
     await user.keyboard("{Escape}");
     await user.click(screen.getByRole("button", { name: "Add page" }));
     const dialog = within(screen.getByRole("dialog"));
@@ -468,7 +480,7 @@ describe("insertable event components", () => {
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
     const filter = await screen.findByRole("button", { name: "Filter" });
     await user.click(filter);
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    await showInFilter(user, "All");
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("group", { name: /layout controls/ })).toBeNull();
     const before = await client.getEventLayout(eventId);
@@ -936,7 +948,7 @@ describe("insertable event components", () => {
     // under the strip, and moving the period is session state only.
     const todos = panel("Tasks");
     await user.click(todos.getByRole("button", { name: "Filter" }));
-    await user.click(todos.getByRole("menuitemradio", { name: "All" }));
+    await showInFilter(user, "All");
     await user.keyboard("{Escape}");
     const choose = async (panel: ReturnType<typeof within>, view: string) => {
       await user.click(panel.getByRole("button", { name: /^Layout: / }));
@@ -1145,7 +1157,7 @@ describe("insertable event components", () => {
     ).toEqual(["month", "by-day"]);
   });
 
-  it("filters the Tasks by the labels and people its tasks carry, for the session", async () => {
+  it("filters the Tasks by label and by whom, from lists found by typing, for the session", async () => {
     await client.updateEventLayout(eventId, {
       expectedVersion: 0,
       pages: [page("Plan", ["todos"])],
@@ -1167,82 +1179,76 @@ describe("insertable event components", () => {
           resource: { objectType: "task", ...input },
         })
       ).resource;
-    const cake = await task({
+    await task({
       displayName: "Order the cake",
       labelIds: [urgent.id],
       assigneeId: mira.id,
     });
     await task({ displayName: "Call the band", assigneeId: me.id });
     const user = userEvent.setup();
-    render(
-      <>
-        <PagesHarness eventId={eventId} canEdit />
-        <RefreshProbe />
-      </>,
-      { wrapper: Providers },
-    );
+    render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
     await screen.findByText("Order the cake");
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
-    // The menu offers only what the tasks carry: one label, Me, and Mira.
-    const choices = () =>
-      [...screen.getByRole("menu").querySelectorAll("[role^='menuitem']")].map(
-        (item) => item.textContent,
-      );
-    expect(choices()).toEqual([
-      "Open",
-      "All",
-      "Done",
-      "Has a time",
-      "Overdue",
-      "Any label",
-      "Urgent",
-      "Anyone",
-      "Me",
-      "Mira",
-      "Clear filters",
-    ]);
-    const choose = (name: string) =>
-      user.click(screen.getByRole("menuitemradio", { name }));
-    await choose("Urgent");
+    await showInFilter(user, "All");
+    const filter = () => within(screen.getByRole("dialog", { name: "Filter" }));
+    /** Opens a row's list, types into its search when given, and chooses. */
+    const choose = async (row: RegExp, choice: RegExp, search?: string) => {
+      await user.click(filter().getByRole("button", { name: row }));
+      if (search !== undefined)
+        await user.type(filter().getByRole("searchbox"), search);
+      await user.click(filter().getByRole("option", { name: choice }));
+    };
+    // Label lists Any and No label, then the workspace's labels.
+    await user.click(filter().getByRole("button", { name: /^Label/ }));
+    const labels = filter()
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+    expect(labels.slice(0, 2)).toEqual(["Any", "No label"]);
+    expect(labels).toContain("Urgent");
+    await user.click(filter().getByRole("option", { name: "Urgent" }));
     expect(screen.getByRole("row", { name: /Order the cake/ })).toBeVisible();
     expect(screen.queryByRole("row", { name: /Call the band/ })).toBeNull();
     expect(
       screen.queryByRole("row", { name: /Confirm the garden venue/ }),
     ).toBeNull();
-    // The filters combine; a match-less pair leaves the view empty.
-    await choose("Me");
+    // Assigned to lists Anyone, You, and Unassigned before the people; the
+    // filters combine, and a match-less pair leaves the view empty.
+    await user.click(filter().getByRole("button", { name: /Assigned to/ }));
+    expect(
+      filter()
+        .getAllByRole("option")
+        .slice(0, 3)
+        .map((option) => option.textContent),
+    ).toEqual(["Anyone", "You", "Unassigned"]);
+    await user.click(filter().getByRole("option", { name: "You" }));
     expect(
       screen.getByRole("heading", { name: "Nothing in this view" }),
     ).toBeVisible();
-    await choose("Any label");
+    await choose(/^Label/, /^Any$/);
     expect(screen.getByRole("row", { name: /Call the band/ })).toBeVisible();
     expect(screen.queryByRole("row", { name: /Order the cake/ })).toBeNull();
-    await choose("Mira");
+    // Typing part of a name finds the person.
+    await choose(/Assigned to/, /Mira/, "mi");
     expect(screen.getByRole("row", { name: /Order the cake/ })).toBeVisible();
     expect(screen.getByText("1 of 3 open")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Filter: 2 filters" })).toBe(
+      screen.getByRole("button", { name: /^Filter/ }),
+    );
+    // No label and Unassigned narrow to what carries none.
+    await choose(/Assigned to/, /Unassigned/);
+    await choose(/^Label/, /No label/);
+    expect(
+      screen.getByRole("row", { name: /Confirm the garden venue/ }),
+    ).toBeVisible();
+    expect(screen.queryByRole("row", { name: /Order the cake/ })).toBeNull();
+    expect(screen.queryByRole("row", { name: /Call the band/ })).toBeNull();
     // The choice is session state: the layout saved nothing for it.
     expect((await client.getEventLayout(eventId)).version).toBe(1);
-    // A label the tasks no longer carry leaves the menu; the list widens.
-    await choose("Urgent");
-    expect(
-      screen.getByRole("button", { name: "Filter: 3 filters" }),
-    ).toBeVisible();
-    await client.updateTask(cake.id, {
-      expectedVersion: cake.version,
-      labelIds: [],
-    });
-    await user.click(screen.getByRole("button", { name: "Refetch layout" }));
-    expect(
-      await screen.findByRole("button", { name: "Filter: 2 filters" }),
-    ).toBeVisible();
-    expect(screen.getByRole("row", { name: /Order the cake/ })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Filter: 2 filters" }));
-    expect(choices()).not.toContain("Urgent");
-    expect(screen.getByRole("menuitemradio", { name: "Mira" })).toHaveAttribute(
-      "aria-checked",
-      "true",
+    await user.click(filter().getByRole("button", { name: "Clear filters" }));
+    expect(screen.getByRole("button", { name: "Filter" })).not.toHaveClass(
+      "is-active",
     );
+    expect(screen.getByRole("row", { name: /Call the band/ })).toBeVisible();
   });
 
   it("lists Tasks and Reminders in manual order and moves them from the row menu", async () => {
@@ -1457,7 +1463,7 @@ describe("insertable event components", () => {
       ).toBeNull(),
     );
     await user.click(first.getByRole("button", { name: "Filter" }));
-    await user.click(first.getByRole("menuitemradio", { name: "All" }));
+    await showInFilter(user, "All");
     await user.keyboard("{Escape}");
     expect(
       first.getByRole("button", {

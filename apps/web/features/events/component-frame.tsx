@@ -7,16 +7,20 @@ import { HeadMenu } from "../../components/head-menu";
 import { LayoutIcon } from "../../components/icons";
 import { tr } from "../../i18n/active-locale";
 import { componentViewLabel } from "../../lib/event-components";
+import type { ViewOption } from "./view-options";
 
 /**
  * The heading every Event component shares: title, a count when the
- * component keeps one, then its controls and one action.
+ * component keeps one, then its controls and one action. `offScreen`
+ * keeps it off the screen, for a view whose tab names it there: it still
+ * prints, and a screen reader still finds it among the headings.
  */
 export function PanelHeading({
   action,
   caption,
   controls,
   count,
+  offScreen = false,
   title,
 }: {
   readonly action?: ReactNode;
@@ -25,10 +29,11 @@ export function PanelHeading({
   readonly controls?: ReactNode;
   /** What the component holds, read beside the title: "3 open". */
   readonly count?: string | undefined;
+  readonly offScreen?: boolean;
   readonly title: string;
 }) {
   return (
-    <header className="panel-heading">
+    <header className={`panel-heading${offScreen ? " off-screen" : ""}`}>
       <div>
         <h2>{title}</h2>
         {count === undefined ? null : <p className="panel-count">{count}</p>}
@@ -83,6 +88,38 @@ export function LayoutControl({
       name={labelOf(view)}
     />
   );
+}
+
+/**
+ * Layout as a row of a view's options on a phone, its templates side by
+ * side (or a list, past three); nothing when the view offers one.
+ */
+export function layoutOption({
+  busy = false,
+  labelOf = componentViewLabel,
+  onChange,
+  view,
+  views,
+}: {
+  readonly busy?: boolean;
+  readonly labelOf?: (view: EventComponentView) => string;
+  readonly onChange: (view: EventComponentView) => void;
+  readonly view: EventComponentView;
+  readonly views: readonly EventComponentView[];
+}): ViewOption | null {
+  if (views.length < 2) return null;
+  return {
+    kind: "segments",
+    id: "layout",
+    label: tr("controls")("layout"),
+    value: view,
+    choices: views.map((option) => ({ value: option, label: labelOf(option) })),
+    onChange: (value) => {
+      const next = views.find((option) => option === value);
+      if (next !== undefined) onChange(next);
+    },
+    busy,
+  };
 }
 
 /**

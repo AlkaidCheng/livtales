@@ -3,7 +3,7 @@
 import {
   type EventComponentView,
   eventComponentViewSchema,
-  type TaskListQuery,
+  type TaskListQueryInput,
   type TaskResponse,
 } from "@livtales/schemas";
 import { useTranslations } from "next-intl";
@@ -22,35 +22,50 @@ import type { TaskFields } from "../../lib/task-fields";
 import { LayoutControl } from "../events/component-frame";
 import { type SubtaskParent, TaskForm } from "../events/task-form";
 import { TaskInspector } from "../events/task-inspector";
+import { ActiveChips } from "../events/view-options";
 import { viewsOf } from "../../lib/event-components";
 import { periodRange, usePeriod } from "../../lib/use-period";
 import { shownTimeZone } from "../../i18n/active-preferences";
 import { personDisplayName } from "../../lib/person-fields";
 import {
+  useEventsQuery,
   useLabelsQuery,
   usePersonsQuery,
   useRefreshEvent,
   useSessionQuery,
   useTasksQuery,
 } from "../../lib/queries";
+import {
+  defaultTaskPageChoices,
+  readTaskPageChoices,
+  standingChoices,
+} from "../../lib/task-choices";
 import { useIsPhone } from "../../lib/use-media";
+import { useViewChoices, viewChoicesKey } from "../../lib/view-choices";
 import { ManageLabelsButton } from "./label-manager";
 import { AddTaskRow } from "./add-task-row";
+import { FinishedFoot, FinishedHead } from "./finished-tasks";
 import {
-  defaultTaskFilters,
-  type TaskFilters,
   TaskFilterControl,
   TaskSortControl,
+  useTaskChips,
+  useTaskFilterOptions,
 } from "./task-controls";
 import { TaskListView } from "./task-list-view";
 
 const viewStorageKey = "chronelle.task-view";
 
+/** How many finished tasks the foot counts before it says "50+". */
+const finishedCountLimit = 50;
+
 /**
  * Every task the user may view in the workspace, on its own or inside an
  * Event, as a list or by day, in manual order unless another sort is
- * chosen. The view is a device preference like the Event collection's
- * layout; the filter, sort, and query live with the tab.
+ * chosen. The layout is a device preference like the Event collection's;
+ * what the list shows, its sort, and its filters (Show, From, Assigned to,
+ * Label) are kept for the account in this browser and show as chips, and
+ * the search lives with the tab. While the finished tasks are hidden, the
+ * list's foot counts them and shows them on request.
  */
 export function TasksPage() {
   const t = useTranslations("tasksPage");
@@ -59,11 +74,8 @@ export function TasksPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isComposing, setIsComposing] = useState(false);
-  const [filters, setFilters] = useState<TaskFilters>(defaultTaskFilters);
-  const [sort, setSort] =
-    useState<NonNullable<TaskListQuery["sort"]>>("manual");
   const [view, setView] = useState<EventComponentView>("list");
-  const { status: filter, label, assignee } = filters;
+  const [eventQuery, setEventQuery] = useState("");
   // The full editor for a new task opens from the header, or from an add
   // row's composer with its fields; for a task, from its row's composer.
   const [adding, setAdding] = useState<Partial<TaskFields> | null>(null);
@@ -97,18 +109,42 @@ export function TasksPage() {
       // The list stays usable when browser storage is unavailable.
     }
   }, []);
+  const session = useSessionQuery();
+  const [choices, change] = useViewChoices(
+    session.data === undefined
+      ? null
+      : viewChoicesKey(session.data.user.id, "tasks"),
+    defaultTaskPageChoices,
+    readTaskPageChoices,
+  );
+  const labels = useLabelsQuery();
+  const persons = usePersonsQuery();
+  // The person linked to the signed-in account, when one exists.
+  const myPerson = persons.data?.items.find(
+    (person) =>
+      session.data !== undefined && person.userId === session.data.user.id,
+  );
+  const effective = standingChoices(choices, {
+    me: myPerson?.id,
+    people: persons.data?.names,
+    labels: labels.data?.names,
+  });
+  const { show, sort, label, from } = effective;
+  const assignee =
+    effective.assignee === "me" ? (myPerson?.id ?? "") : effective.assignee;
   // A week or month asks the server for its days and loads all of them.
   const period = usePeriod(view);
   const range = useMemo(
     () => periodRange(view, period.cursor),
     [view, period.cursor],
   );
-  const tasks = useTasksQuery({
+  const listed: Omit<TaskListQueryInput, "cursor"> = {
     query: debouncedQuery,
-    filter,
+    filter: show,
     sort,
     ...(label === "" ? {} : { label }),
     ...(assignee === "" ? {} : { assignee }),
+    ...(from === "" ? {} : { event: from }),
     ...(range === null
       ? {}
       : {
@@ -117,33 +153,83 @@ export function TasksPage() {
           timezone: shownTimeZone(),
           limit: 50,
         }),
-  });
+  };
+  const tasks = useTasksQuery(listed);
+  // While Show hides them, the finished tasks the same filters keep are
+  // counted for the list's foot, up to a page.
+  const finished = useTasksQuery(
+    { ...listed, filter: "done", limit: finishedCountLimit },
+    show === "open",
+  );
   const { fetchNextPage, hasNextPage, isFetching: isFetchingTasks } = tasks;
   useEffect(() => {
     if (range !== null && hasNextPage && !isFetchingTasks) void fetchNextPage();
   }, [range, hasNextPage, isFetchingTasks, fetchNextPage]);
-  const labels = useLabelsQuery();
-  const persons = usePersonsQuery();
-  const session = useSessionQuery();
+  const events = useEventsQuery({
+    query: eventQuery.trim(),
+    sort: "name",
+    limit: 50,
+  });
   // On a phone the add button stands in for the header's New task.
   const phone = useIsPhone();
-  // The person linked to the signed-in account, when one exists.
-  const myPerson = persons.data?.items.find(
-    (person) =>
-      session.data !== undefined && person.userId === session.data.user.id,
-  );
   const refresh = useRefreshEvent(undefined);
   const changingQuery = isComposing || query.trim() !== debouncedQuery;
   const items = changingQuery ? [] : (tasks.data?.items ?? []);
   const filtered =
     debouncedQuery !== "" ||
-    filter !== "open" ||
+    show !== "open" ||
     label !== "" ||
-    assignee !== "";
-  const labelChoices = labels.data?.items ?? [];
-  const assigneeChoices = (persons.data?.items ?? [])
+    assignee !== "" ||
+    from !== "";
+  const people = (persons.data?.items ?? [])
     .filter((person) => person.id !== myPerson?.id)
     .map((person) => ({ id: person.id, name: personDisplayName(person) }));
+  // The chosen event keeps its name for the chip while other events are
+  // listed; it is learned from the list or from the tasks' own events.
+  const eventName = (id: string): string | undefined =>
+    events.data?.items.find((event) => event.id === id)?.displayName ??
+    Object.values(tasks.data?.contexts ?? {}).find(
+      (context) => context.eventId === id,
+    )?.displayName ??
+    (choices.from === id && choices.fromName !== ""
+      ? choices.fromName
+      : undefined);
+  const filterOptions = useTaskFilterOptions(
+    effective,
+    {
+      people,
+      labels: labels.data?.items ?? [],
+      me: myPerson !== undefined,
+      none: false,
+      events: {
+        choices: (events.data?.items ?? []).map((event) => ({
+          id: event.id,
+          name: event.displayName,
+        })),
+        onQuery: setEventQuery,
+      },
+    },
+    (changes) =>
+      change(
+        changes.from === undefined
+          ? changes
+          : { ...changes, fromName: eventName(changes.from) ?? "" },
+      ),
+  );
+  const clearFilters = () =>
+    change({ show: "open", assignee: "", label: "", from: "", fromName: "" });
+  const chips = useTaskChips(
+    effective,
+    {
+      person: (id) => persons.data?.names.get(id),
+      label: (id) => labels.data?.names.get(id),
+      event: eventName,
+    },
+    change,
+  );
+  const finishedListed = items.filter(
+    (task) => task.status === "done" || task.status === "cancelled",
+  ).length;
 
   // Stable, so the row cells keep their identity and focus across renders.
   const addSubtask = useCallback(
@@ -222,13 +308,14 @@ export function TasksPage() {
             />
           </label>
           <div className="head-controls">
-            <TaskSortControl onChange={setSort} sort={sort} />
+            <TaskSortControl
+              onChange={(next) => change({ sort: next })}
+              sort={sort}
+            />
             <TaskFilterControl
-              assignees={assigneeChoices}
-              filters={filters}
-              labels={labelChoices}
-              me={myPerson}
-              onChange={setFilters}
+              filters={effective}
+              onClear={clearFilters}
+              options={filterOptions}
             />
             <LayoutControl
               onChange={changeView}
@@ -246,6 +333,13 @@ export function TasksPage() {
             {t("refresh")}
           </button>
         </div>
+        <ActiveChips
+          chips={chips}
+          onClearAll={() => {
+            clearFilters();
+            change({ sort: "manual" });
+          }}
+        />
         <div className="collection-heading">
           <p
             aria-label={t("countLabel")}
@@ -311,7 +405,7 @@ export function TasksPage() {
               className="button button-secondary"
               onClick={() => {
                 setQuery("");
-                setFilters(defaultTaskFilters);
+                clearFilters();
               }}
               type="button"
             >
@@ -336,6 +430,14 @@ export function TasksPage() {
             canEdit
             composer={composer}
             contexts={tasks.data?.contexts}
+            finishedAfter={
+              show === "all" && finishedListed > 0 ? (
+                <FinishedHead
+                  count={finishedListed}
+                  onHide={() => change({ show: "open" })}
+                />
+              ) : undefined
+            }
             labelNames={labels.data?.names}
             manual={sort === "manual"}
             onAddDetails={setAdding}
@@ -359,6 +461,16 @@ export function TasksPage() {
           >
             {tasks.isFetchingNextPage ? t("loadingMore") : t("loadMore")}
           </button>
+        ) : null}
+        {show === "open" &&
+        !changingQuery &&
+        tasks.data !== undefined &&
+        (finished.data?.items.length ?? 0) > 0 ? (
+          <FinishedFoot
+            count={finished.data?.items.length ?? 0}
+            more={finished.hasNextPage}
+            onShow={() => change({ show: "all" })}
+          />
         ) : null}
       </section>
       {editing !== null ? (

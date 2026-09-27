@@ -8,6 +8,7 @@ import {
   type ReactNode,
   type Ref,
   type RefObject,
+  useCallback,
   useLayoutEffect,
   useRef,
   useState,
@@ -20,14 +21,17 @@ import { canInsertComponent } from "../../lib/keyboard";
 import { useComponentShortcut } from "../../lib/use-component-shortcut";
 import { useLongPress } from "../../lib/use-long-press";
 import type { PageDrop } from "./use-event-pages";
+import type { TabCount } from "./view-head";
 
 /**
  * One strip under the event title: the event's pages, a thin plus that
  * adds one, a bar, then the views the account keeps on the event, and a
- * plus that opens the gallery. The strip never wraps: the tabs that do not
- * fit fold into one chip at the end that lists them; the current tab never
- * folds. Page buttons navigate; the views are tabs with arrow-key movement.
- * On a touch screen, holding a tab or the chip opens Manage tabs.
+ * plus that opens the gallery. The current view's tab carries its count,
+ * and the view's own controls sit at the strip's right end (see
+ * `onControlsSlot`). The strip never wraps: the tabs that do not fit fold
+ * into one chip at the end that lists them; the current tab never folds.
+ * Page buttons navigate; the views are tabs with arrow-key movement. On a
+ * touch screen, holding a tab or the chip opens Manage tabs.
  */
 export function EventStrip({
   pages,
@@ -45,6 +49,8 @@ export function EventStrip({
   onSelectView,
   onAddView,
   onManageTabs,
+  count,
+  onControlsSlot,
 }: {
   readonly pages: readonly EventPage[];
   readonly selectedPageId: string | undefined;
@@ -64,9 +70,21 @@ export function EventStrip({
   readonly onAddView?: (() => void) | undefined;
   /** Opens Manage tabs, from a touch held on a tab or the fold chip. */
   readonly onManageTabs?: (() => void) | undefined;
+  /** The current view's count, faint on its tab. */
+  readonly count?: TabCount | undefined;
+  /** Receives the place at the strip's end where the current view puts its controls. */
+  readonly onControlsSlot?: ((element: HTMLElement | null) => void) | undefined;
 }) {
   const t = useTranslations("event");
   const strip = useRef<HTMLDivElement>(null);
+  const controlsSlot = useRef<HTMLSpanElement | null>(null);
+  const placeControls = useCallback(
+    (element: HTMLSpanElement | null) => {
+      controlsSlot.current = element;
+      onControlsSlot?.(element);
+    },
+    [onControlsSlot],
+  );
   const tabs = useRef(new Map<EventView, HTMLButtonElement>());
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set());
@@ -175,6 +193,8 @@ export function EventStrip({
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
+    // The view's controls arrive after the strip and change with the view.
+    if (controlsSlot.current !== null) observer.observe(controlsSlot.current);
     return () => observer.disconnect();
   }, [
     tabKeys.join("\n"),
@@ -182,6 +202,7 @@ export function EventStrip({
     currentKey,
     canAddPage,
     folded.size,
+    count?.value,
   ]);
 
   function onTabKeyDown(
@@ -285,11 +306,26 @@ export function EventStrip({
             role="tab"
             tabIndex={activeView === tab.id ? 0 : -1}
             type="button"
+            aria-describedby={
+              activeView === tab.id && count !== undefined
+                ? `event-tab-${tab.id}-count`
+                : undefined
+            }
           >
             {tab.label}
+            {activeView === tab.id && count !== undefined ? (
+              <span aria-hidden="true" className="event-tab-count">
+                {count.value}
+              </span>
+            ) : null}
           </button>
         ))}
       </div>
+      {count === undefined ? null : (
+        <span hidden id={`event-tab-${activeView}-count`}>
+          {count.label}
+        </span>
+      )}
       <span className="event-strip-end">
         <span data-strip-chip hidden={foldedCount === 0}>
           <QuietMenu
@@ -323,6 +359,7 @@ export function EventStrip({
           </IconButton>
         ) : null}
       </span>
+      <span className="event-strip-options" ref={placeControls} />
     </div>
   );
 }

@@ -20,5 +20,8 @@
   "attach": "附加檔案",
   "uploading": "正在上傳 {name}…",
   "choose": "選擇私密檔案",
-  "uploadingLabel": "正在上傳附件"
+  "uploadingLabel": "正在上傳附件",
+  "count": "{count} 個檔案",
+  "findTarget": "尋找任務或支出",
+  "noTarget": "沒有這個名稱的項目"
 }

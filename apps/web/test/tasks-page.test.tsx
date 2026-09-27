@@ -74,6 +74,29 @@ afterEach(() => {
   window.sessionStorage.clear();
 });
 
+/** Chooses what the open Filter shows: Open, All, or Finished. */
+async function showInFilter(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+) {
+  await user.click(
+    within(screen.getByRole("dialog", { name: "Filter" })).getByRole("radio", {
+      name,
+    }),
+  );
+}
+
+/** Opens one of the open Filter's lists and chooses in it. */
+async function pickInFilter(
+  user: ReturnType<typeof userEvent.setup>,
+  row: RegExp,
+  name: string,
+) {
+  const filter = within(screen.getByRole("dialog", { name: "Filter" }));
+  await user.click(filter.getByRole("button", { name: row }));
+  await user.click(filter.getByRole("option", { name }));
+}
+
 /** Opens the Layout menu and chooses a template by its name. */
 async function chooseLayout(
   user: ReturnType<typeof userEvent.setup>,
@@ -100,22 +123,25 @@ describe("TasksPage", () => {
     expect(
       within(sample).getByRole("link", { name: "Autumn gathering" }),
     ).toHaveAttribute("href", expect.stringMatching(/^\/events\//));
-    // The Filter menu chooses the status; it stays open between choices
-    // and the button counts what differs from Open.
+    // The Filter chooses what shows; it stays open between choices and
+    // the button counts what differs from Open.
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Done" }));
+    await showInFilter(user, "Finished");
     expect(await screen.findByText("1 task loaded")).toBeVisible();
     expect(screen.getByRole("row", { name: /Send invitations/ })).toBeVisible();
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    await showInFilter(user, "All");
     expect(await screen.findByText("2 tasks loaded")).toBeVisible();
     await user.keyboard("{Escape}");
     expect(
       screen.getByRole("button", { name: "Filter: 1 filter" }),
     ).toHaveClass("is-active");
 
+    // By day the open task sits in its day; the finished one, undated,
+    // follows apart.
     await chooseLayout(user, "By day");
     expect(screen.queryByRole("table")).toBeNull();
-    expect(screen.getByRole("region", { name: /No due date/ })).toBeVisible();
+    expect(screen.queryByRole("region", { name: /No due date/ })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Finished · 1" })).toBeVisible();
     expect(stored["chronelle.task-view"]).toBe("by-day");
     // The week and the calendar ask the server for their days in this time
     // zone, so the undated task is not in them.
@@ -287,9 +313,9 @@ describe("TasksPage", () => {
 
     // Filtering by the label asks the server and keeps only that task.
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
+    await showInFilter(user, "All");
     await screen.findByText("2 tasks loaded");
-    await user.click(screen.getByRole("menuitemradio", { name: "Venue" }));
+    await pickInFilter(user, /^Label/, "Venue");
     expect(await screen.findByText("1 task loaded")).toBeVisible();
     await user.keyboard("{Escape}");
     expect(
@@ -393,9 +419,9 @@ describe("TasksPage", () => {
     );
     await screen.findByText("2 tasks loaded");
 
-    // Filtering by assignee asks the server; Me names the linked person.
+    // Filtering by assignee asks the server; You names the linked person.
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Sam Lee" }));
+    await pickInFilter(user, /Assigned to/, "Sam Lee");
     expect(await screen.findByText("1 task loaded")).toBeVisible();
     expect(
       vi
@@ -403,7 +429,7 @@ describe("TasksPage", () => {
         .mock.calls.map(([url]) => String(url))
         .some((url) => /^\/api\/tasks\?.*assignee=[0-9a-f-]+/.test(url)),
     ).toBe(true);
-    await user.click(screen.getByRole("menuitemradio", { name: "Me" }));
+    await pickInFilter(user, /Assigned to/, "You");
     expect(
       await screen.findByRole("row", { name: /Water the plants/ }),
     ).toBeVisible();
@@ -470,9 +496,9 @@ describe("TasksPage", () => {
     );
     await screen.findByText("2 tasks loaded");
 
-    // Filtering by assignee asks the server; Me names the linked person.
+    // Filtering by assignee asks the server; You names the linked person.
     await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Sam Lee" }));
+    await pickInFilter(user, /Assigned to/, "Sam Lee");
     expect(await screen.findByText("1 task loaded")).toBeVisible();
     expect(
       vi
@@ -480,12 +506,90 @@ describe("TasksPage", () => {
         .mock.calls.map(([url]) => String(url))
         .some((url) => /^\/api\/tasks\?.*assignee=[0-9a-f-]+/.test(url)),
     ).toBe(true);
-    await user.click(screen.getByRole("menuitemradio", { name: "Me" }));
+    await pickInFilter(user, /Assigned to/, "You");
     expect(
       await screen.findByRole("row", { name: /Water the plants/ }),
     ).toBeVisible();
     expect(screen.getByText("1 task loaded")).toBeVisible();
     await user.keyboard("{Escape}");
+  });
+
+  it("narrows to standalone tasks or one event's, counts the finished ones at the foot, and keeps the choices", async () => {
+    const user = userEvent.setup();
+    const created = await store.fetch("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify({ displayName: "Water the plants" }),
+    });
+    expect(created.ok).toBe(true);
+    const first = render(
+      <Providers>
+        <TasksPage />
+      </Providers>,
+    );
+    expect(await screen.findByText("2 tasks loaded")).toBeVisible();
+    // The finished task waits behind the foot, which shows it after the
+    // open ones.
+    const foot = await screen.findByRole("button", { name: /1 finished/ });
+    await user.click(foot);
+    expect(await screen.findByText("3 tasks loaded")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Finished · 1" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Hide" }));
+    expect(await screen.findByText("2 tasks loaded")).toBeVisible();
+
+    // From: Standalone asks the server for the tasks outside every event.
+    await user.click(screen.getByRole("button", { name: "Filter" }));
+    await pickInFilter(user, /^From/, "Standalone");
+    expect(await screen.findByText("1 task loaded")).toBeVisible();
+    expect(screen.getByRole("row", { name: /Water the plants/ })).toBeVisible();
+    const requested = () =>
+      vi
+        .mocked(fetch)
+        .mock.calls.map(([url]) => String(url))
+        .filter((url) => url.startsWith("/api/tasks?"));
+    expect(requested()).toContain(
+      "/api/tasks?query=&filter=open&sort=manual&event=none",
+    );
+    // One event is found by typing part of its name.
+    const filter = within(screen.getByRole("dialog", { name: "Filter" }));
+    await user.click(filter.getByRole("button", { name: /^From/ }));
+    await user.type(
+      filter.getByRole("searchbox", { name: "Find an event" }),
+      "autumn",
+    );
+    await user.click(
+      await filter.findByRole("option", { name: "Autumn gathering" }),
+    );
+    await user.keyboard("{Escape}");
+    expect(
+      await screen.findByRole("row", { name: /Confirm the garden venue/ }),
+    ).toBeVisible();
+    expect(screen.queryByRole("row", { name: /Water the plants/ })).toBeNull();
+    expect(requested().some((url) => /&event=[0-9a-f-]{36}$/u.test(url))).toBe(
+      true,
+    );
+    expect(
+      screen.getByRole("button", { name: "From Autumn gathering, remove" }),
+    ).toBeVisible();
+    first.unmount();
+
+    // Opened again, the page keeps the choice and its chip.
+    render(
+      <Providers>
+        <TasksPage />
+      </Providers>,
+    );
+    expect(
+      await screen.findByRole("button", {
+        name: "From Autumn gathering, remove",
+      }),
+    ).toBeVisible();
+    expect(
+      await screen.findByRole("row", { name: /Confirm the garden venue/ }),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "From Autumn gathering, remove" }),
+    );
+    expect(await screen.findByText("2 tasks loaded")).toBeVisible();
   });
 
   it("keeps where a task happens and shows it on the row", async () => {
@@ -621,21 +725,38 @@ describe("TasksPage", () => {
       </Providers>,
     );
     await screen.findByText("3 tasks loaded");
-    await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
-    await user.keyboard("{Escape}");
-    await screen.findByText("4 tasks loaded");
     const rowNames = () =>
       screen
         .getAllByRole("row")
-        .slice(1)
-        .map((row) => row.querySelector("strong")?.textContent);
+        .flatMap((row) => row.querySelector("strong")?.textContent ?? []);
     expect(rowNames()).toEqual([
       "Confirm the garden venue",
-      "Send invitations",
       "Order the cake",
       "Call the band",
     ]);
+    // Shown too, the finished tasks follow the open ones apart, and are
+    // not moved among them.
+    await user.click(screen.getByRole("button", { name: "Filter" }));
+    await showInFilter(user, "All");
+    await user.keyboard("{Escape}");
+    await screen.findByText("4 tasks loaded");
+    expect(screen.getByRole("heading", { name: "Finished · 1" })).toBeVisible();
+    expect(rowNames()).toEqual([
+      "Confirm the garden venue",
+      "Order the cake",
+      "Call the band",
+      "Send invitations",
+    ]);
+    await user.click(
+      within(screen.getByRole("row", { name: /Send invitations/ })).getByRole(
+        "button",
+        { name: /^Actions for/ },
+      ),
+    );
+    expect(screen.queryByRole("menuitem", { name: "Move up" })).toBeNull();
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Hide" }));
+    await screen.findByText("3 tasks loaded");
     // The first row cannot move up; the last cannot move down.
     const first = screen.getByRole("row", { name: /Confirm the garden venue/ });
     await user.click(
@@ -649,13 +770,12 @@ describe("TasksPage", () => {
     await waitFor(() =>
       expect(rowNames()).toEqual([
         "Confirm the garden venue",
-        "Send invitations",
         "Call the band",
         "Order the cake",
       ]),
     );
     expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
-      "Call the band is now 3 of 4.",
+      "Call the band is now 2 of 3.",
     );
     // Only the moved task was written: it took the midpoint rank.
     const listed = (await (
@@ -664,13 +784,18 @@ describe("TasksPage", () => {
       items: { displayName: string; rank: string; version: number }[];
     };
     expect(
-      listed.items.map((item) => [item.displayName, item.rank, item.version]),
-    ).toEqual([
-      ["Confirm the garden venue", "00000001000", 1],
-      ["Send invitations", "00000002000", 1],
-      ["Call the band", "00000002500", 2],
-      ["Order the cake", "00000003000", 1],
-    ]);
+      Object.fromEntries(
+        listed.items.map((item) => [
+          item.displayName,
+          [item.rank, item.version],
+        ]),
+      ),
+    ).toEqual({
+      "Confirm the garden venue": ["00000001000", 1],
+      "Send invitations": ["00000002000", 1],
+      "Call the band": ["00000002000", 2],
+      "Order the cake": ["00000003000", 1],
+    });
     // The menu button keeps focus after the move.
     expect(
       within(screen.getByRole("row", { name: /Call the band/ })).getByRole(
@@ -825,10 +950,6 @@ describe("TasksPage", () => {
       </Providers>,
     );
     await screen.findByText("1 task loaded");
-    await user.click(screen.getByRole("button", { name: "Filter" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "All" }));
-    await user.keyboard("{Escape}");
-    await screen.findByText("2 tasks loaded");
     const row = screen.getByRole("row", { name: /Confirm the garden venue/ });
     await chooseRowAction(user, row, "Copy link");
     expect(writeText).toHaveBeenCalledWith(
@@ -842,7 +963,7 @@ describe("TasksPage", () => {
       ),
     );
     await chooseRowAction(user, row, "Duplicate");
-    expect(await screen.findByText("3 tasks loaded")).toBeVisible();
+    expect(await screen.findByText("2 tasks loaded")).toBeVisible();
     const copy = screen.getByRole("row", {
       name: /Confirm the garden venue \(copy\)/,
     });
@@ -851,12 +972,11 @@ describe("TasksPage", () => {
       within(copy).getByRole("link", { name: "Autumn gathering" }),
     ).toBeVisible();
     const listed = (await (
-      await store.fetch("/api/tasks?filter=all&sort=manual")
+      await store.fetch("/api/tasks?filter=open&sort=manual")
     ).json()) as { items: { displayName: string; rank: string }[] };
     expect(listed.items.map((item) => item.displayName)).toEqual([
       "Confirm the garden venue",
       "Confirm the garden venue (copy)",
-      "Send invitations",
     ]);
   });
 });

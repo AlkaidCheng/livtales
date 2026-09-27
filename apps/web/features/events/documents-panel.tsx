@@ -29,7 +29,8 @@ import {
 } from "../../lib/queries";
 import { useOpenHistory } from "../history/history-provider";
 import { useOpenLifecycle } from "../recovery/lifecycle-provider";
-import { PanelHeading, RowActions } from "./component-frame";
+import { RowActions } from "./component-frame";
+import { ViewHead } from "./view-head";
 
 interface AttachmentTarget {
   readonly id: string;
@@ -114,7 +115,18 @@ export function DocumentsPanel({
 
   return (
     <section className="planning-panel panel-column documents-panel">
-      <PanelHeading
+      <ViewHead
+        chips={
+          target === undefined || target.id === event.id
+            ? []
+            : [
+                {
+                  id: "target",
+                  label: target.label,
+                  onClear: () => setParentObjectId(event.id),
+                },
+              ]
+        }
         controls={
           <HeadMenu
             busy={isUploading}
@@ -131,6 +143,38 @@ export function DocumentsPanel({
         }
         count={
           attachments.data === undefined ? undefined : String(items.length)
+        }
+        options={[
+          {
+            kind: "list",
+            id: "target",
+            label: t("attachedTo"),
+            value: parentObjectId,
+            changed: parentObjectId !== event.id,
+            groups: [
+              {
+                choices: targets.map((choice) => ({
+                  value: choice.id,
+                  label: choice.label,
+                  searchable: true,
+                })),
+              },
+            ],
+            search:
+              targets.length > 8
+                ? { label: t("findTarget"), empty: t("noTarget") }
+                : undefined,
+            onChange: setParentObjectId,
+            busy: isUploading,
+          },
+        ]}
+        tabCount={
+          attachments.data === undefined
+            ? undefined
+            : {
+                value: items.length,
+                label: t("count", { count: items.length }),
+              }
         }
         title={t("title")}
       />

@@ -34,5 +34,11 @@
     "text": "內文",
     "lastEdited": "最後編輯",
     "editedBy": "編輯者"
+  },
+  "ics": "匯出到日曆（.ics）",
+  "short": {
+    "pdf": "PDF",
+    "csv": "CSV",
+    "ics": "日曆"
   }
 }
