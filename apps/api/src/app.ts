@@ -19,6 +19,7 @@ import { registerFriendRoutes } from "./friends/routes.js";
 import { httpServerOptions, registerHttpBoundary } from "./http-boundary.js";
 import { registerLabelRoutes } from "./labels/routes.js";
 import { registerMoveRoutes } from "./moves/routes.js";
+import { registerPersonalViewRoutes } from "./personal-views/routes.js";
 import { registerSectionRoutes } from "./sections/routes.js";
 import { registerRecoveryRoutes } from "./recovery/routes.js";
 import { registerRequestContext } from "./request-context.js";
@@ -55,6 +56,7 @@ export function buildApp(
   registerLabelRoutes(app, dependencies);
   registerSectionRoutes(app, dependencies);
   registerEventPageRoutes(app, dependencies);
+  registerPersonalViewRoutes(app, dependencies);
   registerSearchRoutes(app, dependencies);
   registerSharingRoutes(app, dependencies);
   registerWorkspaceRoutes(app, dependencies);

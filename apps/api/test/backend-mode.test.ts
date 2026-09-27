@@ -125,6 +125,15 @@ describe("resolveBackend", () => {
         "chronelle_workspace_delete",
       ]),
     );
+    // Personal views need migration 0079.
+    expect(cloudBaseRequiredFunctions).toEqual(
+      expect.arrayContaining([
+        "chronelle_user_event_view_read",
+        "chronelle_user_event_view_save",
+        "chronelle_user_page_choices_read",
+        "chronelle_user_page_choices_update",
+      ]),
+    );
   });
 
   it("logs routine rejections as information and failures as errors", () => {

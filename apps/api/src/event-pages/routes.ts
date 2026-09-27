@@ -1,7 +1,12 @@
-import type { EventLayoutService } from "@livtales/object-model";
+import type {
+  EventLayoutService,
+  PersonalViewService,
+} from "@livtales/object-model";
 import {
+  eventLayoutQuerySchema,
   eventLayoutResponseSchema,
   eventLayoutUpdateSchema,
+  eventLayoutWithViewResponseSchema,
   eventLayoutHistoryQuerySchema,
   eventLayoutHistoryResponseSchema,
   eventLayoutRestoreSchema,
@@ -14,7 +19,10 @@ import { parseRequest } from "../request-validation.js";
 
 export function registerEventPageRoutes(
   app: FastifyInstance,
-  dependencies: { readonly eventLayouts: EventLayoutService },
+  dependencies: {
+    readonly eventLayouts: EventLayoutService;
+    readonly personalViews: PersonalViewService;
+  },
 ): void {
   app.get(
     "/api/events/:id/layout/history",
@@ -46,13 +54,24 @@ export function registerEventPageRoutes(
       );
     },
   );
+  // `include=yours` adds the account's own view; without it the response
+  // is the layout alone, as clients that validate it strictly expect.
   app.get(
     "/api/events/:id/layout",
     { preHandler: app.authenticate },
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
+      const { include } = parseRequest(eventLayoutQuerySchema, request.query);
+      const principal = requirePrincipal(request);
+      if (include === "yours")
+        return eventLayoutWithViewResponseSchema.parse(
+          await dependencies.personalViews.getEventLayoutWithView(
+            principal,
+            id,
+          ),
+        );
       return eventLayoutResponseSchema.parse(
-        await dependencies.eventLayouts.get(requirePrincipal(request), id),
+        await dependencies.eventLayouts.get(principal, id),
       );
     },
   );
