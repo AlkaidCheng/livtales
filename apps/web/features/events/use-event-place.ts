@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   useChangeEventView,
   useEventViewState,
@@ -16,11 +16,13 @@ export const placeSettleMs = 1500;
  * The place is saved once the account has stayed on a view or page for a
  * moment, so moving through the tabs does not save each one, and at once
  * when the account leaves the event, the page, or the browser tab.
+ * Returns a way to save a place still waiting at once, for an action that
+ * may take the event out of the account's reach (Move to Trash).
  */
 export function useKeepEventPlace(
   eventId: string,
   place: EventPlace | null,
-): void {
+): () => void {
   const view = useEventViewState(eventId);
   const changeView = useChangeEventView(eventId);
   // The place not yet saved, for a departure to save.
@@ -39,13 +41,16 @@ export function useKeepEventPlace(
     }, placeSettleMs);
     return () => window.clearTimeout(timer);
   }, [changeView, kept, place]);
-  useEffect(() => {
-    function depart(leaving: boolean) {
+  const depart = useCallback(
+    (leaving: boolean) => {
       const place = waiting.current;
       if (place === null) return;
       waiting.current = null;
       changeView(() => ({ place }), { leaving });
-    }
+    },
+    [changeView],
+  );
+  useEffect(() => {
     const onPageHide = () => depart(true);
     const onHidden = () => {
       if (document.visibilityState === "hidden") depart(true);
@@ -57,5 +62,6 @@ export function useKeepEventPlace(
       document.removeEventListener("visibilitychange", onHidden);
       depart(false);
     };
-  }, [changeView]);
+  }, [depart]);
+  return useCallback(() => depart(false), [depart]);
 }

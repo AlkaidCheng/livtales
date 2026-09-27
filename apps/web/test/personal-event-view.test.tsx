@@ -44,6 +44,8 @@ let day: EventPage;
 let role: "owner" | "viewer";
 /** The saves of the account's view, as sent. */
 let saves: { readonly change: unknown; readonly keepalive: boolean }[];
+/** Whether the account may also delete the event, which the sample store never grants. */
+let grantDelete: boolean;
 
 beforeEach(async () => {
   vi.stubGlobal("localStorage", window.sessionStorage);
@@ -93,18 +95,27 @@ beforeEach(async () => {
   });
   role = "owner";
   saves = [];
+  grantDelete = false;
   window.sessionStorage.setItem(
     "chronelle.session",
     JSON.stringify({ accessToken: "sample", workspaceId: sandboxWorkspaceId }),
   );
   vi.stubGlobal(
     "fetch",
-    vi.fn<typeof globalThis.fetch>((input, options) => {
-      if (options?.method === "PATCH" && String(input).endsWith("/view"))
+    vi.fn<typeof globalThis.fetch>(async (input, options) => {
+      const url = String(input);
+      if (options?.method === "PATCH" && url.endsWith("/view"))
         saves.push({
           change: JSON.parse(String(options.body)),
           keepalive: options.keepalive === true,
         });
+      if (grantDelete && url.endsWith(`/${eventId}/access`)) {
+        const access = await (await store.fetch(input, options, role)).json();
+        return Response.json({
+          ...access,
+          actions: [...access.actions, "delete"],
+        });
+      }
       return store.fetch(input, options, role);
     }),
   );
@@ -259,6 +270,28 @@ describe("the account's own view of an event", () => {
     const layout = await client.getEventLayout(eventId);
     expect(layout.version).toBe(2);
     expect(layout.pages.map((page) => page.name)).toEqual(["Day", "Plan"]);
+  });
+
+  it("keeps a place still waiting before the event can go to Trash", async () => {
+    const user = userEvent.setup();
+    grantDelete = true;
+    window.history.replaceState(null, "", `/events/${eventId}?view=overview`);
+    renderEvent();
+    await screen.findByRole("tab", { name: "Overview", selected: true });
+    await user.click(screen.getByRole("tab", { name: "Tasks" }));
+    await user.click(
+      screen.getByRole("button", { name: "Actions for Autumn gathering" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "Move to Trash" }));
+    // Saved at once, long before the place would settle.
+    await waitFor(
+      () =>
+        expect(saves).toEqual([
+          { change: { place: { view: "todos" } }, keepalive: false },
+        ]),
+      { timeout: placeSettleMs / 3 },
+    );
+    expect(await screen.findByRole("dialog")).toBeVisible();
   });
 
   it("keeps a page component's choices for the account", async () => {

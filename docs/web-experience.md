@@ -1048,7 +1048,8 @@ not yet reviewed the two Chinese catalogs; wording may change.
   still exists), else to its Overview, and the address is replaced to name
   that place. The place is kept once the account has stayed on a view or
   page for a moment, so moving through the tabs does not keep each one,
-  and at once when it leaves the event or the browser tab.
+  and at once when it leaves the event or the browser tab, or chooses Move
+  to Trash or Move to space.
   The Pages view without a page reads `?view=pages`. A phone keeps
   the strip, folded past its width into the chip, with no separate view
   select. A view reached by its address shows even while hidden from or

@@ -156,7 +156,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
             : { page: selectedPageId },
     [address, activeTab, selectedPageId],
   );
-  useKeepEventPlace(eventId, place);
+  const savePlace = useKeepEventPlace(eventId, place);
   const essentialQueries = [queries.event, queries.access];
   const failedQuery =
     essentialQueries.find(
@@ -404,7 +404,13 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
                 </>
               ) : null}
               {canMove ? (
-                <MenuItem icon={<MoveIcon />} onSelect={() => setMoving(true)}>
+                <MenuItem
+                  icon={<MoveIcon />}
+                  onSelect={() => {
+                    savePlace();
+                    setMoving(true);
+                  }}
+                >
                   {spaces("menu")}
                 </MenuItem>
               ) : null}
@@ -434,7 +440,11 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
                   <MenuItem
                     icon={<TrashIcon />}
                     tone="danger"
-                    onSelect={() => openLifecycle(event)}
+                    onSelect={() => {
+                      // The place is kept before the event can go to Trash.
+                      savePlace();
+                      openLifecycle(event);
+                    }}
                   >
                     {t("moveToTrash")}
                   </MenuItem>
