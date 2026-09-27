@@ -6,9 +6,9 @@ import { openEventView } from "./helpers/event-view";
 
 /**
  * An event with two pages and three views on the strip, in that order:
- * Plan, Budget | Overview, To-dos, Calendar. The account's tab
+ * Plan, Budget | Overview, Tasks, Calendar. The account's tab
  * arrangement takes every other view off the strip, and the event holds
- * enough tasks for its To-dos list to scroll the page.
+ * enough tasks for its Tasks list to scroll the page.
  */
 async function arrangedEvent(request: APIRequestContext, email: string) {
   const identity = await request.post("/api/auth/development/sign-in", {
@@ -198,7 +198,7 @@ test("moves between an event's pages and views with a sideways swipe on a touch 
   const event = await arrangedEvent(request, email);
   await signIn(page, email);
   await page.goto(`/events/${event.id}?view=todos`);
-  const todos = page.getByRole("tab", { name: "To-dos", exact: true });
+  const todos = page.getByRole("tab", { name: "Tasks", exact: true });
   const calendar = page.getByRole("tab", { name: "Calendar", exact: true });
   const overview = page.getByRole("tab", { name: "Overview", exact: true });
   const pages = page.getByRole("navigation", { name: "Pages", exact: true });
@@ -364,7 +364,7 @@ test("never swipes between tabs with a mouse", async ({
   await signIn(page, email);
   await page.goto(`/events/${event.id}?view=todos`);
   await expect(
-    page.getByRole("tab", { name: "To-dos", exact: true }),
+    page.getByRole("tab", { name: "Tasks", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   const box = await page.locator(".event-swipe").boundingBox();
   if (box === null) throw new Error("The event has no content.");

@@ -194,6 +194,15 @@ describe("presses that belong to something else", () => {
     widen(target("outer"), 2000, 400);
     expect(swipeBelongsElsewhere(target("row"), target("surface"))).toBe(false);
   });
+
+  it("leaves what a view shows outside the surface, such as its options on the strip", () => {
+    document.body.innerHTML =
+      '<div id="strip"><button id="options">Options</button></div><div id="surface"><p id="row">Row</p></div>';
+    expect(swipeBelongsElsewhere(target("options"), target("surface"))).toBe(
+      true,
+    );
+    expect(swipeBelongsElsewhere(target("row"), target("surface"))).toBe(false);
+  });
 });
 
 describe("a page busy with something else", () => {

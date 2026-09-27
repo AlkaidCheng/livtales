@@ -209,7 +209,7 @@ still press when motion is reduced). On Events, Tasks, and People it opens
 New event, New task, or New person at once. On an event it is a menu button
 named "Add to" the event: its menu rises above it over a scrim as pills,
 Task, Schedule item, Expense, Reminder, and Note, the kind the current view
-lists nearest the button (Task on To-dos; Schedule item on Calendar,
+lists nearest the button (Task on Tasks; Schedule item on Calendar,
 Timeline, and Itinerary; Expense, Reminder, and Note on their own views; the
 usual order elsewhere), and the plus turns into a close mark while it is
 open. Focus starts on the nearest pill and the arrow keys move through
@@ -1085,7 +1085,8 @@ not yet reviewed the two Chinese catalogs; wording may change.
   first and last tab it gives a little and springs back. With reduced
   motion, the system's or the Motion setting, the tab changes without the
   slide. A swipe never starts within 20 pixels of the screen's sides
-  (Back and the drawer), on a field, on content that scrolls sideways
+  (Back and the drawer), on the strip (with the view's options button on
+  it) or the chips under it, on a field, on content that scrolls sideways
   itself (the Calendar's week, a wide table), on the Itinerary's day sheet,
   whose own swipe turns a day, while a dialog, sheet, or menu is open,
   while text is selected or a field has focus, or while a page is being

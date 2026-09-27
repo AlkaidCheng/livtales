@@ -247,14 +247,14 @@ make one child private while leaving both the object and relationship intact.
 ## Event-planning workspace
 
 Events open on [user-composed pages](docs/event-pages.md). Add a named page and
-insert To-dos, Calendar, Timeline, Expenses, Reminders, Files, and People
+insert Tasks, Calendar, Timeline, Expenses, Reminders, Files, and People
 through a focused picker. Layouts save independently from canonical objects;
 the same records stay synchronized across pages. Browse
 event data opens the other planning views. Migration 0011 and refreshed runtime
 role grants are required before deploying the page-layout API.
 
 The web client provides development sign-in, an event list, event editing,
-to-dos, calendar (as a list, an agenda, a week, or a month), timeline,
+tasks, calendar (as a list, an agenda, a week, or a month), timeline,
 expenses, and reminders. Creating a schedule item creates one canonical Event.
 Its ID is preserved in the calendar and timeline projections, and an edit
 invalidates every affected view. Optimistic-concurrency conflicts show a refresh action instead of
