@@ -230,6 +230,22 @@ export function TasksPage() {
   const finishedListed = items.filter(
     (task) => task.status === "done" || task.status === "cancelled",
   ).length;
+  const listShown =
+    items.length > 0 ||
+    (range !== null && tasks.data !== undefined && !changingQuery);
+  // While Show hides them, the list's foot counts the finished tasks, in
+  // the list's column when the list shows.
+  const finishedFoot =
+    show === "open" &&
+    !changingQuery &&
+    tasks.data !== undefined &&
+    (finished.data?.items.length ?? 0) > 0 ? (
+      <FinishedFoot
+        count={finished.data?.items.length ?? 0}
+        more={finished.hasNextPage}
+        onShow={() => change({ show: "all" })}
+      />
+    ) : null;
 
   // Stable, so the row cells keep their identity and focus across renders.
   const addSubtask = useCallback(
@@ -424,8 +440,7 @@ export function TasksPage() {
             </div>
           </div>
         ) : null}
-        {items.length > 0 ||
-        (range !== null && tasks.data !== undefined && !changingQuery) ? (
+        {listShown ? (
           <TaskListView
             canEdit
             composer={composer}
@@ -438,6 +453,7 @@ export function TasksPage() {
                 />
               ) : undefined
             }
+            foot={finishedFoot ?? undefined}
             labelNames={labels.data?.names}
             manual={sort === "manual"}
             onAddDetails={setAdding}
@@ -462,16 +478,7 @@ export function TasksPage() {
             {tasks.isFetchingNextPage ? t("loadingMore") : t("loadMore")}
           </button>
         ) : null}
-        {show === "open" &&
-        !changingQuery &&
-        tasks.data !== undefined &&
-        (finished.data?.items.length ?? 0) > 0 ? (
-          <FinishedFoot
-            count={finished.data?.items.length ?? 0}
-            more={finished.hasNextPage}
-            onShow={() => change({ show: "all" })}
-          />
-        ) : null}
+        {listShown ? null : finishedFoot}
       </section>
       {editing !== null ? (
         <TaskInspector

@@ -325,6 +325,14 @@ export function TasksPanel({
       .map((chip) => chip.label),
   ].join(", ");
   const finishedShown = shownTasks.length - shownOpen;
+  // While Show hides them, the list's foot counts the finished tasks.
+  const finishedFoot =
+    show === "open" && chosen.finished > 0 ? (
+      <FinishedFoot
+        count={chosen.finished}
+        onShow={() => change({ show: "all" })}
+      />
+    ) : null;
 
   return (
     <section className={panelClasses(view)} ref={panel}>
@@ -425,6 +433,7 @@ export function TasksPanel({
               />
             ) : undefined
           }
+          foot={finishedFoot ?? undefined}
           labelNames={labels.data?.names}
           manual={sort === "manual"}
           onAddDetails={setAdding}
@@ -440,12 +449,7 @@ export function TasksPanel({
           view={view}
         />
       )}
-      {show === "open" && chosen.finished > 0 ? (
-        <FinishedFoot
-          count={chosen.finished}
-          onShow={() => change({ show: "all" })}
-        />
-      ) : null}
+      {shownTasks.length === 0 ? finishedFoot : null}
       {canEdit && editing !== null ? (
         <TaskInspector
           key={editing.id}
