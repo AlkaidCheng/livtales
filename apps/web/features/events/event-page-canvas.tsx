@@ -205,27 +205,29 @@ export function EventPageCanvas({
     const origin = trigger;
     let version = source.version;
     setAnnouncement("");
-    save.mutate(
-      { expectedVersion: source.version, pages },
-      {
-        onSuccess: (saved) => {
-          version = saved.version;
-          onSaved?.();
-          setAnnouncement(message);
-          if (selected) onSelect(targetPageId ?? selected.id);
-          if (targetPageId) {
-            trigger =
-              document.querySelector<HTMLButtonElement>(
-                `.event-strip-pages [data-page-id="${targetPageId}"]`,
-              ) ?? null;
-          }
+    // What follows the save runs even when the page has closed by then.
+    void save
+      .mutateAsync(
+        { expectedVersion: source.version, pages },
+        {
+          onSuccess: (saved) => {
+            version = saved.version;
+            setAnnouncement(message);
+            if (selected) onSelect(targetPageId ?? selected.id);
+            if (targetPageId) {
+              trigger =
+                document.querySelector<HTMLButtonElement>(
+                  `.event-strip-pages [data-page-id="${targetPageId}"]`,
+                ) ?? null;
+            }
+          },
+          onSettled: () => {
+            locked.current = false;
+            setFocusRequest({ trigger, origin, version });
+          },
         },
-        onSettled: () => {
-          locked.current = false;
-          setFocusRequest({ trigger, origin, version });
-        },
-      },
-    );
+      )
+      .then(onSaved, () => undefined);
   }
 
   // Moves the selected page in the account's order. An editor's order
@@ -261,18 +263,17 @@ export function EventPageCanvas({
     }
     locked.current = true;
     setAnnouncement("");
-    save.mutate(
-      { expectedVersion: layout.version, pages: next },
-      {
-        onSuccess: () => {
-          keep();
-          setAnnouncement(describeShownView(view));
+    void save
+      .mutateAsync(
+        { expectedVersion: layout.version, pages: next },
+        {
+          onSuccess: () => setAnnouncement(describeShownView(view)),
+          onSettled: () => {
+            locked.current = false;
+          },
         },
-        onSettled: () => {
-          locked.current = false;
-        },
-      },
-    );
+      )
+      .then(keep, () => undefined);
   }
 
   function move(

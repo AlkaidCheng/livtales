@@ -35,13 +35,30 @@ import { queryKeys, sessionAccountId } from "./queries";
 
 const layoutUpdateKey = (eventId: string) =>
   ["event-layout-update", eventId] as const;
-export const eventLayoutKey = (eventId: string) =>
+const eventLayoutKey = (eventId: string) =>
   [...queryKeys.event(eventId), "layout"] as const;
 const historyKey = (eventId: string) =>
   [...eventLayoutKey(eventId), "history"] as const;
 const undoKey = (eventId: string) => ["layout-undo", eventId] as const;
 const viewUpdateKey = (eventId: string) =>
   ["event-view-update", eventId] as const;
+
+/**
+ * How many saves of the account's view of each event have been taken
+ * into the cache, per query cache: a read that began before one of them
+ * answers with an older view.
+ */
+const viewSaves = new WeakMap<QueryClient, Map<string, number>>();
+
+function viewSavesOf(cache: QueryClient, eventId: string): number {
+  return viewSaves.get(cache)?.get(eventId) ?? 0;
+}
+
+function noteViewSave(cache: QueryClient, eventId: string): void {
+  const saves = viewSaves.get(cache) ?? new Map<string, number>();
+  saves.set(eventId, viewSavesOf(cache, eventId) + 1);
+  viewSaves.set(cache, saves);
+}
 
 /** The account's view as the layout now stands, kept across a change of the layout. */
 function keepView(
@@ -147,7 +164,8 @@ export function useRestoreEventLayout(eventId: string) {
 /**
  * The event's layout with the account's own view of it. What this browser
  * still keeps for the event (see `keptViewStores`) is saved to the account
- * on the first read.
+ * on the first read. A read never replaces what is newer in the cache: a
+ * later layout, or a view saved while the read was on its way.
  */
 async function loadEventLayout(
   client: LivTalesApiClient,
@@ -155,9 +173,30 @@ async function loadEventLayout(
   eventId: string,
   signal?: AbortSignal,
 ): Promise<EventLayoutWithViewResponse> {
-  const layout = await (
-    signal === undefined ? client : client.withSignal(signal)
-  ).getEventLayoutWithView(eventId);
+  const saves = viewSavesOf(cache, eventId);
+  const read = await moveKept(
+    client,
+    cache,
+    await (
+      signal === undefined ? client : client.withSignal(signal)
+    ).getEventLayoutWithView(eventId),
+  );
+  const current = cache.getQueryData<EventLayoutWithViewResponse>(
+    eventLayoutKey(eventId),
+  );
+  if (current === undefined) return read;
+  if (current.version > read.version) return current;
+  return viewSavesOf(cache, eventId) === saves
+    ? read
+    : keepView(read, current.yours);
+}
+
+/** The layout read, with what this browser still keeps for the event moved into the view. */
+async function moveKept(
+  client: LivTalesApiClient,
+  cache: QueryClient,
+  layout: EventLayoutWithViewResponse,
+): Promise<EventLayoutWithViewResponse> {
   if (!mayHoldKeptViews()) return layout;
   const accountId = await sessionAccountId(client, cache);
   if (accountId === undefined) return layout;
@@ -259,15 +298,17 @@ export function useChangeEventView(eventId: string) {
     scope: { id: `event-view:${eventId}` },
     mutationFn: ({ change, leaving }: ViewChangeRequest) =>
       (leaving ? leavingClient : client).updateEventView(eventId, change),
-    onSuccess: (yours) => {
+    onSuccess: async (yours) => {
       const key = eventLayoutKey(eventId);
-      const fetching = cache.getQueryState(key)?.fetchStatus === "fetching";
+      // A read sent before this change could answer without it: it is
+      // dropped and sent again once the reply is in.
+      const reading = cache.getQueryState(key)?.fetchStatus === "fetching";
+      await cache.cancelQueries({ queryKey: key, exact: true });
+      noteViewSave(cache, eventId);
       cache.setQueryData<EventLayoutWithViewResponse>(key, (current) =>
         current === undefined ? current : keepView(current, yours),
       );
-      // A read sent before this change could answer without it.
-      if (fetching)
-        void cache.invalidateQueries({ queryKey: key, exact: true });
+      if (reading) void cache.invalidateQueries({ queryKey: key, exact: true });
     },
     onError: (error, { change }) => {
       if (Object.keys(change).some((name) => name !== "place"))

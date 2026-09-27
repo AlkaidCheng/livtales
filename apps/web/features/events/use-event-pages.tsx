@@ -66,11 +66,12 @@ export function usePageOrder(eventId: string, canEdit: boolean) {
       pages.every((page, index) => page === shared.pages[index])
     )
       keep();
+    // The editor's own order follows the event's save even when Manage
+    // tabs has closed by then.
     else
-      save.mutate(
-        { expectedVersion: shared.version, pages: [...pages] },
-        { onSuccess: keep },
-      );
+      save
+        .mutateAsync({ expectedVersion: shared.version, pages: [...pages] })
+        .then(keep, () => undefined);
   }
   return {
     reorder,

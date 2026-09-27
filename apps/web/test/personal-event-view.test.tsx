@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { LivTalesApiClient } from "@livtales/api-client";
-import type { EventPage } from "@livtales/schemas";
+import type { EventLayoutWithViewResponse, EventPage } from "@livtales/schemas";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import {
   act,
   cleanup,
@@ -44,6 +45,14 @@ let day: EventPage;
 let role: "owner" | "viewer";
 /** The saves of the account's view, as sent. */
 let saves: { readonly change: unknown; readonly keepalive: boolean }[];
+/**
+ * Requests held back until released: the event's layout saves, and the
+ * reads of the layout with the view (answered as the store stood when
+ * they were sent).
+ */
+let held: { layoutSaves: boolean; layoutReads: boolean };
+let release: () => void;
+let released: Promise<void>;
 /** Whether the account may also delete the event, which the sample store never grants. */
 let grantDelete: boolean;
 
@@ -95,7 +104,11 @@ beforeEach(async () => {
   });
   role = "owner";
   saves = [];
+  held = { layoutSaves: false, layoutReads: false };
   grantDelete = false;
+  released = new Promise((resolve) => {
+    release = resolve;
+  });
   window.sessionStorage.setItem(
     "chronelle.session",
     JSON.stringify({ accessToken: "sample", workspaceId: sandboxWorkspaceId }),
@@ -109,12 +122,25 @@ beforeEach(async () => {
           change: JSON.parse(String(options.body)),
           keepalive: options.keepalive === true,
         });
+      if (
+        held.layoutSaves &&
+        options?.method === "PATCH" &&
+        url.endsWith("/layout")
+      ) {
+        await released;
+        return store.fetch(input, options, role);
+      }
       if (grantDelete && url.endsWith(`/${eventId}/access`)) {
         const access = await (await store.fetch(input, options, role)).json();
         return Response.json({
           ...access,
           actions: [...access.actions, "delete"],
         });
+      }
+      if (held.layoutReads && url.endsWith("/layout?include=yours")) {
+        const answer = await store.fetch(input, options, role);
+        await released;
+        return answer;
       }
       return store.fetch(input, options, role);
     }),
@@ -292,6 +318,94 @@ describe("the account's own view of an event", () => {
       { timeout: placeSettleMs / 3 },
     );
     expect(await screen.findByRole("dialog")).toBeVisible();
+  });
+
+  it("keeps an editor's own page order when Manage tabs closes before the event's save answers", async () => {
+    const user = userEvent.setup();
+    // A view already kept freezes the account's order.
+    await client.updateEventView(eventId, { place: { view: "overview" } });
+    window.history.replaceState(null, "", `/events/${eventId}?view=overview`);
+    renderEvent();
+    await screen.findByRole("button", { name: "Day" });
+    await user.click(
+      screen.getByRole("button", { name: "Actions for Autumn gathering" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "Manage tabs" }));
+    const manage = within(
+      await screen.findByRole("dialog", { name: "Manage tabs" }),
+    );
+    held.layoutSaves = true;
+    manage.getByRole("button", { name: "Move Day" }).focus();
+    await user.keyboard("{ArrowUp}");
+    await user.click(manage.getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    release();
+    await waitFor(async () =>
+      expect((await yours()).pages).toEqual([day.id, plan.id]),
+    );
+    await waitFor(() =>
+      expect(
+        [...document.querySelectorAll(".event-strip-pages [data-page-id]")].map(
+          (page) => page.textContent,
+        ),
+      ).toEqual(["Day", "Plan"]),
+    );
+  });
+
+  it("never lets a read sent before a save of the view put back the older view", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, "", `/events/${eventId}?view=overview`);
+    const probe: { cache?: QueryClient } = {};
+    function CacheProbe() {
+      probe.cache = useQueryClient();
+      return null;
+    }
+    render(
+      <Providers>
+        <CacheProbe />
+        <EventWorkspace eventId={eventId} />
+      </Providers>,
+    );
+    await screen.findByRole("button", { name: "Day" });
+    assert(probe.cache);
+    const cache = probe.cache;
+    // A read goes out and is answered with the order as it stands...
+    held.layoutReads = true;
+    act(() => {
+      void cache.invalidateQueries({
+        queryKey: ["event", eventId, "layout"],
+        exact: true,
+      });
+    });
+    // ...then the account hides a page, which is saved at once...
+    await user.click(
+      screen.getByRole("button", { name: "Actions for Autumn gathering" }),
+    );
+    await user.click(screen.getByRole("menuitem", { name: "Manage tabs" }));
+    const manage = within(
+      await screen.findByRole("dialog", { name: "Manage tabs" }),
+    );
+    await user.click(manage.getByRole("button", { name: "Hide Day" }));
+    await waitFor(async () =>
+      expect((await yours()).tabs.hidden).toContain(day.id),
+    );
+    await user.click(manage.getByRole("button", { name: "Done" }));
+    // ...and the older answer arrives last.
+    release();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    await waitFor(() =>
+      expect(
+        cache.getQueryState(["event", eventId, "layout"])?.fetchStatus,
+      ).toBe("idle"),
+    );
+    expect(
+      cache.getQueryData<EventLayoutWithViewResponse>([
+        "event",
+        eventId,
+        "layout",
+      ])?.yours.tabs.hidden,
+    ).toContain(day.id);
+    expect(screen.queryByRole("button", { name: "Day" })).toBeNull();
   });
 
   it("keeps a page component's choices for the account", async () => {

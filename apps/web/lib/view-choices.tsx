@@ -128,7 +128,7 @@ export function useViewChoices<T extends ChoicesOf<T>>(
   return [choices, change] as const;
 }
 
-export const pageChoicesKey = (page: AccountPage) =>
+const pageChoicesKey = (page: AccountPage) =>
   ["account", "pages", page] as const;
 const pageChoicesUpdateKey = (page: AccountPage) =>
   ["page-choices-update", page] as const;
@@ -138,7 +138,7 @@ const pageChoicesUpdateKey = (page: AccountPage) =>
  * browser still keeps for the page (see `keptViewStores`) is saved to the
  * account on the first read.
  */
-export async function loadPageChoices(
+async function loadPageChoices(
   client: LivTalesApiClient,
   cache: QueryClient,
   page: AccountPage,
