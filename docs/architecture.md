@@ -372,6 +372,19 @@ creates a fresh lifetime: old requests, drawers, and drafts cannot become active
 again. Selecting the already active workspace is a no-op. Browser-storage errors
 do not block these in-memory transitions.
 
+The web app follows [Live changes](api.md#live-changes) through
+`lib/live`. One tab per browser holds the connection, elected with the Web
+Locks API; it watches the pages every tab reports over a `BroadcastChannel`
+and relays each signal to them all, and the next tab takes over when it
+closes. The transport holds the server-sent event stream and falls back to
+the poll after three failed attempts. Each tab writes changes into its own
+query cache: an object's state replaces older copies wherever a response
+holds one, trashed and removed objects leave their lists, and only the lists
+an object may have joined or left, or that are ordered or filtered on the
+API, are read again. Every request carries the tab's id as `x-livtales-tab`,
+so a tab skips its own changes. The design sandbox swaps the transport for
+an idle one.
+
 Loaded pages and continuation cursors belong to that session lifetime. Returning
 to a workspace starts from its first page. Event and Search filters, ordering,
 and canonical item deduplication remain unchanged; each page request receives

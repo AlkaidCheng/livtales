@@ -1380,6 +1380,27 @@ error visible. A save refused because the record is no longer within reach
 in a notice: "Your changes were not saved: this item is no longer available
 to you."
 
+## Changes from others
+
+An event's page and the Tasks page follow what others change while they are
+open, without reloading. A name, a due date, or a tick someone else saves
+shows in place; a record someone adds, moves in, sends to Trash, or restores
+joins or leaves the list; a new section, label, or page arrangement shows
+once it is saved. Only what the person may see arrives: a share narrowed to
+a view or section brings that view's or section's records alone, and a
+record that leaves it disappears. Changes to the account's own view of an
+event or page (its tabs, pages, and choices) made on another device follow
+quietly. A tab never receives its own changes back.
+
+A browser holds one connection for all of its LivTales tabs, kept by one of
+them and handed to another when that tab closes. It closes after five
+minutes with no tab in front and opens again when one comes to the front.
+Where the connection cannot stay open, the tab in front asks for changes
+every three seconds instead. After a break, the changes made meanwhile
+arrive when the connection returns; when they can no longer be replayed (a
+long break, or a server restart), the page reads its data again. The design
+sandbox has no server to follow.
+
 ## A stale write, compared
 
 A save refused because the record changed since the draft was opened reads
