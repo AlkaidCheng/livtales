@@ -13,6 +13,7 @@ const settingsSections = [
   "general",
   "language",
   "appearance",
+  "notifications",
   "keyboard",
 ] as const;
 

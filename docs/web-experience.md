@@ -828,8 +828,8 @@ Settings opens from the account menu as a dialog over the page you are on,
 and closing it returns you there as you left it: the page stays mounted
 underneath, so an event's view, its filters, and anything open on it are
 unchanged. At the left, under the title Settings, each section is a row
-with its icon (General; under Preferences, Language & time, Appearance, and
-on a keyboard device Keyboard), the current one
+with its icon (General; under Preferences, Language & time, Appearance,
+Notifications, and on a keyboard device Keyboard), the current one
 marked as the rail marks its current page; at the right, the section's
 title with the close control at its edge, then its content, which scrolls
 inside the dialog. On a narrow screen (up to 640px) the dialog fills the
@@ -840,7 +840,8 @@ on closing, to the control that opened Settings (the account block or
 More; on a phone the menu control, whose drawer closes as Settings opens).
 
 Each section has an address on the page underneath: a `settings` query
-parameter (`general`, `language`, `appearance`, `keyboard`, or `members`)
+parameter (`general`, `language`, `appearance`, `notifications`,
+`keyboard`, or `members`)
 added to the page's own, so `/events/<id>?view=todos&settings=language` is
 an event's Tasks with Settings open on Language & time. The entries that
 open Settings (Settings in the account menu, Keyboard shortcuts in More,
@@ -1390,6 +1391,32 @@ a view or section brings that view's or section's records alone, and a
 record that leaves it disappears. Changes to the account's own view of an
 event or page (its tabs, pages, and choices) made on another device follow
 quietly. A tab never receives its own changes back.
+
+The people on an event's page or the Tasks page show in its head as faces,
+and only there: the initials of each on a tone of the palette that stays
+theirs, the three who arrived last, overlapped, newest first, then a count
+of the rest ("+2"). Pointing at a face names the person; pressing or
+pointing at the count lists everyone on the page with their face and name.
+On a phone the head keeps two faces. A person shows while the page (any of
+an event's tabs and pages) is open and in front on any of their devices,
+and leaves about 30 seconds after closing it or switching away. The viewer
+is never among them.
+
+A change someone else saves on the page being viewed flashes its row once
+and shows a pop-up at the foot of the screen for five seconds: the person's
+face and what they did, in words ("Ana changed the due date of Book the
+hall", "Ana changed the due date and labels of Book the hall", "Ana renamed
+Book the hall to Book the town hall", "Ana moved Old idea to Trash"). An
+edit names one or two parts: the name, time, due date, repeat schedule,
+status, assignee, labels, section, parent task, location, description,
+amount, date, reminder time, text, or contacts; three or more read "Ana
+updated Book the hall", and one that only moves a record in its list shows
+in the list alone. Several changes by one person within a few seconds share
+one pop-up ("Ana made 3 changes on Autumn wedding"). Pressing a single
+change's pop-up scrolls to its row. Changes made on the account's own other
+devices arrive without a pop-up. Settings, Notifications, Show when others
+make changes turns the pop-ups off for the account (on by default); the
+changes and the flash still arrive.
 
 A browser holds one connection for all of its LivTales tabs, kept by one of
 them and handed to another when that tab closes. It closes after five

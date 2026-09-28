@@ -27,6 +27,7 @@ const user = {
   rail: {},
   event_tabs: {},
   workspace_recency: {},
+  change_notices: true,
   created_at: observedAt.toISOString(),
   updated_at: observedAt.toISOString(),
 };

@@ -49,6 +49,7 @@ const session = {
     rail: {},
     eventTabs: {},
     workspaceRecency: {},
+    changeNotices: true,
   },
   workspace: { id: home, displayName: "Planner's workspace" },
   availableWorkspaces: [

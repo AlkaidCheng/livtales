@@ -27,5 +27,8 @@
   "byNameNote": "在“查找伙伴”中输入“{name}”。",
   "byEmail": "通过邮箱",
   "byEmailNote": "输入 {email} 的人能看到你。关闭后对方什么也看不到。",
-  "byEmailNoteNone": "此账户没有可供查找的邮箱。"
+  "byEmailNoteNone": "此账户没有可供查找的邮箱。",
+  "notifications": "通知",
+  "othersChanges": "他人更改时显示提示",
+  "othersChangesNote": "在你正在查看的页面上"
 }

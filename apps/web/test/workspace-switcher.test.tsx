@@ -75,6 +75,7 @@ function sessionWith(
       rail: {},
       eventTabs: {},
       workspaceRecency: { [ids.kai]: dayAgo, [ids.ana]: weekAgo },
+      changeNotices: true,
     },
     workspace: {
       id: current,

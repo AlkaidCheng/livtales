@@ -1,0 +1,38 @@
+{
+  "here": "People here",
+  "tasksPage": "Tasks",
+  "thisEvent": "this event",
+  "notice": {
+    "updated": "{name} updated {object}",
+    "changedOne": "{name} changed the {part} of {object}",
+    "changedTwo": "{name} changed the {first} and {second} of {object}",
+    "renamed": "{name} renamed {before} to {object}",
+    "added": "{name} added {object}",
+    "trashed": "{name} moved {object} to Trash",
+    "restored": "{name} restored {object}",
+    "undid": "{name} undid a change to {object}",
+    "redid": "{name} redid a change to {object}",
+    "removed": "{name} took {object} off this page",
+    "several": "{name} made {count} changes on {page}"
+  },
+  "parts": {
+    "name": "name",
+    "when": "time",
+    "due": "due date",
+    "repeat": "repeat schedule",
+    "status": "status",
+    "assignee": "assignee",
+    "labels": "labels",
+    "section": "section",
+    "order": "order",
+    "parent": "parent task",
+    "location": "location",
+    "description": "description",
+    "amount": "amount",
+    "date": "date",
+    "reminder": "reminder time",
+    "text": "text",
+    "contacts": "contacts"
+  },
+  "everyone": "{count} people here"
+}

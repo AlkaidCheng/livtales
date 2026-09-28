@@ -25,6 +25,7 @@ const session = {
     rail: {},
     eventTabs: {},
     workspaceRecency: {},
+    changeNotices: true,
   },
   workspace: {
     id: "019d6e7d-0000-7000-8000-000000000001",

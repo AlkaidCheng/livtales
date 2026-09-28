@@ -50,6 +50,7 @@ import {
 import { useEventViewState } from "../../lib/event-layout-queries";
 import { type EventPlace, placeOf } from "../../lib/event-place";
 import { useLivePage } from "../../lib/live/live-provider";
+import { LiveFaces } from "../live/live-faces";
 import { ViewChoicesScope } from "../../lib/view-choices";
 import { EventOverview } from "./event-overview";
 import { EventPages } from "./event-pages";
@@ -159,11 +160,9 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   );
   const savePlace = useKeepEventPlace(eventId, place);
   // Others' changes to the event reach it while it is open, and the
-  // account counts as on it, at this view or page.
-  useLivePage(
-    `event:${eventId}`,
-    place === null ? null : "view" in place ? place.view : place.page,
-  );
+  // account counts as on it.
+  const livePage = `event:${eventId}`;
+  useLivePage(livePage);
   const essentialQueries = [queries.event, queries.access];
   const failedQuery =
     essentialQueries.find(
@@ -357,6 +356,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
             />
           </div>
           <div className="event-actions">
+            <LiveFaces page={livePage} />
             {canEdit && schedule === "" ? (
               <IconButton
                 label={t("setDates")}

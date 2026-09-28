@@ -19,36 +19,16 @@ import {
   resetLivePage,
 } from "./apply-live-change";
 import { LiveCoordinator } from "./live-coordinator";
+import { PresenceStore } from "./live-people";
 import { type LiveSignal, liveTabId, type TabPage } from "./live-signals";
 import { openLiveTransport } from "./live-transport";
+import { flashRows, useChangeNotices } from "./use-change-notices";
 
 type People = LivePresence["people"];
 const nobody: People = [];
 
-/** Who is on each page, as the connection last said. */
-class PresenceStore {
-  readonly #people = new Map<string, People>();
-  readonly #listeners = new Set<() => void>();
-
-  set(presence: LivePresence): void {
-    if (presence.people.length === 0) this.#people.delete(presence.page);
-    else this.#people.set(presence.page, presence.people);
-    for (const listener of this.#listeners) listener();
-  }
-
-  get(page: string): People {
-    return this.#people.get(page) ?? nobody;
-  }
-
-  subscribe(listener: () => void): () => void {
-    this.#listeners.add(listener);
-    return () => this.#listeners.delete(listener);
-  }
-}
-
 interface ShownPage {
   readonly page: string;
-  readonly place: string | null;
 }
 
 /** The pages this tab shows, reported to the browser's connection. */
@@ -56,7 +36,7 @@ class TabPages {
   readonly #shown = new Map<symbol, ShownPage>();
   #coordinator: LiveCoordinator | null = null;
 
-  /** Says this tab shows the page, at the place; returns the way to say it stopped. */
+  /** Says this tab shows the page; returns the way to say it stopped. */
   show(page: ShownPage): () => void {
     const key = Symbol(page.page);
     this.#shown.set(key, page);
@@ -72,6 +52,14 @@ class TabPages {
     this.report();
   }
 
+  /** Whether this tab shows the page, in front. */
+  inFront(page: string): boolean {
+    return (
+      document.visibilityState === "visible" &&
+      [...this.#shown.values()].some((shown) => shown.page === page)
+    );
+  }
+
   /** Reports each page once, in front while the tab is, read from the latest position the tab knows. */
   report(): void {
     const coordinator = this.#coordinator;
@@ -79,8 +67,8 @@ class TabPages {
     const here = document.visibilityState === "visible";
     const since = coordinator.position();
     const pages = new Map<string, TabPage>();
-    for (const { page, place } of this.#shown.values())
-      pages.set(page, { page, place, here, since });
+    for (const { page } of this.#shown.values())
+      pages.set(page, { page, place: null, here, since });
     coordinator.report([...pages.values()]);
   }
 }
@@ -120,6 +108,7 @@ export function LiveProvider({ children }: { readonly children: ReactNode }) {
   const client = useLeavingApiClient();
   const { credential } = useAuthSession();
   const signedIn = credential !== null;
+  const prepareNotice = useChangeNotices(cache);
   const [value] = useState<LiveContextValue>(() => ({
     pages: new TabPages(),
     presence: new PresenceStore(),
@@ -131,10 +120,23 @@ export function LiveProvider({ children }: { readonly children: ReactNode }) {
     const tab = liveTabId();
     const receive = (signal: LiveSignal) => {
       switch (signal.kind) {
-        case "change":
-          if (signal.change.actor.tabId !== tab)
-            applyLiveChange(cache, signal.change);
+        case "change": {
+          const change = signal.change;
+          if (change.actor.tabId === tab) return;
+          // The pop-up is worded from what the page held before the change.
+          const notify = pages.inFront(change.page)
+            ? prepareNotice(change)
+            : null;
+          applyLiveChange(cache, change);
+          if (change.kind === "objects")
+            flashRows(
+              change.objects
+                .filter((state) => state.deletedAt === null)
+                .map((state) => state.id),
+            );
+          notify?.();
           return;
+        }
         case "presence":
           presence.set(signal.presence);
           return;
@@ -182,22 +184,22 @@ export function LiveProvider({ children }: { readonly children: ReactNode }) {
       document.removeEventListener("visibilitychange", onVisibility);
       stop();
     };
-  }, [cache, client, signedIn, value]);
+  }, [cache, client, prepareNotice, signedIn, value]);
 
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }
 
 /**
  * Says the component shows a page, while it is mounted: its changes reach
- * this tab, and the person counts as on it, at `place`, while the tab is in
- * front. Null shows nothing.
+ * this tab, and the person counts as on it while the tab is in front. Null
+ * shows nothing.
  */
-export function useLivePage(page: string | null, place: string | null): void {
+export function useLivePage(page: string | null): void {
   const live = useContext(LiveContext);
   useEffect(() => {
     if (live === null || page === null) return;
-    return live.pages.show({ page, place });
-  }, [live, page, place]);
+    return live.pages.show({ page });
+  }, [live, page]);
 }
 
 /** The people on a page, the viewer included. */

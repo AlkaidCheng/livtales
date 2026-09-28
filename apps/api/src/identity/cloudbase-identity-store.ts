@@ -220,6 +220,9 @@ export class CloudBaseIdentityStore implements IdentityStore {
           ...(preferences.eventTabs !== undefined && {
             event_tabs: preferences.eventTabs,
           }),
+          ...(preferences.changeNotices !== undefined && {
+            change_notices: preferences.changeNotices,
+          }),
           ...(preferences.workspaceRecency !== undefined && {
             workspace_recency: preferences.workspaceRecency,
           }),

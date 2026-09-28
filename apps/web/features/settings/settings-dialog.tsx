@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import {
+  BellIcon,
   GlobeIcon,
   InfoIcon,
   KeyboardIcon,
@@ -25,11 +26,12 @@ import { AccountSettings } from "./account-settings";
 import { AppearanceSection } from "./appearance-section";
 import { KeyboardSection } from "./keyboard-section";
 import { LanguageTimeSettings } from "./language-time-settings";
+import { NotificationSettings } from "./notification-settings";
 
 /**
  * Settings, as a dialog over the page it opens from: General (the
- * account); under Preferences, Language & time, Appearance, and on a
- * keyboard device Keyboard. A space's members are managed from the space
+ * account); under Preferences, Language & time, Appearance,
+ * Notifications, and on a keyboard device Keyboard. A space's members are managed from the space
  * switcher's Manage space, not here. Without a keyboard,
  * Keyboard is listed only while its address has it open, and says it
  * needs one.
@@ -60,6 +62,12 @@ function SettingsDialog({
       icon: <ThemeIcon />,
       group: preferences,
     },
+    {
+      id: "notifications",
+      label: t("notifications"),
+      icon: <BellIcon />,
+      group: preferences,
+    },
     ...(keyboard || section === "keyboard"
       ? [
           {
@@ -75,6 +83,7 @@ function SettingsDialog({
     general: <AccountSettings />,
     language: <LanguageTimeSettings />,
     appearance: <AppearanceSection />,
+    notifications: <NotificationSettings />,
     keyboard: <KeyboardSection />,
   };
   return (

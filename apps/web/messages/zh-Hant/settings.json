@@ -27,5 +27,8 @@
   "byNameNote": "在「尋找夥伴」中輸入「{name}」。",
   "byEmail": "透過電郵",
   "byEmailNote": "輸入 {email} 的人能看到你。關閉後對方什麼也看不到。",
-  "byEmailNoteNone": "此帳戶沒有可供尋找的電郵。"
+  "byEmailNoteNone": "此帳戶沒有可供尋找的電郵。",
+  "notifications": "通知",
+  "othersChanges": "他人更改時顯示提示",
+  "othersChangesNote": "在你正在查看的頁面上"
 }

@@ -108,7 +108,7 @@ interface State {
   labels: LabelResponse[];
   /** The sections of the sample events' To-dos and Expenses. */
   sections: SectionResponse[];
-  /** The sample account's name, language, zone, clock, week start, rail, event tabs, and workspace recency, as Settings, the rail, the strips, and the switcher keep them. */
+  /** The sample account's name, language, zone, clock, week start, rail, event tabs, workspace recency, and change pop-ups, as Settings, the rail, the strips, and the switcher keep them. */
   preferences: Pick<
     Preferences,
     | "displayName"
@@ -119,6 +119,7 @@ interface State {
     | "rail"
     | "eventTabs"
     | "workspaceRecency"
+    | "changeNotices"
     | "username"
     | "findByName"
     | "findByEmail"
@@ -256,6 +257,7 @@ const defaultPreferences: State["preferences"] = {
   rail: {},
   eventTabs: {},
   workspaceRecency: {},
+  changeNotices: true,
   username: "planner",
   findByName: true,
   findByEmail: true,
@@ -636,6 +638,7 @@ function parseState(raw: string): State {
       rail: true,
       eventTabs: true,
       workspaceRecency: true,
+      changeNotices: true,
       username: true,
       findByName: true,
       findByEmail: true,
@@ -2691,6 +2694,10 @@ export class SandboxStore {
             this.#state.preferences.workspaceRecency,
             input.workspaceRecency,
           ),
+          changeNotices:
+            input.changeNotices === undefined
+              ? this.#state.preferences.changeNotices
+              : (input.changeNotices ?? true),
         },
       });
       return this.#user();

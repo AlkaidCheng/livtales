@@ -87,6 +87,7 @@ export function userPayload(user: UserRow) {
     rail: user.rail,
     eventTabs: user.eventTabs,
     workspaceRecency: user.workspaceRecency,
+    changeNotices: user.changeNotices,
   };
 }
 

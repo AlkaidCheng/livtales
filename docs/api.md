@@ -44,14 +44,16 @@ off the event until added again), `{}` until arranged; and
 `workspaceRecency`, when the account last opened each workspace, an object
 keyed by workspace id whose value is an ISO 8601 instant as the client
 wrote it, `{}` until a workspace is switched to, which orders the
-workspace switcher on every device. `PATCH /api/auth/me` takes any subset
-of the seven: a key that is present replaces the stored value, null clears
+workspace switcher on every device; and `changeNotices`, whether a pop-up
+names the changes others make on the page being viewed, `true` until turned
+off. `PATCH /api/auth/me` takes any subset of the eight: a key that is present replaces the stored value, null clears
 it (the rail returns to `{}`), an absent key keeps it, and an empty object
 changes nothing; `eventTabs` merges one event at a time, an object
 replacing that event's tabs and null dropping them while events not named
 keep theirs; `workspaceRecency` merges one workspace at a time the same
 way, an instant replacing when it was last opened and null dropping it,
-and the 50 most recent instants are kept. The response is the user as the
+and the 50 most recent instants are kept; a null `changeNotices` turns the
+pop-ups back on. The response is the user as the
 next session read shows it; 400 `invalid_request` for a value of the wrong
 shape (a tag that is not a language tag, a zone that is not an IANA name or
 that the runtime does not know, a clock other than `h12` or `h23`, a week
@@ -60,10 +62,10 @@ collection keys of 1 to 40 characters, event tabs keyed by something other
 than an event id or whose lists are not arrays of up to 40 keys of 1 to 40
 characters, tabs for more than 200 events, or a workspace recency keyed by
 something other than a workspace id or whose value is not an instant with
-its zone). A collection or view key the web app does not know is kept as
+its zone, or a `changeNotices` other than true, false, or null). A collection or view key the web app does not know is kept as
 given and ignored on read. Both backends write through one merging
-function, `chronelle_user_preferences_update` (migrations 0049, 0053, and
-0064).
+function, `chronelle_user_preferences_update` (migrations 0049, 0053, 0064,
+and 0080).
 
 With `ENABLE_WECHAT_AUTH=true`, `POST /api/auth/wechat` accepts
 `{ accessToken, deviceId? }`. The API verifies the end-user token with

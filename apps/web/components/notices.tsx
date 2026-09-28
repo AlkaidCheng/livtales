@@ -29,6 +29,14 @@ export interface PostedNotice {
   readonly onSettle?: () => void;
   /** `danger` for a refusal; a notice is a success by default. */
   readonly tone?: "success" | "danger";
+  /** A notice of the same key replaces the one showing, and its time starts again. */
+  readonly key?: string;
+  /** The person a notice is about, as a face before its message. */
+  readonly face?: { readonly initials: string; readonly tone: number };
+  /** Pressing the message goes to what it is about. */
+  readonly onOpen?: () => void;
+  /** How long it stays; eight seconds by default. */
+  readonly durationMs?: number;
 }
 
 interface NoticeEntry extends PostedNotice {
@@ -77,12 +85,16 @@ export function NoticesProvider({
       if (notice.onSettle !== undefined)
         settles.current.set(id, notice.onSettle);
       setEntries((current) => {
-        const kept = current.slice(1 - shownAtOnce);
-        for (const pushed of current.slice(0, current.length - kept.length))
+        const others =
+          notice.key === undefined
+            ? current
+            : current.filter((entry) => entry.key !== notice.key);
+        const kept = others.slice(1 - shownAtOnce);
+        for (const pushed of others.slice(0, others.length - kept.length))
           settle(pushed.id);
         return [...kept, { ...notice, id, tone: notice.tone ?? "success" }];
       });
-      window.setTimeout(() => dismiss(id), dismissAfterMs);
+      window.setTimeout(() => dismiss(id), notice.durationMs ?? dismissAfterMs);
     },
     [dismiss, settle],
   );
@@ -133,7 +145,29 @@ function NoticeStack({
           key={entry.id}
           role={entry.tone === "danger" ? "alert" : "status"}
         >
-          <span>{entry.message}</span>
+          {entry.face === undefined ? null : (
+            <span
+              aria-hidden="true"
+              className="notice-toast-face"
+              data-tone={entry.face.tone}
+            >
+              {entry.face.initials}
+            </span>
+          )}
+          {entry.onOpen === undefined ? (
+            <span>{entry.message}</span>
+          ) : (
+            <button
+              className="notice-toast-open"
+              onClick={() => {
+                entry.onOpen?.();
+                onDismiss(entry.id, true);
+              }}
+              type="button"
+            >
+              {entry.message}
+            </button>
+          )}
           {entry.action === undefined ? null : (
             <button
               className="notice-toast-action"

@@ -99,6 +99,7 @@ describe("the preferences kept on the account", () => {
       rail: {},
       eventTabs: {},
       workspaceRecency: {},
+      changeNotices: true,
     });
 
     const chosen = await app.inject({
@@ -123,6 +124,7 @@ describe("the preferences kept on the account", () => {
       rail: {},
       eventTabs: {},
       workspaceRecency: {},
+      changeNotices: true,
     });
 
     const session = await app.inject({
@@ -435,6 +437,24 @@ describe("the preferences kept on the account", () => {
     expect(kept["01a0b355-cad8-73d2-89f8-000000000027"]).toBe(
       "2026-01-28T00:00:00Z",
     );
+  });
+
+  it("turns the pop-ups for others' changes off, keeps the choice on the next session, and turns them back on with null", async () => {
+    const signedIn = await signIn();
+    expect(signedIn.user.changeNotices).toBe(true);
+    const patch = (payload: Record<string, unknown>) =>
+      app.inject({
+        method: "PATCH",
+        url: "/api/auth/me",
+        headers: bearer(signedIn.accessToken),
+        payload,
+      });
+    const off = await patch({ changeNotices: false });
+    expect(userResponseSchema.parse(off.json()).changeNotices).toBe(false);
+    expect((await signIn()).user.changeNotices).toBe(false);
+    expect((await patch({ changeNotices: "no" })).statusCode).toBe(400);
+    const on = await patch({ changeNotices: null });
+    expect(userResponseSchema.parse(on.json()).changeNotices).toBe(true);
   });
 
   it("refuses a value that is not a language tag, a zone, a clock, or a week start, and an unauthenticated change", async () => {

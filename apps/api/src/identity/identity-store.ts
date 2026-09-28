@@ -125,6 +125,7 @@ export const searchLimit = 10;
  * `workspaceRecency` merges one workspace at a time the same way: an
  * instant (ISO 8601, kept as written) replaces when the workspace was last
  * opened and null drops it; the most recent `workspaceRecencyLimit` stay.
+ * `changeNotices` null turns the pop-ups back on.
  */
 export interface UserPreferences {
   readonly locale?: string | null | undefined;
@@ -136,6 +137,7 @@ export interface UserPreferences {
     Readonly<Record<string, EventTabsPreferenceRow | null>> | undefined;
   readonly workspaceRecency?:
     Readonly<Record<string, string | null>> | undefined;
+  readonly changeNotices?: boolean | null | undefined;
 }
 
 /** How many events keep tab preferences on one account. */
@@ -364,6 +366,15 @@ export class PostgresIdentityStore implements IdentityStore {
     userId: string,
     preferences: UserPreferences,
   ): Promise<UserRow> {
+    // PostgreSQL would read a word such as "no" as a boolean; the choice is
+    // true, false, or null, as chronelle_user_preferences_update holds it.
+    const notices = preferences.changeNotices;
+    if (
+      notices !== undefined &&
+      notices !== null &&
+      typeof notices !== "boolean"
+    )
+      throw new InvalidRequestError();
     return this.#database.transaction(async (transaction) => {
       const eventTabs =
         preferences.eventTabs === undefined
@@ -397,6 +408,9 @@ export class PostgresIdentityStore implements IdentityStore {
           }),
           ...(eventTabs !== undefined && { eventTabs }),
           ...(workspaceRecency !== undefined && { workspaceRecency }),
+          ...(preferences.changeNotices !== undefined && {
+            changeNotices: preferences.changeNotices ?? true,
+          }),
           updatedAt: sql`GREATEST(now(), ${users.createdAt})`,
         })
         .where(eq(users.id, userId))

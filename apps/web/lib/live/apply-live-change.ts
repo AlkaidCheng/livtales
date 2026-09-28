@@ -113,6 +113,29 @@ function mapChildren(
   return changed ? next : value;
 }
 
+/** The first copy of an object the cache holds, as a list or read returned it. */
+export function heldState(
+  cache: QueryClient,
+  id: string,
+): Resource | undefined {
+  let found: Resource | undefined;
+  const search = (value: unknown, depth: number): void => {
+    if (found !== undefined || depth > searchDepth) return;
+    if (isObjectState(value) && value.id === id) {
+      found = value as unknown as Resource;
+      return;
+    }
+    if (Array.isArray(value)) for (const item of value) search(item, depth + 1);
+    else if (isRecord(value))
+      for (const child of Object.values(value)) search(child, depth + 1);
+  };
+  for (const query of cache
+    .getQueryCache()
+    .findAll({ predicate: (query) => holdsStates(query.queryKey) }))
+    search(query.state.data, 0);
+  return found;
+}
+
 /** The Event a change's page is, or null for a space page. */
 function eventOf(change: { readonly page: string }): string | null {
   return change.page.startsWith("event:") ? change.page.slice(6) : null;

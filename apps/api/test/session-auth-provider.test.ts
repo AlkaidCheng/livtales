@@ -29,6 +29,7 @@ const user: UserRow = {
   rail: {},
   eventTabs: {},
   workspaceRecency: {},
+  changeNotices: true,
   createdAt: now,
   updatedAt: now,
 };
