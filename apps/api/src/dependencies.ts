@@ -19,6 +19,7 @@ import {
   CloudBaseExpenseWriteRepository,
   CloudBaseGrantReadRepository,
   CloudBaseLabelRepository,
+  CloudBaseLiveChangeReadRepository,
   CloudBaseObjectLifecycleWriteRepository,
   CloudBaseObjectMoveRepository,
   CloudBaseObjectReadRepository,
@@ -45,6 +46,7 @@ import {
   EventPlanningObjectService,
   EventPlanningProjectionService,
   LabelService,
+  type LiveChangeReadRepository,
   type ObjectMoveRepository,
   ObjectRecoveryService,
   ObjectRelationService,
@@ -52,6 +54,7 @@ import {
   ObjectRevisionService,
   PersonalViewService,
   PostgresLabelRepository,
+  PostgresLiveChangeReadRepository,
   PostgresObjectMoveRepository,
   PostgresPersonalViewRepository,
   PostgresSectionRepository,
@@ -102,6 +105,7 @@ import {
 } from "./workspaces/membership-store.js";
 import { CloudBaseIdentityStore } from "./identity/cloudbase-identity-store.js";
 import { WorkspaceIdentityService } from "./identity/workspace-identity-service.js";
+import { LiveHub, type LiveHubOptions } from "./live/live-hub.js";
 
 export interface AppDependencies {
   readonly authProvider: AuthProvider;
@@ -133,6 +137,9 @@ export interface AppDependencies {
   readonly members: MembershipStore;
   readonly moves: ObjectMoveRepository;
   readonly storageInventory: StorageInventoryService;
+  /** The confirmed changes of this process and the browsers watching them. */
+  readonly live: LiveHub;
+  readonly liveReads: LiveChangeReadRepository;
 }
 
 export interface AppDependencyOptions {
@@ -151,6 +158,7 @@ export interface AppDependencyOptions {
   /** Enables verified CloudBase-WeChat exchange and explicit account linking. */
   readonly weChatIdentityVerifier?: WeChatIdentityVerifier | undefined;
   readonly friends?: FriendServiceOptions | undefined;
+  readonly live?: LiveHubOptions | undefined;
 }
 
 // The server composes a real sender from its configuration; test
@@ -402,6 +410,11 @@ export function createAppDependencies(
     personShares,
     members,
     moves,
+    live: new LiveHub(options.live),
+    liveReads:
+      options.cloudBaseRdb === undefined
+        ? new PostgresLiveChangeReadRepository(connection.db)
+        : new CloudBaseLiveChangeReadRepository(options.cloudBaseRdb),
     projections: new EventPlanningProjectionService(
       connection.db,
       options.cloudBaseRdb === undefined

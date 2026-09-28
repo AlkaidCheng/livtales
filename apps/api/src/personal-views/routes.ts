@@ -27,13 +27,15 @@ export function registerPersonalViewRoutes(
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(eventViewStateUpdateSchema, request.body);
-      return eventViewStateSchema.parse(
+      const view = eventViewStateSchema.parse(
         await dependencies.personalViews.updateEventView(
           requirePrincipal(request),
           id,
           input,
         ),
       );
+      request.live.view({ event: id });
+      return view;
     },
   );
   app.get(
@@ -59,6 +61,7 @@ export function registerPersonalViewRoutes(
         page,
         input,
       );
+      request.live.view({ page });
       return pageChoicesResponseSchema.parse({ page, choices });
     },
   );

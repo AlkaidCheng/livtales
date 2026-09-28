@@ -184,6 +184,7 @@ export * from "./friends.js";
 export { type HealthStatus, healthStatusSchema } from "./health.js";
 export { apiRequestTimeoutMs, maximumApiBodySizeBytes } from "./http.js";
 export * from "./labels.js";
+export * from "./live.js";
 export * from "./note-list.js";
 export * from "./object-move.js";
 export * from "./person-list.js";

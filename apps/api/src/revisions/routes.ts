@@ -74,6 +74,7 @@ export function registerRevisionRoutes(
         version,
         input,
       );
+      request.live.objects(resource.workspaceId, [resource], "restored");
       return eventPlanningResourceResponseSchema.parse(
         serializeResource(resource),
       );

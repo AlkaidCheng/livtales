@@ -239,7 +239,12 @@ describe.sequential("CloudBase relation writes", () => {
         service.softDelete(context(harness.viewerId), relation.id, 3),
       );
       results.push({
-        removed: { ...removed, id: removed.id === relation.id },
+        removed: {
+          ...removed,
+          id: removed.id === relation.id,
+          sourceObjectId: removed.sourceObjectId === event.id,
+          targetObjectId: removed.targetObjectId === task.id,
+        },
         stale: stale.constructor.name,
         again: [again.constructor.name, again.message],
         recovered: shape(recovered, event.id, task.id),
@@ -250,7 +255,14 @@ describe.sequential("CloudBase relation writes", () => {
     }
     expect(results[1]).toEqual(results[0]);
     expect(results[0]).toMatchObject({
-      removed: { id: true, version: 2, deletedAt: clock() },
+      removed: {
+        id: true,
+        version: 2,
+        deletedAt: clock(),
+        relationType: "includes",
+        sourceObjectId: true,
+        targetObjectId: true,
+      },
       stale: ObjectConflictError.name,
       again: [
         InvalidRelationError.name,

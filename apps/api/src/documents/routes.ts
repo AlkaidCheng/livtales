@@ -143,6 +143,11 @@ export function registerDocumentRoutes(
         mutationContext(request),
         uploadAuthorizationId,
       );
+      request.live.objects(
+        attachment.document.workspaceId,
+        [attachment.document],
+        "created",
+      );
       return reply
         .code(201)
         .send(

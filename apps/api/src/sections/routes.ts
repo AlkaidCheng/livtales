@@ -43,14 +43,17 @@ export function registerSectionRoutes(
     async (request, reply) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(sectionCreateRequestSchema, request.body);
-      const section = await dependencies.sections.createSection(
-        requirePrincipal(request),
-        id,
-        input,
+      const section = sectionResponseSchema.parse(
+        serializeSection(
+          await dependencies.sections.createSection(
+            requirePrincipal(request),
+            id,
+            input,
+          ),
+        ),
       );
-      return reply
-        .code(201)
-        .send(sectionResponseSchema.parse(serializeSection(section)));
+      request.live.section(section);
+      return reply.code(201).send(section);
     },
   );
   app.patch(
@@ -59,12 +62,17 @@ export function registerSectionRoutes(
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(sectionUpdateRequestSchema, request.body);
-      const section = await dependencies.sections.updateSection(
-        requirePrincipal(request),
-        id,
-        input,
+      const section = sectionResponseSchema.parse(
+        serializeSection(
+          await dependencies.sections.updateSection(
+            requirePrincipal(request),
+            id,
+            input,
+          ),
+        ),
       );
-      return sectionResponseSchema.parse(serializeSection(section));
+      request.live.section(section);
+      return section;
     },
   );
   app.delete(
@@ -72,11 +80,21 @@ export function registerSectionRoutes(
     { preHandler: app.authenticate },
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
-      const section = await dependencies.sections.deleteSection(
-        requirePrincipal(request),
-        id,
+      const section = sectionResponseSchema.parse(
+        serializeSection(
+          await dependencies.sections.deleteSection(
+            requirePrincipal(request),
+            id,
+          ),
+        ),
       );
-      return sectionResponseSchema.parse(serializeSection(section));
+      request.live.section(section, { removed: true });
+      // Grants narrowed to the section end with it.
+      request.live.accessChanged({
+        workspaces: [section.workspaceId],
+        grantsOnly: true,
+      });
+      return section;
     },
   );
 }

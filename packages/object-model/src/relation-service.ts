@@ -197,7 +197,15 @@ export class ObjectRelationService {
             expectedVersion,
             deletedAt,
           );
-    return { id: relation.id, version: relation.version, deletedAt };
+    return {
+      id: relation.id,
+      version: relation.version,
+      deletedAt,
+      workspaceId: relation.workspaceId,
+      relationType: relation.relationType,
+      sourceObjectId: relation.sourceObjectId,
+      targetObjectId: relation.targetObjectId,
+    };
   }
 
   async recover(

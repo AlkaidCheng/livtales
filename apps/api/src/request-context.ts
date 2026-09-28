@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { UserPrincipal } from "@livtales/authorization";
 import { z } from "zod";
 import type { FastifyInstance, FastifyRequest } from "fastify";
@@ -48,6 +50,13 @@ export function readBearerToken(
     throw new UnauthenticatedError();
   }
   return match[1];
+}
+
+/** The session a request's bearer token names, as a digest to match it by. */
+export function sessionDigest(request: FastifyRequest): string {
+  return createHash("sha256")
+    .update(readBearerToken(request.headers.authorization))
+    .digest("hex");
 }
 
 function readWorkspaceId(

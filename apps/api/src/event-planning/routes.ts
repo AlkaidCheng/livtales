@@ -125,6 +125,7 @@ function registerTypedObjectRoutes<CreateInput, UpdateInput>(
     async (request, reply) => {
       const input = parseRequest(definition.createSchema, request.body);
       const resource = await definition.create(mutationContext(request), input);
+      request.live.objects(resource.workspaceId, [resource], "created");
       return reply
         .code(201)
         .send(definition.responseSchema.parse(serializeResource(resource)));
@@ -145,6 +146,7 @@ function registerTypedObjectRoutes<CreateInput, UpdateInput>(
       id,
       input,
     );
+    request.live.objects(resource.workspaceId, [resource], "updated");
     return definition.responseSchema.parse(serializeResource(resource));
   });
 }
@@ -159,10 +161,16 @@ export function registerEventPlanningRoutes(
     async (request, reply) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(eventContextCreateRequestSchema, request.body);
+      const context = mutationContext(request);
       const result = await dependencies.eventContexts.create(
-        mutationContext(request),
+        context,
         id,
         input,
+      );
+      request.live.objects(
+        context.principal.workspaceId,
+        [result.resource.id],
+        "created",
       );
       return reply
         .code(201)
@@ -291,11 +299,15 @@ export function registerEventPlanningRoutes(
         objectDeletionQuerySchema,
         request.query,
       );
+      const context = mutationContext(request);
       const deletion = await dependencies.objects.softDelete(
-        mutationContext(request),
+        context,
         id,
         expectedVersion,
       );
+      request.live.objects(context.principal.workspaceId, [id], "trashed", {
+        subtasks: true,
+      });
       return objectDeletionResponseSchema.parse(
         serializeObjectDeletion(deletion),
       );
@@ -329,6 +341,7 @@ export function registerEventPlanningRoutes(
         mutationContext(request),
         { ...input, sourceObjectId: id },
       );
+      request.live.relation(relation, true);
       return reply
         .code(201)
         .send(relationResponseSchema.parse(serializeRelation(relation)));
@@ -349,6 +362,7 @@ export function registerEventPlanningRoutes(
         id,
         expectedVersion,
       );
+      request.live.relation(deletion, false);
       return relationDeletionResponseSchema.parse(
         serializeRelationDeletion(deletion),
       );

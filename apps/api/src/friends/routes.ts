@@ -188,6 +188,8 @@ export function registerFriendRoutes(
         token,
         request.id,
       );
+      // Shares waiting on the invitation are granted to the account now.
+      request.live.accessChanged({ users: [actor.userId] });
       return invitationAcceptResponseSchema.parse({
         friendship: outcome.friendship,
         shared: outcome.shared,
@@ -226,6 +228,8 @@ export function registerFriendRoutes(
         true,
         request.id,
       );
+      // Shares waiting on the request are granted to the account now.
+      request.live.accessChanged({ users: [actor.userId] });
       return friendSchema.parse(friendPayload(connection));
     },
   );
