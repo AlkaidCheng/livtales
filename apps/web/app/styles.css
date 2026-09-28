@@ -9588,6 +9588,18 @@ html:has(.event-create-dialog[open]) {
   content: none;
 }
 
+/* The folded tabs' list is as wide as their names. */
+.event-strip-more .quiet-menu-list {
+  min-width: 0;
+}
+
+/* A phone's tabs sit a little closer, so three fit beside the chip. */
+@media (max-width: 760px) {
+  .event-strip .event-tab {
+    padding-inline: 8px;
+  }
+}
+
 /* The strip and the chips of the view on it stay under the top of the
    screen while the view scrolls: at the window's top on a wide screen,
    under the app bar on a phone. */

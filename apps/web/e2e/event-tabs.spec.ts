@@ -432,3 +432,92 @@ test("opens an event where the account left it, else on its Overview", async ({
     new RegExp(`/events/${walk.id}\\?view=overview$`, "u"),
   );
 });
+
+test("folds a phone's tabs into a short chip, leaves no room for another tab, and lists the folded ones inside the strip @webkit-mobile", async ({
+  page,
+  request,
+}, testInfo) => {
+  test.skip(
+    !testInfo.project.name.endsWith("mobile"),
+    "The fold's widths are a phone's.",
+  );
+  const email = `strip-${randomUUID()}@example.test`;
+  const signedIn = await request.post("/api/auth/development/sign-in", {
+    data: { email, displayName: "Planner" },
+  });
+  expect(signedIn.status()).toBe(200);
+  const headers = {
+    authorization: `Bearer ${(await signedIn.json()).accessToken}`,
+  };
+  const created = await request.post("/api/events", {
+    headers,
+    data: { displayName: "Wedding countdown" },
+  });
+  expect(created.status()).toBe(201);
+  const event = await created.json();
+  // More tabs than any phone's line holds, whatever the fonts' widths.
+  const tabs = await request.patch(`/api/events/${event.id}/view`, {
+    headers,
+    data: {
+      tabs: {
+        order: [
+          "overview",
+          "todos",
+          "calendar",
+          "reminders",
+          "expenses",
+          "timeline",
+          "notes",
+          "people",
+        ],
+        hidden: ["sharing", "removed-links"],
+        removed: ["itinerary", "files"],
+      },
+    },
+  });
+  expect(tabs.status()).toBe(200);
+  await page.goto("/sign-in/development");
+  await page.getByLabel("Name", { exact: true }).fill("Planner");
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page).toHaveURL(/\/events$/u);
+  await page.goto(`/events/${event.id}?view=todos`);
+
+  // The chip is the count alone, and the room left beside the add and
+  // options controls is narrower than the next folded tab would need.
+  const chip = page.getByRole("button", { name: /^\d+ more tabs?$/u });
+  await expect(chip).toHaveText(/^\+\d+$/u);
+  const room = await page.locator(".event-strip").evaluate((strip) => {
+    const end = strip.querySelector(".event-strip-end");
+    const options = strip.querySelector(".event-strip-options");
+    const next = strip.querySelector<HTMLElement>("[data-tab-key][hidden]");
+    if (end === null || options === null || next === null) return null;
+    next.hidden = false;
+    const needed = next.getBoundingClientRect().width;
+    next.hidden = true;
+    return {
+      left:
+        options.getBoundingClientRect().left -
+        end.getBoundingClientRect().right,
+      needed,
+    };
+  });
+  expect(room).not.toBeNull();
+  if (room === null) return;
+  expect(room.left).toBeLessThan(room.needed);
+
+  // The folded tabs' list is as wide as their names and stays inside the
+  // strip, clear of the page's margin.
+  await chip.click();
+  const folded = page.getByRole("menu", { name: /^\d+ more tabs?$/u });
+  await expect(folded.getByRole("menuitem").first()).toBeVisible();
+  const strip = await page.locator(".event-strip").boundingBox();
+  const list = await folded.boundingBox();
+  expect(strip).not.toBeNull();
+  expect(list).not.toBeNull();
+  if (strip === null || list === null) return;
+  expect(list.x).toBeGreaterThanOrEqual(strip.x);
+  expect(list.x + list.width).toBeLessThanOrEqual(strip.x + strip.width);
+  expect(list.width).toBeLessThan(160);
+  await page.screenshot({ path: testInfo.outputPath("phone-fold.png") });
+});
