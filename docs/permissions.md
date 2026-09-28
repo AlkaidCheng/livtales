@@ -102,7 +102,9 @@ assignee. `GET /events/:id/assignees` returns the display name and nickname
 of the Person each Task the viewer may view is assigned to, even where the
 viewer may not open that Person (a guest of an Event reading a card of the
 owner's space); nothing else of the Person is returned, and the Person
-itself stays unavailable.
+itself stays unavailable. In the same way `POST /events/:id/assignees/me`
+names to the caller the Person linked to the caller's own account in the
+Event's workspace, which a guest may not open either.
 
 Document upload authorization requires Edit on the Event, Task, or Expense
 being attached to. The resulting Document inherits that parent's canonical

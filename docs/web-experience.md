@@ -552,7 +552,9 @@ exist), and offers Assign to me, which creates the signed-in user's person on
 first use and marks it "(me)" thereafter. Rows name the assignee under the
 title in both views. On an event shared from another space, the people,
 labels, and choices are that space's, and the tasks name their assignees
-even where the viewer may not open that person's card. The Tasks page filters by assignee from the toolbar:
+even where the viewer may not open that person's card. There a new person
+is added to the event itself, and Assign to me finds the viewer's own
+person in that space, or adds one to the event. The Tasks page filters by assignee from the toolbar:
 Anyone, Me (when the user has a person), or a person by name. A Location
 field in the task editor names where the task happens, as text; rows show it
 under the title ("At ..."), and clearing the field removes it. A task due at

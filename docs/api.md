@@ -510,10 +510,12 @@ in the order sent; an `email` value must be an address), `labelIds` (labels
 of the workspace, returned in name order; an unknown id returns HTTP 400 with
 `labelIds must name labels of this workspace.`), and an optional `userId`
 linking the Person to an account. `userId` must name a member of the
-workspace, of any role, or a friend of one (see Friends), and each account belongs to at most
-one Person of the workspace; a violation returns HTTP 400 with
-`userId must name a member of this workspace or a friend of one.` or
-`userId is already linked to another person.`. The contacts are the only
+workspace, of any role, a friend of one (see Friends), or an account the
+workspace shares with (an unexpired grant on a live object, or the owner's),
+and each account belongs to at most one Person of the workspace; a violation
+returns HTTP 400 with `userId must name a member of this workspace, a friend
+of one, or an account it shares with.` or `userId is already linked to
+another person.`. Deploy migration 0081 before this API. The contacts are the only
 place a Person keeps an address: there is no `email` field on a Person,
 and a request that still sends one is read without it like any unknown
 key. `null` clears the nickname, description, or linked account on an
@@ -553,7 +555,13 @@ collection or, for the Tasks of an Event, from `GET /events/:id/assignees`,
 which names the assignees of the Event's Tasks the viewer may view (each
 person once, `{ id, displayName, nickname }`, in name order) even where the
 viewer may not open the Person, as a guest of the Event may not open a card
-of the owner's space. `GET /tasks?assignee=<personId>` lists only the tasks assigned
+of the owner's space. `POST /events/:id/assignees/me` with
+`{ commandId, displayName }` returns the caller's own Person in the Event's
+workspace the same way (HTTP 200, `{ id, displayName, nickname }`), even one
+the caller may not open, and when there is none adds one inside the Event
+under that name, linked to the caller's account (HTTP 201, the Event's
+people and a live change as `POST /events/:id/resources` makes; Edit on the
+Event is needed). A guest's "Assign to me" uses it. `GET /tasks?assignee=<personId>` lists only the tasks assigned
 to that Person. A Person moved to Trash keeps their tasks; the assignee is not
 part of a revision's restorable content. Deploy migration 0038 before this
 API.
@@ -1032,18 +1040,19 @@ parent-specific endpoint. The full detail endpoint is unchanged.
 Deploy the additive API endpoint before or together with the web bundle that
 uses it; no database migration is required.
 
-| Method | Path                    | Result                                      |
-| ------ | ----------------------- | ------------------------------------------- |
-| `GET`  | `/events/:id/detail`    | Event plus related typed collections        |
-| `GET`  | `/events/:id/todos`     | Included Tasks by due, with `sections`      |
-| `GET`  | `/events/:id/calendar`  | Included scheduled Events                   |
-| `GET`  | `/events/:id/timeline`  | Dated included resources in time order      |
-| `GET`  | `/events/:id/itinerary` | Included scheduled Events                   |
-| `GET`  | `/events/:id/expenses`  | Included Expenses, newest first, `sections` |
-| `GET`  | `/events/:id/reminders` | Included Reminders ordered by trigger time  |
-| `GET`  | `/events/:id/people`    | Included People in name order               |
-| `GET`  | `/events/:id/assignees` | Names of the visible Tasks' assignees       |
-| `GET`  | `/events/:id/notes`     | Included Notes, newest edit first (Notes)   |
+| Method | Path                       | Result                                      |
+| ------ | -------------------------- | ------------------------------------------- |
+| `GET`  | `/events/:id/detail`       | Event plus related typed collections        |
+| `GET`  | `/events/:id/todos`        | Included Tasks by due, with `sections`      |
+| `GET`  | `/events/:id/calendar`     | Included scheduled Events                   |
+| `GET`  | `/events/:id/timeline`     | Dated included resources in time order      |
+| `GET`  | `/events/:id/itinerary`    | Included scheduled Events                   |
+| `GET`  | `/events/:id/expenses`     | Included Expenses, newest first, `sections` |
+| `GET`  | `/events/:id/reminders`    | Included Reminders ordered by trigger time  |
+| `GET`  | `/events/:id/people`       | Included People in name order               |
+| `GET`  | `/events/:id/assignees`    | Names of the visible Tasks' assignees       |
+| `POST` | `/events/:id/assignees/me` | The caller's own Person, found or added     |
+| `GET`  | `/events/:id/notes`        | Included Notes, newest edit first (Notes)   |
 
 Every projection is computed from active relationships and canonical rows. It
 does not create projection-owned data. Every included resource is separately
