@@ -81,6 +81,7 @@ export {
 export * from "./event-context.js";
 export * from "./event-list.js";
 export * from "./event-pages.js";
+export * from "./personal-views.js";
 export {
   type DocumentResponse,
   documentResponseSchema,

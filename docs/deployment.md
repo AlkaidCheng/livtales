@@ -468,6 +468,35 @@ keep working after the migration. On CloudBase, apply it through the console
 SQL editor with the API stopped, then redeploy the API, because readiness
 requires the two functions.
 
+Migration `0079_add_personal_views.sql` keeps each account's own view of an
+Event on the account: `user_event_views` (where the Event was left, the tab
+strip, the page order, and each page component's layout, one row per account
+and Event from the account's first save), `user_component_choices` (what a
+tab or page component was left with, while it differs from the defaults, gone
+with its view), and `user_page_choices` (the choices of the Events, Tasks,
+and People pages). It copies every `users.event_tabs` entry for a live Event
+into a view with the Event's current page order and component layouts;
+`users.event_tabs` and its merge in `chronelle_user_preferences_update` stay
+until a later release. It adds `chronelle_user_event_view_read`,
+`chronelle_user_event_view_save`, `chronelle_user_page_choices_read`, and
+`chronelle_user_page_choices_update`, which the readiness check requires,
+with the helpers `chronelle_user_event_view_json` and
+`chronelle_assert_account_page`; it revokes browser-role execution and grants
+`service_role` execution when those managed roles exist. The keys to `users`
+and `objects` hold writes to both tables until the migration commits, so
+apply 0079 with API writers stopped; it gives up after five seconds waiting
+for a lock.
+
+Apply 0079 after 0078 and before deploying the API. Then reapply the
+PostgreSQL runtime-role script, which grants `SELECT`, `INSERT`, `UPDATE`,
+and `DELETE` on the three tables; a TCP API that reads a view before the
+script runs fails with a permission error. Then deploy the API, and the web
+after it. Older API versions never read the new tables, so they keep working
+after the migration, but tabs an older web saves to `users.event_tabs` after
+the copy do not reach the views. On CloudBase, apply it through the console
+SQL editor with the API stopped, then redeploy the API, because readiness
+requires the four functions.
+
 Enable the WeChat routes only after CloudBase authentication is configured:
 
 ```dotenv

@@ -85,6 +85,14 @@ export {
   type LabelResource,
   type LabelWriteRepository,
 } from "./labels.js";
+export { CloudBasePersonalViewRepository } from "./cloudbase-personal-view-repository.js";
+export type { EventViewWrite, StoredEventView } from "./personal-view-state.js";
+export {
+  PersonalViewService,
+  PostgresPersonalViewRepository,
+  type PersonalViewReadRepository,
+  type PersonalViewWriteRepository,
+} from "./personal-views.js";
 export { CloudBaseSectionRepository } from "./cloudbase-section-repository.js";
 export {
   PostgresSectionRepository,

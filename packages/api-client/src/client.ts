@@ -207,6 +207,15 @@ import {
   objectMovePreviewSchema,
   objectMoveResponseSchema,
   objectMoveTargetsResponseSchema,
+  type AccountPage,
+  type EventLayoutWithViewResponse,
+  type EventViewState,
+  type EventViewStateUpdate,
+  type PageChoicesResponse,
+  type PageChoicesUpdate,
+  eventLayoutWithViewResponseSchema,
+  eventViewStateSchema,
+  pageChoicesResponseSchema,
 } from "@livtales/schemas";
 import type { z } from "zod";
 
@@ -1235,6 +1244,46 @@ export class LivTalesApiClient {
     return this.#request(
       `/api/events/${id}/layout`,
       eventLayoutResponseSchema,
+      jsonRequest(input, "PATCH"),
+    );
+  }
+
+  /** The event's layout with the account's own view of it. */
+  getEventLayoutWithView(id: string): Promise<EventLayoutWithViewResponse> {
+    return this.#request(
+      `/api/events/${id}/layout?include=yours`,
+      eventLayoutWithViewResponseSchema,
+    );
+  }
+
+  /** Saves a change to the account's own view of an event. */
+  updateEventView(
+    id: string,
+    input: EventViewStateUpdate,
+  ): Promise<EventViewState> {
+    return this.#request(
+      `/api/events/${id}/view`,
+      eventViewStateSchema,
+      jsonRequest(input, "PATCH"),
+    );
+  }
+
+  /** The choices the account left a collection page with. */
+  getPageChoices(page: AccountPage): Promise<PageChoicesResponse> {
+    return this.#request(
+      `/api/account/pages/${page}`,
+      pageChoicesResponseSchema,
+    );
+  }
+
+  /** Merges a change into a collection page's choices; null returns a choice to its default. */
+  updatePageChoices(
+    page: AccountPage,
+    input: PageChoicesUpdate,
+  ): Promise<PageChoicesResponse> {
+    return this.#request(
+      `/api/account/pages/${page}`,
+      pageChoicesResponseSchema,
       jsonRequest(input, "PATCH"),
     );
   }

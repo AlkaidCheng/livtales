@@ -26,6 +26,7 @@ import {
   CloudBaseNoteWriteRepository,
   CloudBasePersonReadRepository,
   CloudBasePersonWriteRepository,
+  CloudBasePersonalViewRepository,
   CloudBaseProjectionReadRepository,
   CloudBaseRecoveryReadRepository,
   CloudBaseRelationReadRepository,
@@ -49,8 +50,10 @@ import {
   ObjectRelationService,
   ObjectRestorationService,
   ObjectRevisionService,
+  PersonalViewService,
   PostgresLabelRepository,
   PostgresObjectMoveRepository,
+  PostgresPersonalViewRepository,
   PostgresSectionRepository,
   ReversibleCommandService,
   SectionService,
@@ -121,6 +124,7 @@ export interface AppDependencies {
   readonly recovery: ObjectRecoveryService;
   readonly eventContexts: EventContextService;
   readonly eventLayouts: EventLayoutService;
+  readonly personalViews: PersonalViewService;
   readonly commands: ReversibleCommandService;
   readonly search: CanonicalObjectSearchService;
   readonly shares: ResourceGrantService;
@@ -281,6 +285,23 @@ export function createAppDependencies(
       ? postgresSections
       : cloudBaseSections,
   );
+  const eventLayouts = new EventLayoutService(
+    connection.db,
+    writes.eventLayout,
+    reads?.layouts,
+  );
+  const postgresViews = new PostgresPersonalViewRepository(connection.db);
+  const cloudBaseViews =
+    options.cloudBaseRdb === undefined
+      ? undefined
+      : new CloudBasePersonalViewRepository(options.cloudBaseRdb);
+  const personalViews = new PersonalViewService(
+    eventLayouts,
+    cloudBaseViews ?? postgresViews,
+    cloudBaseViews === undefined || options.cloudBaseWrites !== true
+      ? postgresViews
+      : cloudBaseViews,
+  );
   const storage =
     options.storage ??
     new LocalFilesystemStorageProvider({
@@ -354,11 +375,8 @@ export function createAppDependencies(
       writes.objectLifecycle,
     ),
     eventContexts: new EventContextService(connection.db, writes.eventContext),
-    eventLayouts: new EventLayoutService(
-      connection.db,
-      writes.eventLayout,
-      reads?.layouts,
-    ),
+    eventLayouts,
+    personalViews,
     commands: new ReversibleCommandService(
       connection.db,
       writes.command,

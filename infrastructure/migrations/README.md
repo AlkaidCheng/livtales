@@ -78,3 +78,11 @@ restored from its Trash, taking the workspace row in share mode so they wait
 for a deletion in progress, and session resolution leaves deleted workspaces
 out. Apply it after 0077 with API writers stopped, then deploy the API; the
 runtime role needs no new privilege.
+
+Migration 0079 keeps each account's own view of an Event (`user_event_views`
+and `user_component_choices`) and the choices of the Events, Tasks, and
+People pages (`user_page_choices`), beside the TypeScript repository that
+writes the same rows. It copies each account's `users.event_tabs` entry for a
+live Event into its view of that Event with the Event's current page order
+and component layouts. Apply it after 0078 with API writers stopped, rerun
+the runtime role script for the three tables, then deploy the API.
