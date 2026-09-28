@@ -145,6 +145,15 @@ export interface ProjectionReadRepository {
     principal: UserPrincipal,
     personIds: readonly string[],
   ): Promise<readonly AssigneeName[]>;
+  /**
+   * The live Person linked to the principal's own account in the Event's
+   * workspace, by name, whether or not the principal may open it; null when
+   * there is none. The principal must be able to view the Event.
+   */
+  readLinkedPerson(
+    principal: UserPrincipal,
+    eventId: string,
+  ): Promise<AssigneeName | null>;
   readAttachmentTargets(
     principal: UserPrincipal,
     eventId: string,
@@ -194,6 +203,44 @@ export class PostgresProjectionReadRepository implements ProjectionReadRepositor
           isNull(objects.deletedAt),
         ),
       );
+  }
+
+  readLinkedPerson(
+    principal: UserPrincipal,
+    eventId: string,
+  ): Promise<AssigneeName | null> {
+    return withReadAuthorization(
+      this.#database,
+      async (transaction, authorization) => {
+        await new EventPlanningObjectService({
+          database: transaction,
+          authorization,
+        }).getEvent(principal, eventId);
+        const [person] = await transaction
+          .select({
+            id: objects.id,
+            displayName: objects.displayName,
+            nickname: persons.nickname,
+          })
+          .from(persons)
+          .innerJoin(
+            objects,
+            and(
+              eq(objects.workspaceId, persons.workspaceId),
+              eq(objects.id, persons.objectId),
+            ),
+          )
+          .where(
+            and(
+              eq(persons.workspaceId, principal.workspaceId),
+              eq(persons.userId, principal.userId),
+              isNull(objects.deletedAt),
+            ),
+          )
+          .limit(1);
+        return person ?? null;
+      },
+    );
   }
 
   readAttachmentTargets(
@@ -601,6 +648,17 @@ export class EventPlanningProjectionService {
       sourceEventId: eventId,
       items: [...names].sort(comparePersonNames),
     };
+  }
+
+  /**
+   * The principal's own Person in the Event's workspace, by name, whether
+   * or not the principal may open it; null when there is none.
+   */
+  getLinkedPerson(
+    principal: UserPrincipal,
+    eventId: string,
+  ): Promise<AssigneeName | null> {
+    return this.#projectionReads.readLinkedPerson(principal, eventId);
   }
 
   async getPeople(

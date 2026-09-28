@@ -154,6 +154,34 @@ export class CloudBaseProjectionReadRepository implements ProjectionReadReposito
     });
   }
 
+  async readLinkedPerson(
+    principal: UserPrincipal,
+    eventId: string,
+  ): Promise<AssigneeName | null> {
+    await this.#readRoot(principal, eventId);
+    const people = await this.#client.select<CloudBasePersonRow>("persons", {
+      columns: cloudbasePersonColumns,
+      filters: cloudbaseFilters(
+        ["workspace_id", "eq", principal.workspaceId],
+        ["user_id", "eq", principal.userId],
+      ),
+    });
+    const [row] = await readCloudBaseObjectRows(
+      this.#client,
+      principal,
+      people.map((person) => cloudbaseText(person.object_id, "person id")),
+      ["person"],
+    );
+    if (row === undefined) return null;
+    const id = cloudbaseText(row.id, "person id");
+    const person = people.find((candidate) => candidate.object_id === id);
+    return {
+      id,
+      displayName: cloudbaseText(row.display_name, "person name"),
+      nickname: cloudbaseNullableText(person?.nickname, "person nickname"),
+    };
+  }
+
   async listIncludedResources<Type extends ProjectionObjectType>(
     principal: UserPrincipal,
     eventId: string,

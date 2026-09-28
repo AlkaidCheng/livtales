@@ -97,6 +97,7 @@ function service(
       { id: "ben", displayName: "ben", nickname: null },
       { id: "ana", displayName: "Ana", nickname: "Annie" },
     ]),
+    readLinkedPerson: vi.fn().mockResolvedValue(null),
     readAttachmentTargets: vi.fn().mockResolvedValue({
       event: { id: "root", displayName: "root" },
       included: [],
