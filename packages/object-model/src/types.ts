@@ -437,6 +437,19 @@ export interface PersonResourceProjection {
   readonly sourceEventId: string;
 }
 
+/** A task's assignee as the task names them: the person's name alone. */
+export interface AssigneeName {
+  readonly id: string;
+  readonly displayName: string;
+  readonly nickname: string | null;
+}
+
+/** The people an Event's visible tasks are assigned to, by name. */
+export interface AssigneeProjection {
+  readonly items: readonly AssigneeName[];
+  readonly sourceEventId: string;
+}
+
 export interface TimelineItem {
   readonly canonicalObjectId: string;
   readonly displayName: string;

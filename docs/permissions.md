@@ -97,7 +97,12 @@ remains available in the audit log.
 
 Object references never grant access. APIs, projections, searches, attachment
 URLs, and relation traversal must independently authorize every protected
-resource they return.
+resource they return. One exception is deliberate: a Task names its
+assignee. `GET /events/:id/assignees` returns the display name and nickname
+of the Person each Task the viewer may view is assigned to, even where the
+viewer may not open that Person (a guest of an Event reading a card of the
+owner's space); nothing else of the Person is returned, and the Person
+itself stays unavailable.
 
 Document upload authorization requires Edit on the Event, Task, or Expense
 being attached to. The resulting Document inherits that parent's canonical

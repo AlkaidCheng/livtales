@@ -5,10 +5,10 @@ type ChangedResource = Pick<EventPlanningResourceResponse, "id" | "objectType">;
 
 const projections: Record<ChangedResource["objectType"], readonly string[]> = {
   event: ["detail", "calendar", "timeline", "itinerary", "attachment-targets"],
-  task: ["detail", "todos", "timeline", "attachment-targets"],
+  task: ["detail", "todos", "timeline", "attachment-targets", "assignees"],
   expense: ["detail", "expenses", "timeline", "attachment-targets"],
   reminder: ["detail", "reminders", "timeline"],
-  person: ["detail", "people", "shares"],
+  person: ["detail", "people", "shares", "assignees"],
   note: ["detail", "notes"],
   document: ["detail"],
 };

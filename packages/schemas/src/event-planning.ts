@@ -536,6 +536,19 @@ export const personResourceProjectionResponseSchema = z.object({
   items: z.array(personResponseSchema),
 });
 
+// The people an Event's visible tasks are assigned to, by name alone: a
+// task names its assignee even to a viewer who may not open the person.
+export const assigneeProjectionResponseSchema = z.object({
+  sourceEventId: objectIdSchema,
+  items: z.array(
+    z.object({
+      id: objectIdSchema,
+      displayName: z.string(),
+      nickname: z.string().nullable(),
+    }),
+  ),
+});
+
 export const reminderResourceProjectionResponseSchema = z.object({
   sourceEventId: objectIdSchema,
   items: z.array(reminderResponseSchema),
@@ -614,6 +627,9 @@ export type ReminderResourceProjectionResponse = z.infer<
 >;
 export type PersonResourceProjectionResponse = z.infer<
   typeof personResourceProjectionResponseSchema
+>;
+export type AssigneeProjectionResponse = z.infer<
+  typeof assigneeProjectionResponseSchema
 >;
 export type EventDetailResponse = z.infer<typeof eventDetailResponseSchema>;
 export type TimelineResponse = z.infer<typeof timelineResponseSchema>;

@@ -549,7 +549,11 @@ update (`null` clears it; absent leaves it unchanged); the id must name a live
 Person of the workspace, or the request returns HTTP 400 with
 `assigneeId must name a live person in this workspace.`. Responses carry
 `assigneeId`, null when unassigned; the Person's name comes from the People
-collection. `GET /tasks?assignee=<personId>` lists only the tasks assigned
+collection or, for the Tasks of an Event, from `GET /events/:id/assignees`,
+which names the assignees of the Event's Tasks the viewer may view (each
+person once, `{ id, displayName, nickname }`, in name order) even where the
+viewer may not open the Person, as a guest of the Event may not open a card
+of the owner's space. `GET /tasks?assignee=<personId>` lists only the tasks assigned
 to that Person. A Person moved to Trash keeps their tasks; the assignee is not
 part of a revision's restorable content. Deploy migration 0038 before this
 API.
@@ -1038,6 +1042,7 @@ uses it; no database migration is required.
 | `GET`  | `/events/:id/expenses`  | Included Expenses, newest first, `sections` |
 | `GET`  | `/events/:id/reminders` | Included Reminders ordered by trigger time  |
 | `GET`  | `/events/:id/people`    | Included People in name order               |
+| `GET`  | `/events/:id/assignees` | Names of the visible Tasks' assignees       |
 | `GET`  | `/events/:id/notes`     | Included Notes, newest edit first (Notes)   |
 
 Every projection is computed from active relationships and canonical rows. It

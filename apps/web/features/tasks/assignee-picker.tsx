@@ -7,6 +7,7 @@ import { CountedField } from "../../components/counted-field";
 import { personDisplayName } from "../../lib/person-fields";
 import {
   useCreatePerson,
+  usePersonNames,
   usePersonsQuery,
   useSessionQuery,
 } from "../../lib/queries";
@@ -30,10 +31,9 @@ export function AssigneePicker({
   const t = useTranslations("assignee");
   const [open, setOpen] = useState(false);
   const persons = usePersonsQuery(open || value !== "");
+  const names = usePersonNames(open || value !== "");
   const name =
-    value === ""
-      ? t("unassigned")
-      : (persons.data?.names.get(value) ?? t("assigned"));
+    value === "" ? t("unassigned") : (names?.get(value) ?? t("assigned"));
   return (
     <details
       className="assignee-picker field-wide"

@@ -47,7 +47,7 @@ import {
   type ContextCreateAttempt,
   useCreateTask,
   useLabelsQuery,
-  usePersonsQuery,
+  usePersonNames,
   useRefreshEvent,
   useUpdateTask,
 } from "../../lib/queries";
@@ -166,15 +166,14 @@ function TaskEditor({
   // The comparison names labels and the assignee rather than showing ids;
   // the lists load only once there is a newer version to compare.
   const labelNames = useLabelsQuery(draft.hasNewerVersion).data?.names;
-  const people = usePersonsQuery(draft.hasNewerVersion).data?.items;
+  const personNames = usePersonNames(draft.hasNewerVersion);
   const formatTaskField: FieldFormatter = (key, value) => {
     if (value === "") return undefined;
     if (key === "labels")
       return splitLabelIds(value)
         .map((labelId) => labelNames?.get(labelId) ?? labelId)
         .join(", ");
-    if (key === "assignee")
-      return people?.find((person) => person.id === value)?.displayName;
+    if (key === "assignee") return personNames?.get(value);
     return undefined;
   };
   const t = useTranslations("taskForm");

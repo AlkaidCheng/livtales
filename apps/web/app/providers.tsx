@@ -10,6 +10,7 @@ import { AuthSessionProvider, useAuthSession } from "../lib/auth-session";
 import { CommandHistoryProvider } from "../lib/command-history";
 import { EditorDraftProvider } from "../lib/editor-draft-context";
 import { EventCollectionProvider } from "../lib/event-collection-state";
+import { EventScopeProvider } from "../lib/event-scope";
 import { LiveProvider } from "../lib/live/live-provider";
 import { watchTips } from "../lib/tooltips";
 
@@ -46,21 +47,23 @@ function SessionProviders({ children }: { readonly children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ApiClientProvider>
-        <HistoryProvider>
-          <NoticesProvider>
-            <LiveProvider>
-              <LifecycleProvider>
-                <EditorDraftProvider>
-                  <CommandHistoryProvider>
-                    <EventCollectionProvider>
-                      {children}
-                    </EventCollectionProvider>
-                  </CommandHistoryProvider>
-                </EditorDraftProvider>
-              </LifecycleProvider>
-            </LiveProvider>
-          </NoticesProvider>
-        </HistoryProvider>
+        <EventScopeProvider>
+          <HistoryProvider>
+            <NoticesProvider>
+              <LiveProvider>
+                <LifecycleProvider>
+                  <EditorDraftProvider>
+                    <CommandHistoryProvider>
+                      <EventCollectionProvider>
+                        {children}
+                      </EventCollectionProvider>
+                    </CommandHistoryProvider>
+                  </EditorDraftProvider>
+                </LifecycleProvider>
+              </LiveProvider>
+            </NoticesProvider>
+          </HistoryProvider>
+        </EventScopeProvider>
       </ApiClientProvider>
     </QueryClientProvider>
   );
