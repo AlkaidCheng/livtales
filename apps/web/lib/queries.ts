@@ -61,6 +61,7 @@ import {
 import { isLocale } from "../i18n/locales";
 import { useApiClient } from "./api-context";
 import { useCommandHistory } from "./command-history";
+import { useForeignEvent } from "./event-scope";
 import {
   commandDescription,
   commandHistoryKey,
@@ -92,6 +93,7 @@ export const queryKeys = {
   expenses: (eventId: string) => ["event", eventId, "expenses"] as const,
   reminders: (eventId: string) => ["event", eventId, "reminders"] as const,
   people: (eventId: string) => ["event", eventId, "people"] as const,
+  assignees: (eventId: string) => ["event", eventId, "assignees"] as const,
   notes: (eventId: string, sort: NoteListQuery["sort"]) =>
     ["event", eventId, "notes", sort] as const,
   search: (input: ObjectSearchQueryInput) => ["search", input] as const,
@@ -373,14 +375,30 @@ function selectTaskItems(data: InfiniteData<TaskListResponse>) {
   };
 }
 
+/**
+ * The client for the workspace a page's records live in: the session's, or
+ * on an Event shared from another space, that space's.
+ */
+function usePageClient() {
+  const client = useApiClient();
+  const { credential } = useAuthSession();
+  const foreign = useForeignEvent();
+  return foreign === null
+    ? { client, workspaceId: credential?.workspaceId }
+    : {
+        client: client.inWorkspace(foreign.workspaceId),
+        workspaceId: foreign.workspaceId,
+      };
+}
+
 /** The workspace's labels in name order, by id and as a list. */
 export function useLabelsQuery(enabled = true) {
-  const client = useApiClient();
+  const { client, workspaceId } = usePageClient();
   const { credential } = useAuthSession();
   return useQuery({
     enabled: enabled && credential !== null,
     queryFn: ({ signal }) => client.withSignal(signal).listLabels(),
-    queryKey: [...queryKeys.labels, credential?.workspaceId],
+    queryKey: [...queryKeys.labels, workspaceId],
     select: (page) => ({
       items: page.items,
       names: new Map(page.items.map((label) => [label.id, label.name])),
@@ -393,12 +411,12 @@ export function usePersonsQuery(
   enabled = true,
   input: PersonListQueryInput = {},
 ) {
-  const client = useApiClient();
+  const { client, workspaceId } = usePageClient();
   const { credential } = useAuthSession();
   return useQuery({
     enabled: enabled && credential !== null,
     queryFn: ({ signal }) => client.withSignal(signal).listPersons(input),
-    queryKey: [...queryKeys.persons, credential?.workspaceId, input],
+    queryKey: [...queryKeys.persons, workspaceId, input],
     select: (page) => ({
       items: page.items,
       names: new Map(
@@ -406,6 +424,36 @@ export function usePersonsQuery(
       ),
     }),
   });
+}
+
+/**
+ * Person names by id, for naming assignees: the people the viewer may
+ * open, and on an Event shared from another space, the assignees its tasks
+ * name, whose cards there may stay closed to the viewer.
+ */
+export function usePersonNames(
+  enabled = true,
+): ReadonlyMap<string, string> | undefined {
+  const client = useApiClient();
+  const foreign = useForeignEvent();
+  const people = usePersonsQuery(enabled).data?.names;
+  const assignees = useQuery({
+    enabled: enabled && foreign !== null,
+    queryFn: ({ signal }) =>
+      client.withSignal(signal).getEventAssignees(foreign?.eventId ?? ""),
+    queryKey: queryKeys.assignees(foreign?.eventId ?? ""),
+    select: (projection) =>
+      new Map(
+        projection.items.map((person) => [
+          person.id,
+          personDisplayName(person),
+        ]),
+      ),
+  }).data;
+  if (assignees === undefined) return people;
+  if (people === undefined) return assignees;
+  // The people keep their order, the assignees closed to the viewer after.
+  return new Map([...people, ...assignees]);
 }
 
 /**

@@ -62,6 +62,7 @@ import { formatDateTime, formatTime } from "../../lib/format";
 import { formatMoney, sumMoneyByCurrency } from "../../lib/money";
 import {
   useLabelsQuery,
+  usePersonNames,
   usePersonsQuery,
   useRefreshEvent,
   useSessionQuery,
@@ -70,7 +71,6 @@ import {
 } from "../../lib/queries";
 import { recordComposerKey } from "../../lib/record-composers";
 import type { ReminderFields } from "../../lib/reminder-fields";
-import { personDisplayName } from "../../lib/person-fields";
 import {
   chooseEventTasks,
   defaultEventTaskChoices,
@@ -226,6 +226,7 @@ export function TasksPanel({
   const tree = useMemo(() => deriveTaskTree(tasks), [tasks]);
   const labels = useLabelsQuery();
   const persons = usePersonsQuery();
+  const names = usePersonNames();
   const session = useSessionQuery();
   // The person linked to the signed-in account, when one exists.
   const myPerson = persons.data?.items.find(
@@ -234,7 +235,7 @@ export function TasksPanel({
   );
   const effective = standingChoices(choices, {
     me: myPerson?.id,
-    people: persons.data?.names,
+    people: names,
     labels: labels.data?.names,
   });
   const { show, sort, assignee, label, timed, overdue } = effective;
@@ -264,9 +265,9 @@ export function TasksPanel({
   const openCount = tasks.filter(isOpenTask).length;
   const shownOpen = shownTasks.filter(isOpenTask).length;
   const filterCount = activeFilterCount(effective);
-  const people = (persons.data?.items ?? [])
-    .filter((person) => person.id !== myPersonId)
-    .map((person) => ({ id: person.id, name: personDisplayName(person) }));
+  const people = [...(names ?? [])]
+    .filter(([id]) => id !== myPersonId)
+    .map(([id, name]) => ({ id, name }));
   const filterOptions = useTaskFilterOptions(
     effective,
     {
@@ -281,7 +282,7 @@ export function TasksPanel({
   const chips = useTaskChips(
     effective,
     {
-      person: (id) => persons.data?.names.get(id),
+      person: (id) => names?.get(id),
       label: (id) => labels.data?.names.get(id),
     },
     change,
@@ -302,7 +303,7 @@ export function TasksPanel({
         {
           event,
           labels: labels.data?.names,
-          persons: persons.data?.names,
+          persons: names,
         },
       ),
     view: "todos",
@@ -440,7 +441,7 @@ export function TasksPanel({
           onRefresh={refresh}
           parents={tree.parents}
           period={period}
-          personNames={persons.data?.names}
+          personNames={names}
           progress={tree.progress}
           sections={sections}
           tasks={shownTasks}

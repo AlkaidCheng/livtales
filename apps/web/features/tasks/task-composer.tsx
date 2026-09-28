@@ -30,6 +30,7 @@ import {
   type ContextCreateAttempt,
   useCreateTask,
   useLabelsQuery,
+  usePersonNames,
   usePersonsQuery,
   useUpdateTask,
 } from "../../lib/queries";
@@ -206,16 +207,17 @@ export function TaskComposer({
   const labelNames = useLabelsQuery(
     openChip === "labels" || fields.labels !== "" || draft.hasNewerVersion,
   ).data?.names;
-  const persons = usePersonsQuery(
-    openChip === "assignee" || fields.assignee !== "" || draft.hasNewerVersion,
-  );
+  const readPeople =
+    openChip === "assignee" || fields.assignee !== "" || draft.hasNewerVersion;
+  const persons = usePersonsQuery(readPeople);
+  const personNames = usePersonNames(readPeople);
   const formatTaskField: FieldFormatter = (key, value) => {
     if (value === "") return undefined;
     if (key === "labels")
       return splitLabelIds(value)
         .map((labelId) => labelNames?.get(labelId) ?? labelId)
         .join(", ");
-    if (key === "assignee") return persons.data?.names.get(value);
+    if (key === "assignee") return personNames?.get(value);
     return undefined;
   };
 
@@ -284,7 +286,7 @@ export function TaskComposer({
   const assigneeValue =
     fields.assignee === ""
       ? ""
-      : (persons.data?.names.get(fields.assignee) ?? assigneeT("assigned"));
+      : (personNames?.get(fields.assignee) ?? assigneeT("assigned"));
   const labelIds = splitLabelIds(fields.labels);
   const named = labelIds.flatMap((id) => {
     const name = labelNames?.get(id);

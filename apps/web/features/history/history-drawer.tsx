@@ -17,8 +17,7 @@ import {
   useRestoreRevision,
   useRevisionComparison,
 } from "../../lib/history-queries";
-import { personDisplayName } from "../../lib/person-fields";
-import { useLabelsQuery, usePersonsQuery } from "../../lib/queries";
+import { useLabelsQuery, usePersonNames } from "../../lib/queries";
 import { useSessionDialog } from "../../lib/use-session-dialog";
 
 /** Names for the ids a change carries: people for assignees, labels for label lists. */
@@ -31,15 +30,12 @@ const noNames: ChangeNames = { people: new Map(), labels: new Map() };
 
 /** The workspace's people and labels, by id, so a change reads as names. */
 function useChangeNames(): ChangeNames {
-  const persons = usePersonsQuery();
+  const people = usePersonNames();
   const labels = useLabelsQuery();
-  const people = new Map(
-    (persons.data?.items ?? []).map((person) => [
-      person.id,
-      personDisplayName(person),
-    ]),
-  );
-  return { people, labels: labels.data?.names ?? new Map() };
+  return {
+    people: people ?? new Map(),
+    labels: labels.data?.names ?? new Map(),
+  };
 }
 
 const actionKeys = {

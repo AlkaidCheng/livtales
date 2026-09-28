@@ -25,6 +25,7 @@ import {
   QuietMenu,
 } from "../../components/quiet-menu";
 import { usePageCommandHistory } from "../../lib/command-history";
+import { useEventPageScope } from "../../lib/event-scope";
 import { formatEventSchedule } from "../../lib/event-schedule";
 import { useIsPhone } from "../../lib/use-media";
 import { useEventWorkspaceQueries, useSessionQuery } from "../../lib/queries";
@@ -73,6 +74,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   const [activeTab, setActiveTab] = useEventView();
   const queries = useEventWorkspaceQueries(eventId, activeTab);
   usePageCommandHistory(queries.event.data);
+  useEventPageScope(queries.event.data);
   const canEdit = queries.access.data?.actions.includes("edit") ?? false;
   const pagesState = useEventPagesState(eventId, canEdit, () =>
     setActiveTab("pages"),

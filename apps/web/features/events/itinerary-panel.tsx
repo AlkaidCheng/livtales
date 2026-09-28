@@ -35,7 +35,7 @@ import {
 import { viewsOf } from "../../lib/event-components";
 import { itinerarySheet } from "../../lib/export/sheets";
 import { formatTime } from "../../lib/format";
-import { usePersonsQuery, useUpdateTask } from "../../lib/queries";
+import { usePersonNames, useUpdateTask } from "../../lib/queries";
 import { deriveTaskTree } from "../../lib/task-tree";
 import { LayoutControl, layoutOption } from "./component-frame";
 import { CreateScheduleDialog } from "./create-schedule-dialog";
@@ -287,7 +287,7 @@ function DaySheetView({
 }) {
   const t = useTranslations("itinerary");
   const rows = useTranslations("taskRow");
-  const persons = usePersonsQuery();
+  const personNames = usePersonNames();
   const { mutate: updateTask, isPending } = useUpdateTask();
   const progress = useMemo(() => deriveTaskTree(tasks).progress, [tasks]);
   const empty =
@@ -405,7 +405,7 @@ function DaySheetView({
                   <span className="day-sheet-who">
                     {task.assigneeId === null
                       ? ""
-                      : (persons.data?.names.get(task.assigneeId) ?? "")}
+                      : (personNames?.get(task.assigneeId) ?? "")}
                   </span>
                 </li>
               );
