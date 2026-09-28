@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Browser } from "@playwright/test";
 import { type APIRequestContext, expect, type Page, test } from "./fixtures";
 import { openEventView } from "./helpers/event-view";
+import { showTasks } from "./helpers/view-options";
 
 /** Signs an account in on a fresh browser of its own. */
 async function signedIn(browser: Browser, name: string, email: string) {
@@ -120,7 +121,7 @@ test("keeps each account's own page order and tab choices, and opens a new brows
   const first = await signedIn(browser, "Ana", anaEmail);
   await first.page.goto(`/events/${event.id}?view=todos`);
   await openEventView(first.page, "Tasks");
-  await first.page.getByRole("button", { name: /1 finished/ }).click();
+  await showTasks(first.page, "All");
   await expect(
     first.page.getByRole("button", { name: "Showing finished, remove" }),
   ).toBeVisible();
@@ -146,9 +147,6 @@ test("keeps each account's own page order and tab choices, and opens a new brows
   await expect(pageOrder(second.page)).toHaveText(["Budget", "Plan"]);
   await openEventView(second.page, "Tasks");
   await expect(
-    second.page.getByRole("button", { name: /1 finished/ }),
-  ).toBeVisible();
-  await expect(
     second.page.getByRole("button", { name: "Showing finished, remove" }),
   ).toHaveCount(0);
   await movePageUp(second.page, "Lantern walk", "Plan");
@@ -161,8 +159,8 @@ test("keeps each account's own page order and tab choices, and opens a new brows
   ).toEqual([budget, plan]);
   await second.context.close();
 
-  // A new browser of Ana's opens the event where she left it, in her order
-  // and with her choices.
+  // A new browser of Ana's opens the event where that account left it, in
+  // its order and with its choices.
   const third = await signedIn(browser, "Ana", anaEmail);
   await third.page.goto(`/events/${event.id}`);
   await expect(third.page).toHaveURL(new RegExp(`\\?page=${budget}$`, "u"));

@@ -217,16 +217,18 @@ describe("task controls", () => {
         initial={{
           ...defaultEventTaskChoices,
           label: "urgent",
+          overdue: true,
           sort: "name",
         }}
       />,
     );
+    // The sort names itself on its own control, so it has no chip.
     expect(
       screen
         .getAllByRole("button", { name: /, remove$/ })
         .map((chip) => chip.textContent),
-    ).toEqual(["Label: Urgent×", "Sorted by name×"]);
-    await user.click(screen.getByRole("button", { name: "Filter: 1 filter" }));
+    ).toEqual(["Label: Urgent×", "Overdue×"]);
+    await user.click(screen.getByRole("button", { name: "Filter: 2 filters" }));
     const panel = screen.getByRole("dialog", { name: "Filter" });
     await user.click(within(panel).getByRole("button", { name: /^Label/ }));
     expect(
@@ -236,9 +238,7 @@ describe("task controls", () => {
     expect(within(panel).getByRole("button", { name: /^Label/ })).toHaveFocus();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
-    await user.click(
-      screen.getByRole("button", { name: "Sorted by name, remove" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Overdue, remove" }));
     expect(
       screen
         .getAllByRole("button", { name: /, remove$/ })

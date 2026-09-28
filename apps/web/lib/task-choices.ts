@@ -136,16 +136,14 @@ export function isOpenTask(task: Pick<TaskResponse, "status">): boolean {
 
 /**
  * An Event's tasks as its choices show them, in their order: the filters
- * narrow every task, Show keeps the open ones, all, or the done ones, and
- * `finished` counts the tasks the filters keep that are no longer open,
- * for the list's foot while Show hides them. `me` is the signed-in
- * user's person, for the "me" assignee.
+ * narrow every task and Show keeps the open ones, all, or the done ones.
+ * `me` is the signed-in user's person, for the "me" assignee.
  */
 export function chooseEventTasks(
   tasks: readonly TaskResponse[],
   choices: EventTaskChoices,
   { me, today }: { readonly me: string | undefined; readonly today: DayKey },
-): { readonly shown: TaskResponse[]; readonly finished: number } {
+): { readonly shown: TaskResponse[] } {
   const assignee = choices.assignee === "me" ? me : choices.assignee;
   const matching = tasks.filter((task) => {
     if (choices.label === "none" && task.labelIds.length > 0) return false;
@@ -176,8 +174,5 @@ export function chooseEventTasks(
         ? task.status === "done"
         : true,
   );
-  return {
-    shown: sortTasks(shown, choices.sort),
-    finished: matching.filter((task) => !isOpenTask(task)).length,
-  };
+  return { shown: sortTasks(shown, choices.sort) };
 }

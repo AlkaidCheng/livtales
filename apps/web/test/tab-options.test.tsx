@@ -114,11 +114,17 @@ describe("a tab's options on the strip", () => {
         .getByRole("heading", { level: 2, name: "Tasks" })
         .closest("header"),
     ).toHaveClass("off-screen");
-    // The finished task waits behind the list's foot.
+    // The finished task stays hidden until Show lists it.
     expect(screen.queryByText("Send invitations")).toBeNull();
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: /1 finished/ }));
+    const user = userEvent.setup();
+    await user.click(strip().getByRole("button", { name: "Filter" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Filter" })).getByRole(
+        "radio",
+        { name: "All" },
+      ),
+    );
+    await user.keyboard("{Escape}");
     expect(screen.getByText("Send invitations")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Finished · 1" })).toBeVisible();
     // The Overview has no controls on the strip.
@@ -150,11 +156,9 @@ describe("a tab's options on the strip", () => {
       screen
         .queryAllByRole("button", { name: /, remove$/ })
         .map((chip) => chip.getAttribute("aria-label"));
-    expect(chips()).toEqual([
-      "Showing finished, remove",
-      "Sorted by name, remove",
-    ]);
-    expect(screen.getByRole("button", { name: "Clear all" })).toBeVisible();
+    // The sort shows in its own control, not as a chip.
+    expect(chips()).toEqual(["Showing finished, remove"]);
+    expect(strip().getByRole("button", { name: /By name/ })).toBeVisible();
     await waitFor(async () =>
       expect(
         (await client.getEventLayoutWithView(event.id)).yours.choices,
@@ -165,11 +169,10 @@ describe("a tab's options on the strip", () => {
     // Opened again, the tab is as it was left.
     renderEvent();
     await screen.findByText("Send invitations");
-    expect(chips()).toEqual([
-      "Showing finished, remove",
-      "Sorted by name, remove",
-    ]);
-    await user.click(screen.getByRole("button", { name: "Clear all" }));
+    expect(chips()).toEqual(["Showing finished, remove"]);
+    await user.click(
+      screen.getByRole("button", { name: "Showing finished, remove" }),
+    );
     expect(chips()).toEqual([]);
     expect(screen.queryByText("Send invitations")).toBeNull();
   });

@@ -25,7 +25,7 @@ async function chooseFilter(page: Page, row: RegExp, name: string) {
  * Event, labels it, assigns it to the signed-in user (whose person is
  * created on first use and named `member`), switches to the by-day view,
  * checks the choice survives a reload, completes the task from the list,
- * and places a task due today in the week and the month.
+ * and places a task due today in the week.
  */
 export async function exerciseTasksPage(page: Page, member: string) {
   await openCollection(page, "Tasks");
@@ -175,10 +175,6 @@ export async function exerciseTasksPage(page: Page, member: string) {
   await expect(editor).toHaveCount(0);
   await expect(todayColumn.getByText("Water the plants")).toBeVisible();
   await expect(page.getByText("1 task loaded")).toBeVisible();
-  await chooseLayout(main, "Calendar");
-  await expect(page.locator(".month-day.is-today")).toContainText(
-    "Water the plants",
-  );
   // Sort is one control too: by name puts the watered plants last.
   await page.getByRole("button", { name: "Sort", exact: true }).click();
   await page

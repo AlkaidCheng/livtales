@@ -106,8 +106,6 @@
   :root[data-printing] .access-line,
   :root[data-printing] .event-strip,
   :root[data-printing] .view-chips,
-  :root[data-printing] .finished-foot,
-  :root[data-printing] .finished-head button,
   :root[data-printing] .composition-actions,
   :root[data-printing] .component-toolbar,
   :root[data-printing] .event-component-block:not(:has([data-printing="true"])),

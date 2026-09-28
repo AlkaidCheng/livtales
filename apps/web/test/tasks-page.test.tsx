@@ -11,7 +11,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "../app/providers";
 import { TasksPage } from "../features/tasks/tasks-page";
-import { monthDays } from "../lib/day-placement";
 import { SandboxStore, sandboxWorkspaceId } from "../sandbox/store";
 import { setRowDate } from "./date-rows";
 import {
@@ -141,17 +140,13 @@ describe("TasksPage", () => {
     await waitFor(async () =>
       expect((await keptChoices()).layout).toBe("by-day"),
     );
-    // The week and the calendar ask the server for their days in this time
-    // zone, so the undated task is not in them.
-    await chooseLayout(user, "Calendar");
-    expect(await screen.findByRole("table")).toBeVisible();
-    expect(screen.getAllByRole("cell")).toHaveLength(
-      monthDays(new Date()).length,
-    );
-    expect(screen.queryByRole("region", { name: "No due date" })).toBeNull();
-    await waitFor(async () =>
-      expect((await keptChoices()).layout).toBe("month"),
-    );
+    // Tasks offer no calendar; that is the Calendar component's. The week
+    // asks the server for its days in this time zone.
+    await user.click(screen.getByRole("button", { name: /^Layout: / }));
+    expect(
+      screen.queryByRole("menuitemradio", { name: "Calendar" }),
+    ).toBeNull();
+    await user.keyboard("{Escape}");
     await chooseLayout(user, "By week");
     expect(screen.getByRole("group", { name: "Period" })).toBeVisible();
     await waitFor(() =>
@@ -170,7 +165,7 @@ describe("TasksPage", () => {
       Intl.DateTimeFormat().resolvedOptions().timeZone,
     );
     const ranged = requests.filter((url) => url.includes("dueFrom="));
-    expect(ranged).toHaveLength(2);
+    expect(ranged).toHaveLength(1);
     for (const url of ranged)
       expect(url).toMatch(
         new RegExp(
@@ -179,10 +174,10 @@ describe("TasksPage", () => {
       );
   });
 
-  it("opens on a kept month and loads every page of its days", async () => {
+  it("opens on a kept week and loads every page of its days", async () => {
     await store.fetch("/api/account/pages/tasks", {
       method: "PATCH",
-      body: JSON.stringify({ choices: { layout: "month" } }),
+      body: JSON.stringify({ choices: { layout: "week" } }),
     });
     // More tasks due today than one page holds.
     const today = new Date();
@@ -200,15 +195,14 @@ describe("TasksPage", () => {
         <TasksPage />
       </Providers>,
     );
-    // The sample task two weeks out may or may not fall inside the grid.
-    expect(await screen.findByText(/^5[12] tasks loaded$/)).toBeVisible();
+    expect(await screen.findByText(/^\d+ tasks loaded$/)).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Layout: Calendar" }),
+      screen.getByRole("button", { name: "Layout: By week" }),
     ).toBeVisible();
-    expect(screen.getAllByRole("cell")).toHaveLength(
-      monthDays(new Date()).length,
+    // Every errand due today arrives, past the first page.
+    await waitFor(() =>
+      expect(screen.getAllByText(/^Errand \d+$/)).toHaveLength(51),
     );
-    expect(screen.getByRole("button", { name: "+48 more" })).toBeVisible();
     expect(
       screen.queryByRole("button", { name: /Load more tasks/ }),
     ).toBeNull();
@@ -519,7 +513,7 @@ describe("TasksPage", () => {
     await user.keyboard("{Escape}");
   });
 
-  it("narrows to standalone tasks or one event's, counts the finished ones at the foot, and keeps the choices", async () => {
+  it("narrows to standalone tasks or one event's, shows the finished ones on request, and keeps the choices", async () => {
     const user = userEvent.setup();
     const created = await store.fetch("/api/tasks", {
       method: "POST",
@@ -532,13 +526,16 @@ describe("TasksPage", () => {
       </Providers>,
     );
     expect(await screen.findByText("2 tasks loaded")).toBeVisible();
-    // The finished task waits behind the foot, which shows it after the
-    // open ones.
-    const foot = await screen.findByRole("button", { name: /1 finished/ });
-    await user.click(foot);
+    // Show lists the finished task after the open ones, and its chip sets
+    // Show back.
+    await user.click(screen.getByRole("button", { name: "Filter" }));
+    await showInFilter(user, "All");
+    await user.keyboard("{Escape}");
     expect(await screen.findByText("3 tasks loaded")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Finished · 1" })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Hide" }));
+    await user.click(
+      screen.getByRole("button", { name: "Showing finished, remove" }),
+    );
     expect(await screen.findByText("2 tasks loaded")).toBeVisible();
 
     // From: Standalone asks the server for the tasks outside every event.
@@ -760,7 +757,9 @@ describe("TasksPage", () => {
     );
     expect(screen.queryByRole("menuitem", { name: "Move up" })).toBeNull();
     await user.keyboard("{Escape}");
-    await user.click(screen.getByRole("button", { name: "Hide" }));
+    await user.click(
+      screen.getByRole("button", { name: "Showing finished, remove" }),
+    );
     await screen.findByText("3 tasks loaded");
     // The first row cannot move up; the last cannot move down.
     const first = screen.getByRole("row", { name: /Confirm the garden venue/ });

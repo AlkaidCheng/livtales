@@ -112,17 +112,6 @@ export function NotesPanel({
     <section className="planning-panel panel-column" ref={panel}>
       <ViewHead
         caption={exports("sortOnly", { sort: t(`sorts.${sort}`) })}
-        chips={
-          sort === "edited"
-            ? []
-            : [
-                {
-                  id: "sort",
-                  label: t("sortedByTitle"),
-                  onClear: () => onChangeSort("edited"),
-                },
-              ]
-        }
         controls={
           <div className="head-controls">
             <HeadMenu

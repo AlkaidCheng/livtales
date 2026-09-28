@@ -3480,7 +3480,8 @@ p[role="alert"] {
   right: 0;
   top: 100%;
   width: 200px;
-  z-index: 4;
+  /* Over the event's pinned strip (5) when it opens upward, under sheets. */
+  z-index: 20;
 }
 
 /* The share sheet, under the Share control or a section's head: what is
@@ -3727,6 +3728,12 @@ p[role="alert"] {
   font-size: 0.86rem;
   padding: 9px 8px;
   vertical-align: middle;
+}
+
+/* The list starts under the strip's rule or its own head, so its first row
+   draws no rule above it. */
+.task-table tbody > tr:first-child > td {
+  border-top: 0;
 }
 
 .task-table td:first-child {
@@ -10117,43 +10124,12 @@ html:has(.event-strip-block) {
   outline-offset: 2px;
 }
 
-/* The finished tasks: a quiet foot that counts them while they are
-   hidden, and a heading with Hide over them once shown. */
-.finished-foot {
-  align-items: center;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-  cursor: pointer;
-  display: flex;
-  font: inherit;
-  font-size: 0.8rem;
-  justify-content: space-between;
-  padding: 12px 2px;
-  text-align: start;
-  width: 100%;
-}
-
-.finished-foot-show {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.finished-foot:focus-visible,
-.finished-head button:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
+/* The finished tasks, listed apart under their heading once shown. */
 .finished-tasks {
   margin-top: 18px;
 }
 
 .finished-head {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
   margin-bottom: 2px;
 }
 
@@ -10164,18 +10140,6 @@ html:has(.event-strip-block) {
   letter-spacing: 0.1em;
   margin: 0;
   text-transform: uppercase;
-}
-
-.finished-head button {
-  background: none;
-  border: 0;
-  border-radius: 6px;
-  color: var(--accent);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 4px 2px;
 }
 
 .event-pages {

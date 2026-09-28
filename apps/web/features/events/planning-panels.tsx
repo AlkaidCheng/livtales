@@ -102,7 +102,7 @@ import {
 } from "../sections/section-parts";
 import { useSectionEditing } from "../sections/use-sections";
 import { AddTaskRow } from "../tasks/add-task-row";
-import { FinishedFoot, FinishedHead } from "../tasks/finished-tasks";
+import { FinishedHead } from "../tasks/finished-tasks";
 import {
   activeFilterCount,
   TaskFilterControl,
@@ -322,14 +322,6 @@ export function TasksPanel({
       .map((chip) => chip.label),
   ].join(", ");
   const finishedShown = shownTasks.length - shownOpen;
-  // While Show hides them, the list's foot counts the finished tasks.
-  const finishedFoot =
-    show === "open" && chosen.finished > 0 ? (
-      <FinishedFoot
-        count={chosen.finished}
-        onShow={() => change({ show: "all" })}
-      />
-    ) : null;
 
   return (
     <section className={panelClasses(view)} ref={panel}>
@@ -424,13 +416,9 @@ export function TasksPanel({
           eventId={eventId}
           finishedAfter={
             show === "all" && finishedShown > 0 ? (
-              <FinishedHead
-                count={finishedShown}
-                onHide={() => change({ show: "open" })}
-              />
+              <FinishedHead count={finishedShown} />
             ) : undefined
           }
-          foot={finishedFoot ?? undefined}
           labelNames={labels.data?.names}
           manual={sort === "manual"}
           onAddDetails={setAdding}
@@ -446,7 +434,6 @@ export function TasksPanel({
           view={view}
         />
       )}
-      {shownTasks.length === 0 ? finishedFoot : null}
       {canEdit && editing !== null ? (
         <TaskInspector
           key={editing.id}

@@ -51,11 +51,6 @@
     "noLabel": "No label",
     "label": "Label: {name}",
     "timed": "Has a time",
-    "overdue": "Overdue",
-    "sorted": {
-      "due": "Sorted by due date",
-      "name": "Sorted by name",
-      "updated": "Sorted by last updated"
-    }
+    "overdue": "Overdue"
   }
 }
