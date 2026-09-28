@@ -8,6 +8,7 @@ import {
 } from "./helpers/lifecycle";
 import { chooseRowAction } from "./helpers/row-menu";
 import { openEventView } from "./helpers/event-view";
+import { withoutLiveChanges } from "./helpers/live";
 
 async function signInAs(page: Page, name: string, email: string) {
   await page.goto("/sign-in/development");
@@ -168,6 +169,8 @@ test("compares a stale write side by side and saves each way out @webkit-desktop
       })
     ).json()
   ).resource;
+  // The tabs learn of each other's saves only when a save is refused.
+  await withoutLiveChanges(context);
   await signInAs(page, "Ana", ana.email);
   await openEvent(page, "Harvest supper");
 

@@ -3,6 +3,7 @@ import { expect, test } from "./fixtures";
 import { openEventView } from "./helpers/event-view";
 import { openCollection } from "./helpers/quiet-chrome";
 import { chooseRowAction } from "./helpers/row-menu";
+import { withoutLiveChanges } from "./helpers/live";
 
 test("edits a task row in place: chips, Save, Cancel, a stale save, and the row menu's Edit @webkit-desktop", async ({
   page,
@@ -38,6 +39,8 @@ test("edits a task row in place: chips, Save, Cancel, a stale save, and the row 
   expect(labelled.status()).toBe(201);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  // The edit made elsewhere is learned only when the save is refused.
+  await withoutLiveChanges(page);
 
   await page.goto("/sign-in/development");
   await page.getByLabel("Name", { exact: true }).fill("Planner");
