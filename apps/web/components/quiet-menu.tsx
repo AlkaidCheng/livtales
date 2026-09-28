@@ -30,9 +30,10 @@ const CloseContext = createContext<((returnFocus?: boolean) => void) | null>(
  * run under the bottom (or the phone's rail) and there is room above
  * (`data-place="up"`, which the stylesheet anchors to the control's top),
  * and is capped to the roomier side and scrolls when it fits neither. A
- * list cut off at a side of the viewport swaps its horizontal anchor
- * (`data-align`) when the other edge fits it whole, else keeps its side
- * and is nudged into view.
+ * list cut off at a side swaps its horizontal anchor (`data-align`) when
+ * the other edge fits it whole, else keeps its side and is nudged into
+ * view. The sides are the viewport's, or a clipping ancestor's where that
+ * is narrower.
  */
 export function useMenuPlacement(
   open: boolean,
@@ -51,23 +52,50 @@ export function useMenuPlacement(
     if (fit.side === "above") element.dataset.place = "up";
     capMenu(element, fit.maxHeight);
     const bounds = element.getBoundingClientRect();
-    if (sidewaysOverflow(bounds) === 0) return;
-    const { width } = viewportSize();
-    element.dataset.align = bounds.right > width ? "end" : "start";
-    if (sidewaysOverflow(element.getBoundingClientRect()) === 0) return;
+    const sides = visibleSides(element);
+    if (sidewaysOverflow(bounds, sides) === 0) return;
+    element.dataset.align = bounds.right > sides.right ? "end" : "start";
+    if (sidewaysOverflow(element.getBoundingClientRect(), sides) === 0) return;
     delete element.dataset.align;
     element.style.marginLeft = `${
-      bounds.right > width
-        ? width - bounds.right - menuEdge
-        : menuEdge - bounds.left
+      bounds.right > sides.right
+        ? sides.right - bounds.right - menuEdge
+        : sides.left + menuEdge - bounds.left
     }px`;
   }, [open, menu]);
 }
 
-/** How far a list runs past the viewport's left or right edge. */
-function sidewaysOverflow(bounds: DOMRect): number {
+/**
+ * The left and right edges a list shows between: the viewport's, narrowed
+ * to each ancestor that clips its sideways overflow.
+ */
+function visibleSides(element: HTMLElement): {
+  readonly left: number;
+  readonly right: number;
+} {
+  let left = 0;
+  let right = viewportSize().width;
+  for (
+    let ancestor = element.parentElement;
+    ancestor !== null;
+    ancestor = ancestor.parentElement
+  ) {
+    if (getComputedStyle(ancestor).overflowX === "visible") continue;
+    const box = ancestor.getBoundingClientRect();
+    left = Math.max(left, box.left);
+    right = Math.min(right, box.right);
+  }
+  return { left, right };
+}
+
+/** How far a list runs past the left or right edge it must stay within. */
+function sidewaysOverflow(
+  bounds: DOMRect,
+  sides: { readonly left: number; readonly right: number },
+): number {
   return (
-    Math.max(0, bounds.right - viewportSize().width) + Math.max(0, -bounds.left)
+    Math.max(0, bounds.right - sides.right) +
+    Math.max(0, sides.left - bounds.left)
   );
 }
 

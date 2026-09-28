@@ -1069,8 +1069,9 @@ not yet reviewed the two Chinese catalogs; wording may change.
   A strip the account has arranged keeps its views, and a view the app
   gains later starts in the gallery. A viewer whose share is narrowed to
   some views sees all of them. The strip never wraps: the tabs that do not fit
-  fold, from the end, into one chip ("+N more") that lists them; the current
-  tab never folds. The page heading retains its full name. Above the title,
+  fold, from the end, into one chip ("+N") whose list, as wide as their
+  names, opens under it; the current tab never folds. A phone's tabs sit a
+  little closer, so three fit beside the chip on a common phone. The page heading retains its full name. Above the title,
   a quiet breadcrumb names the event's place: its space as plain text (the
   switcher's title for it, such as "Personal" or the space's name, or
   "Shared with me" for an event reached through a share alone), a slash,
