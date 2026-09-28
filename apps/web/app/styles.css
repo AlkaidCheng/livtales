@@ -10365,6 +10365,14 @@ html:has(.event-strip-block) {
   padding: 4px 6px;
 }
 
+/* A sheet opened from the drawer rises over the drawer's foot, as wide as
+   the drawer, and gives the screen beside it back to the scrim. */
+.bottom-sheet-drawer {
+  border-radius: 18px 18px 16px 0;
+  inset: auto auto 0 0;
+  width: min(300px, 84vw);
+}
+
 /* The sidebar as the phone's drawer: the rail's own layout in a modal
    panel from the left edge, a scrim behind it, the safe areas kept clear. */
 .phone-drawer {

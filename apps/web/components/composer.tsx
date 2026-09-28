@@ -204,7 +204,7 @@ export function Composer({
                 <span>{t("more")}</span>
               </button>
             )}
-            <span aria-hidden="true" className="composer-keys">
+            <span aria-hidden="true" className="composer-keys keyboard-only">
               {t("keys")}
             </span>
             <span className="composer-spacer" />

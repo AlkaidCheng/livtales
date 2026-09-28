@@ -184,7 +184,7 @@ control in the app bar (the current space's mark and name) opens the
 switcher's list as a sheet, without the way
 back the rail's list has; Cmd/Ctrl+Shift+K opens and closes it too. The
 account block at the drawer's foot opens the account sheet over the
-drawer: the account's name and email, Friends (with the requests waiting),
+drawer's foot, as wide as the drawer: the account's name and email, Friends (with the requests waiting),
 Settings, Sign out, then More's entries as a second group of the same menu
 (Trash, Theme, Customize sidebar, Help, and Keyboard shortcuts on a
 keyboard device), so the arrow keys walk the whole list. Dismissing the
@@ -1490,8 +1490,8 @@ keep the dialog through the row menu). The check, the assignee and labels
 at the row's end, and the row menu keep their own actions, and the menu's
 Edit opens the composer too. The composer is a card in the list: the name
 (bold, one line), the description under a dashed rule, then one chip per
-field, and a foot with More, the keys hint "Enter saves, Esc cancels",
-Cancel, and Save (Add task on the add row). A chip is the field's control,
+field, and a foot with More, the keys hint "Enter saves, Esc cancels" (on
+a keyboard device only), Cancel, and Save (Add task on the add row). A chip is the field's control,
 the one the dialog uses, opened under the chip when pressed: Due opens the
 date panel with Time and Repeat at its foot; Assignee lists the space's
 people with Unassigned, a new person, and Assign to me; Labels is the

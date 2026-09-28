@@ -283,7 +283,7 @@ export function MenuItem({
       {icon}
       <span>{children}</span>
       {shortcut === undefined ? null : (
-        <span aria-hidden="true" className="quiet-menu-key">
+        <span aria-hidden="true" className="quiet-menu-key keyboard-only">
           {shortcut.label}
         </span>
       )}

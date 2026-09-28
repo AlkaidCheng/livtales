@@ -22,11 +22,13 @@ export function BottomSheet({
   open,
   label,
   onClose,
+  className,
   children,
 }: {
   readonly open: boolean;
   readonly label: string;
   readonly onClose: () => void;
+  readonly className?: string | undefined;
   readonly children: ReactNode;
 }) {
   const t = useTranslations("common");
@@ -56,7 +58,9 @@ export function BottomSheet({
   return (
     <dialog
       ref={dialog}
-      className="bottom-sheet"
+      className={
+        className === undefined ? "bottom-sheet" : `bottom-sheet ${className}`
+      }
       aria-label={label}
       onCancel={(event) => {
         event.preventDefault();

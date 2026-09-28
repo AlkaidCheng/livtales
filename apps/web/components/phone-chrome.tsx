@@ -45,7 +45,8 @@ type Sheet = "drawer" | "workspace" | "account" | "theme";
  * the account block as the rail's foot shows it (the avatar, the
  * account's name, and the current space). A long press on a collection
  * enters customization, and the Collections header offers Done until it
- * is left. The account block opens the account sheet over the drawer:
+ * is left. The account block opens the account sheet over the drawer's
+ * foot, as wide as the drawer:
  * Friends, Settings, Sign out, and what More offers under them (Trash,
  * Theme, Customize sidebar, Help, and Keyboard shortcuts on a keyboard
  * device). Dismissing that sheet, or Theme's from it, returns to the
@@ -238,6 +239,7 @@ export function PhoneChrome({
         </div>
       </BottomSheet>
       <BottomSheet
+        className="bottom-sheet-drawer"
         open={sheet === "account"}
         label={account("menu")}
         onClose={backToDrawer}
@@ -282,6 +284,7 @@ export function PhoneChrome({
         </div>
       </BottomSheet>
       <BottomSheet
+        className="bottom-sheet-drawer"
         open={sheet === "theme"}
         label={theme("title")}
         onClose={backToDrawer}
