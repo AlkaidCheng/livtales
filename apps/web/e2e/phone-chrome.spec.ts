@@ -271,7 +271,8 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
   await expect(workspaceControl(page)).toContainText("Personal");
 
   // The account block at the drawer's foot opens the account sheet over
-  // the drawer: the account's name and email, Friends, Settings, Sign out,
+  // the drawer's foot, as wide as the drawer: the account's name and
+  // email, Friends, Settings, Sign out,
   // then More's entries under them; no shortcuts entry, as a phone has no
   // keyboard to list them for. Escape leads back to the drawer. Customize
   // sidebar leaves the drawer open, customizing; Theme opens its own
@@ -282,6 +283,17 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
   await expect(account).toBeVisible();
   await expect(account).toBeInViewport();
   await expect(drawer(page)).toBeVisible();
+  const accountSheet = page.getByRole("dialog", {
+    name: "Account",
+    exact: true,
+  });
+  const drawerBox = await boxOf(drawer(page));
+  const sheetBox = await boxOf(accountSheet);
+  expect(Math.round(sheetBox.x)).toBe(Math.round(drawerBox.x));
+  expect(Math.round(sheetBox.width)).toBe(Math.round(drawerBox.width));
+  expect(Math.round(await bottom(accountSheet))).toBe(
+    Math.round(await bottom(drawer(page))),
+  );
   await expect(page.locator(".sheet-identity")).toContainText("Ben Wu");
   await expect(page.locator(".sheet-identity")).toContainText(benEmail);
   // Safari on an iPhone offers Install app (the home-screen steps) too.
@@ -318,6 +330,10 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
   const theme = page.getByRole("dialog", { name: "Theme", exact: true });
   await expect(theme).toBeVisible();
   await expect(theme).toBeInViewport();
+  expect(Math.round((await boxOf(theme)).width)).toBe(
+    Math.round(drawerBox.width),
+  );
+  await page.screenshot({ path: testInfo.outputPath("theme-sheet.png") });
   // The sheet holds the palette and add button tiles; a shape's styles
   // close alone, leaving the sheet open.
   await expect(
