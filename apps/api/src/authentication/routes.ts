@@ -22,7 +22,7 @@ import {
   SearchLimitError,
   UnauthenticatedError,
 } from "../errors.js";
-import { readBearerToken } from "../request-context.js";
+import { readBearerToken, sessionDigest } from "../request-context.js";
 import { parseRequest } from "../request-validation.js";
 import {
   developmentIdentity,
@@ -238,6 +238,7 @@ export function registerSessionRoutes(
         readBearerToken(request.headers.authorization),
         request.id,
       );
+      request.live.signedOut(sessionDigest(request));
       return sessionRevocationResponseSchema.parse({
         revoked: revoked ? 1 : 0,
       });
@@ -255,6 +256,7 @@ export function registerSessionRoutes(
         request.identitySession.user.id,
         request.id,
       );
+      request.live.signedOut(null);
       return sessionRevocationResponseSchema.parse({ revoked });
     },
   );

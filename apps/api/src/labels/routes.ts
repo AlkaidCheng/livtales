@@ -39,13 +39,16 @@ export function registerLabelRoutes(
     { preHandler: app.authenticate },
     async (request, reply) => {
       const input = parseRequest(labelCreateRequestSchema, request.body);
-      const label = await dependencies.labels.createLabel(
-        requirePrincipal(request),
-        input.name,
+      const label = labelResponseSchema.parse(
+        serializeLabel(
+          await dependencies.labels.createLabel(
+            requirePrincipal(request),
+            input.name,
+          ),
+        ),
       );
-      return reply
-        .code(201)
-        .send(labelResponseSchema.parse(serializeLabel(label)));
+      request.live.label(label);
+      return reply.code(201).send(label);
     },
   );
   app.patch(
@@ -54,13 +57,18 @@ export function registerLabelRoutes(
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(labelUpdateRequestSchema, request.body);
-      const label = await dependencies.labels.updateLabel(
-        requirePrincipal(request),
-        id,
-        input.expectedVersion,
-        input.name,
+      const label = labelResponseSchema.parse(
+        serializeLabel(
+          await dependencies.labels.updateLabel(
+            requirePrincipal(request),
+            id,
+            input.expectedVersion,
+            input.name,
+          ),
+        ),
       );
-      return labelResponseSchema.parse(serializeLabel(label));
+      request.live.label(label);
+      return label;
     },
   );
   app.delete(
@@ -72,12 +80,17 @@ export function registerLabelRoutes(
         labelDeleteQuerySchema,
         request.query,
       );
-      const label = await dependencies.labels.deleteLabel(
-        requirePrincipal(request),
-        id,
-        expectedVersion,
+      const label = labelResponseSchema.parse(
+        serializeLabel(
+          await dependencies.labels.deleteLabel(
+            requirePrincipal(request),
+            id,
+            expectedVersion,
+          ),
+        ),
       );
-      return labelResponseSchema.parse(serializeLabel(label));
+      request.live.label(label, { removed: true });
+      return label;
     },
   );
 }

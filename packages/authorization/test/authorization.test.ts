@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import {
   AuthorizationDeniedError,
   AuthorizationService,
+  grantReaches,
   roleAllows,
   type AuthorizationStore,
   type ResourceRef,
@@ -30,6 +31,51 @@ describe("roleAllows", () => {
     expect(roleAllows("owner", "recover")).toBe(true);
     expect(roleAllows("editor", "recover")).toBe(false);
     expect(roleAllows("viewer", "recover")).toBe(false);
+  });
+});
+
+describe("grantReaches", () => {
+  const event = "00000000-0000-7000-8000-00000000000e";
+  const section = "00000000-0000-7000-8000-00000000000f";
+  const task = {
+    id: "00000000-0000-7000-8000-000000000011",
+    objectType: "task",
+    permissionScopeId: event,
+    sectionId: section,
+  };
+
+  it("reaches the record a grant names, whatever its narrowing", () => {
+    expect(
+      grantReaches(
+        { resourceId: task.id, scope: "expenses", sectionId: null },
+        task,
+      ),
+    ).toBe(true);
+  });
+
+  it("reaches records of the scope a grant names where its narrowing admits them", () => {
+    const on = (
+      scope: "all" | "todos" | "expenses",
+      sectionId: string | null,
+    ) => grantReaches({ resourceId: event, scope, sectionId }, task);
+    expect(on("all", null)).toBe(true);
+    expect(on("todos", null)).toBe(true);
+    expect(on("todos", section)).toBe(true);
+    expect(on("todos", "00000000-0000-7000-8000-000000000012")).toBe(false);
+    expect(on("expenses", null)).toBe(false);
+  });
+
+  it("does not reach a record of another scope", () => {
+    expect(
+      grantReaches(
+        {
+          resourceId: "00000000-0000-7000-8000-000000000013",
+          scope: "all",
+          sectionId: null,
+        },
+        task,
+      ),
+    ).toBe(false);
   });
 });
 

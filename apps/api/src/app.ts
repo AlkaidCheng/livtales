@@ -18,6 +18,7 @@ import { registerEventPlanningRoutes } from "./event-planning/routes.js";
 import { registerFriendRoutes } from "./friends/routes.js";
 import { httpServerOptions, registerHttpBoundary } from "./http-boundary.js";
 import { registerLabelRoutes } from "./labels/routes.js";
+import { registerLive } from "./live/routes.js";
 import { registerMoveRoutes } from "./moves/routes.js";
 import { registerPersonalViewRoutes } from "./personal-views/routes.js";
 import { registerSectionRoutes } from "./sections/routes.js";
@@ -37,6 +38,7 @@ export function buildApp(
   registerHttpBoundary(app);
 
   registerRequestContext(app, dependencies);
+  registerLive(app, dependencies);
   registerSessionRoutes(app, {
     identity: dependencies.identity,
     sessions: dependencies.sessions,

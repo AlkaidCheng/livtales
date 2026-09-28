@@ -91,7 +91,9 @@ export function registerWorkspaceRoutes(
     "/api/workspaces/current",
     { preHandler: app.authenticate },
     async (request, reply) => {
-      await dependencies.members.delete(actorOf(request), request.id);
+      const actor = actorOf(request);
+      await dependencies.members.delete(actor, request.id);
+      request.live.accessChanged({ workspaces: [actor.workspaceId] });
       return reply.code(204).send();
     },
   );
@@ -102,6 +104,7 @@ export function registerWorkspaceRoutes(
     async (request) => {
       const actor = actorOf(request);
       await dependencies.members.leave(actor, request.id);
+      request.live.accessChanged({ users: [actor.userId] });
       return workspaceLeaveResponseSchema.parse({
         userId: actor.userId,
         left: true,
@@ -131,6 +134,7 @@ export function registerWorkspaceRoutes(
         input.role,
         request.id,
       );
+      request.live.accessChanged({ users: [member.userId] });
       return reply
         .code(201)
         .send(workspaceMemberSchema.parse(memberPayload(member)));
@@ -168,6 +172,7 @@ export function registerWorkspaceRoutes(
         request.params,
       );
       await dependencies.members.remove(actorOf(request), userId, request.id);
+      request.live.accessChanged({ users: [userId] });
       return workspaceMemberRemovalResponseSchema.parse({
         userId,
         removed: true,

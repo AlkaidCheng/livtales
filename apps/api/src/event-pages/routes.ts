@@ -45,13 +45,16 @@ export function registerEventPageRoutes(
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(eventLayoutRestoreSchema, request.body);
-      return eventLayoutResponseSchema.parse(
+      const principal = requirePrincipal(request);
+      const layout = eventLayoutResponseSchema.parse(
         await dependencies.eventLayouts.restore(
-          { principal: requirePrincipal(request), requestId: request.id },
+          { principal, requestId: request.id },
           id,
           input,
         ),
       );
+      request.live.layout(principal.workspaceId, id, layout.version);
+      return layout;
     },
   );
   // `include=yours` adds the account's own view; without it the response
@@ -81,13 +84,16 @@ export function registerEventPageRoutes(
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(eventLayoutUpdateSchema, request.body);
-      return eventLayoutResponseSchema.parse(
+      const principal = requirePrincipal(request);
+      const layout = eventLayoutResponseSchema.parse(
         await dependencies.eventLayouts.update(
-          { principal: requirePrincipal(request), requestId: request.id },
+          { principal, requestId: request.id },
           id,
           input,
         ),
       );
+      request.live.layout(principal.workspaceId, id, layout.version);
+      return layout;
     },
   );
 }

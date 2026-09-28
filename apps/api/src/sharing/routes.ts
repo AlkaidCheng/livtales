@@ -144,6 +144,7 @@ export function registerSharingRoutes(
         mutationContext(request),
         input,
       );
+      request.live.accessChanged({ users: [grant.principal.id] });
       return reply
         .code(201)
         .send(shareResponseSchema.parse(serializeShare(grant)));
@@ -155,10 +156,12 @@ export function registerSharingRoutes(
     { preHandler: app.authenticate },
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
-      const revoked = await dependencies.shares.revoke(
-        mutationContext(request),
-        id,
-      );
+      const context = mutationContext(request);
+      const revoked = await dependencies.shares.revoke(context, id);
+      request.live.accessChanged({
+        workspaces: [context.principal.workspaceId],
+        grantsOnly: true,
+      });
       return shareRevocationResponseSchema.parse({
         id: revoked.id,
         revokedAt: revoked.revokedAt.toISOString(),
@@ -173,10 +176,9 @@ export function registerSharingRoutes(
     { preHandler: app.authenticate },
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
-      const left = await dependencies.shares.leave(
-        mutationContext(request),
-        id,
-      );
+      const context = mutationContext(request);
+      const left = await dependencies.shares.leave(context, id);
+      request.live.accessChanged({ users: [context.principal.userId] });
       return shareLeaveResponseSchema.parse({
         resourceId: left.resourceId,
         grantIds: left.grantIds,
@@ -199,6 +201,7 @@ export function registerSharingRoutes(
         id,
         input,
       );
+      request.live.objects(resource.workspaceId, [resource], "updated");
       return eventPlanningResourceResponseSchema.parse(
         serializeResource(resource),
       );

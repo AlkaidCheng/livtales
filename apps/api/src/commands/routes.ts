@@ -1,5 +1,6 @@
 import type { ReversibleCommandService } from "@livtales/object-model";
 import {
+  type CommandReceipt,
   commandExecuteRequestSchema,
   commandTransitionRequestSchema,
   commandReceiptSchema,
@@ -21,6 +22,25 @@ const followsEditedObject = (request: FastifyRequest) =>
     ?.edits?.[0]?.objectId;
 const followsNamedObject = (request: FastifyRequest) =>
   (request.query as { objectId?: unknown } | null | undefined)?.objectId;
+
+const causes = {
+  execute: "updated",
+  undo: "undone",
+  redo: "redone",
+} as const;
+
+/** Reports the objects a command changed, in the workspace it ran in. */
+function reportReceipt(
+  request: FastifyRequest,
+  receipt: CommandReceipt,
+): CommandReceipt {
+  request.live.objects(
+    requirePrincipal(request).workspaceId,
+    receipt.objects.map((object) => object.id),
+    causes[receipt.direction],
+  );
+  return receipt;
+}
 
 export function registerCommandRoutes(
   app: FastifyInstance,
@@ -45,10 +65,13 @@ export function registerCommandRoutes(
     },
     async (request) => {
       const input = parseRequest(commandExecuteRequestSchema, request.body);
-      return commandReceiptSchema.parse(
-        await dependencies.commands.execute(
-          { principal: requirePrincipal(request), requestId: request.id },
-          input,
+      return reportReceipt(
+        request,
+        commandReceiptSchema.parse(
+          await dependencies.commands.execute(
+            { principal: requirePrincipal(request), requestId: request.id },
+            input,
+          ),
         ),
       );
     },
@@ -65,10 +88,13 @@ export function registerCommandRoutes(
           commandTransitionRequestSchema,
           request.body,
         );
-        return commandReceiptSchema.parse(
-          await dependencies.commands[direction](
-            { principal: requirePrincipal(request), requestId: request.id },
-            input,
+        return reportReceipt(
+          request,
+          commandReceiptSchema.parse(
+            await dependencies.commands[direction](
+              { principal: requirePrincipal(request), requestId: request.id },
+              input,
+            ),
           ),
         );
       },

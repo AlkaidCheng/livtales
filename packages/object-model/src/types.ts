@@ -367,7 +367,10 @@ export interface CreateObjectRelationInput {
   readonly targetObjectId: string;
 }
 
-export interface RelationDeletionResource {
+export interface RelationDeletionResource extends Pick<
+  ObjectRelationResource,
+  "workspaceId" | "relationType" | "sourceObjectId" | "targetObjectId"
+> {
   readonly version: number;
   readonly deletedAt: Date;
   readonly id: string;

@@ -31,7 +31,11 @@ export function serializeObjectDeletion(deletion: ObjectDeletionResource) {
 }
 
 export function serializeRelationDeletion(deletion: RelationDeletionResource) {
-  return { ...deletion, deletedAt: deletion.deletedAt.toISOString() };
+  return {
+    id: deletion.id,
+    version: deletion.version,
+    deletedAt: deletion.deletedAt.toISOString(),
+  };
 }
 
 export function serializeEventDetail(projection: EventDetailProjection) {

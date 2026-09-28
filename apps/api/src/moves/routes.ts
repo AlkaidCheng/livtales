@@ -58,11 +58,17 @@ export function registerMoveRoutes(
     async (request) => {
       const { id } = parseRequest(objectIdParamsSchema, request.params);
       const input = parseRequest(objectMoveRequestSchema, request.body);
+      const principal = requirePrincipal(request);
       const { event, move } = await dependencies.moves.move(
-        { principal: requirePrincipal(request), requestId: request.id },
+        { principal, requestId: request.id },
         id,
         input,
       );
+      // Everything shown on the moved Event's pages, and what stayed
+      // behind, is read again with the access of its new place.
+      request.live.accessChanged({
+        workspaces: [principal.workspaceId, event.workspaceId],
+      });
       return objectMoveResponseSchema.parse({
         event: serializeResource(event),
         move,

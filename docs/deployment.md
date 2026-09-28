@@ -827,12 +827,20 @@ or certify development authentication for public use.
   ID. It leaves response framing to the web server, omitting upstream encoding
   and length headers because fetch can decompress the response body.
 - The proxy starts one 30-second deadline at route entry, covering incoming
-  body reads and upstream work, including streamed responses. A deadline before
+  body reads and upstream work, including streamed responses. The live stream
+  (`GET /api/live`) is the exception: it has no deadline, is sent with
+  `Cache-Control: private, no-cache, no-transform` and `X-Accel-Buffering: no`,
+  and ends when the browser leaves. Ingress must pass `text/event-stream`
+  through without buffering and keep an idle connection open for at least 30
+  seconds (the API writes a keep-alive line every 25 seconds). A deadline before
   response headers produces 504; an observed client cancellation produces 408;
   unreachable upstreams produce 503. Errors omit internal addresses and exception
   details. After headers are sent, cancellation terminates the response stream.
   A dispatched mutation may already have committed: retain existing command IDs
   and expected versions, refresh state, and do not retry as a fresh operation.
+- Run the API as a single instance (minimum and maximum 1): live changes are
+  announced from its memory, and a second instance would not hear the first
+  one's changes.
 - API and proxy permit 1 MiB ordinary request bodies and 25 MiB on the raw file
   upload route. The API's native multipart route permits one 9 MiB file plus
   64 KiB of framing. The proxy counts actual bytes, validates declared length, and

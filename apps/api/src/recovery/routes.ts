@@ -53,6 +53,9 @@ export function registerRecoveryRoutes(
         id,
         input,
       );
+      request.live.objects(saved.workspaceId, [saved], "recovered", {
+        subtasks: true,
+      });
       return eventPlanningResourceResponseSchema.parse(
         serializeResource(saved),
       );
@@ -89,6 +92,7 @@ export function registerRecoveryRoutes(
         id,
         input.expectedVersion,
       );
+      request.live.relation(relation, true);
       return relationResponseSchema.parse(serializeRelation(relation));
     },
   );

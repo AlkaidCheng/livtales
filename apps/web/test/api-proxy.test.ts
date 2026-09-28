@@ -269,6 +269,7 @@ describe("same-origin API proxy", () => {
       headers: {
         authorization: "Bearer test-session",
         "x-workspace-id": "workspace",
+        "x-livtales-tab": "tab-desk-1",
         "content-type": "application/json",
         cookie: "unrelated=value",
       },
@@ -281,6 +282,7 @@ describe("same-origin API proxy", () => {
     const headers = new Headers(options?.headers);
     expect(headers.get("authorization")).toBe("Bearer test-session");
     expect(headers.get("x-workspace-id")).toBe("workspace");
+    expect(headers.get("x-livtales-tab")).toBe("tab-desk-1");
     expect(headers.has("cookie")).toBe(false);
     expect(options).toMatchObject({
       method: "PATCH",
@@ -291,6 +293,36 @@ describe("same-origin API proxy", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(await response.json()).toEqual({ version: 2 });
     expect(response.headers.get("x-request-id")).toBe("server-generated-id");
+  });
+  it("keeps the live stream open past the request deadline and passes it on unbuffered", async () => {
+    const timeout = vi.spyOn(AbortSignal, "timeout");
+    const client = new AbortController();
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      new Response("event: ready\ndata: {}\n\n", {
+        headers: {
+          "content-type": "text/event-stream; charset=utf-8",
+          "cache-control": "private, no-cache, no-transform",
+        },
+      }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const response = await GET(
+      new NextRequest("http://localhost:3000/api/live", {
+        signal: client.signal,
+      }),
+      { params: Promise.resolve({ path: ["live"] }) },
+    );
+    expect(timeout).not.toHaveBeenCalled();
+    expect(response.headers.get("content-type")).toBe(
+      "text/event-stream; charset=utf-8",
+    );
+    expect(response.headers.get("cache-control")).toBe(
+      "private, no-cache, no-transform",
+    );
+    expect(response.headers.get("x-accel-buffering")).toBe("no");
+    expect(await response.text()).toBe("event: ready\ndata: {}\n\n");
+    client.abort();
+    expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   });
   it("returns a safe structured error when the upstream is unavailable", async () => {
     vi.stubGlobal(

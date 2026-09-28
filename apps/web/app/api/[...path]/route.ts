@@ -18,21 +18,31 @@ const forwardedRequestHeaders = [
   "authorization",
   "content-type",
   "x-workspace-id",
+  "x-livtales-tab",
 ] as const;
+
+/** The live stream stays open for minutes, so it has no deadline. */
+function isLiveStream(method: string, path: readonly string[]): boolean {
+  return method === "GET" && path.length === 1 && path[0] === "live";
+}
 
 async function forward(
   request: NextRequest,
   context: { readonly params: Promise<{ path: string[] }> },
 ): Promise<Response> {
-  const signal = AbortSignal.any([
-    request.signal,
-    AbortSignal.timeout(apiRequestTimeoutMs),
-  ]);
+  let signal = request.signal;
   let response: Response;
   let route = "";
+  let live = false;
   try {
     const { path } = await context.params;
     route = path.join("/");
+    live = isLiveStream(request.method, path);
+    if (!live)
+      signal = AbortSignal.any([
+        request.signal,
+        AbortSignal.timeout(apiRequestTimeoutMs),
+      ]);
     signal.throwIfAborted();
     if (
       path.some(
@@ -113,7 +123,12 @@ async function forward(
       responseHeaders.set(name, value);
     }
   }
-  responseHeaders.set("cache-control", "private, no-store");
+  // The stream's events are written as they happen: nothing on the way
+  // may hold, compress, or keep them.
+  if (live) {
+    responseHeaders.set("cache-control", "private, no-cache, no-transform");
+    responseHeaders.set("x-accel-buffering", "no");
+  } else responseHeaders.set("cache-control", "private, no-store");
   const cookieOptions = { secure: request.nextUrl.protocol === "https:" };
 
   if (endsSession(request.method, route)) {

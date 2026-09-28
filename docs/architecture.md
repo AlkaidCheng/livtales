@@ -187,6 +187,22 @@ repeated role lookups for the same canonical ID are memoized inside that
 read-only snapshot, and there is no cross-request permission cache. See
 [Authorization performance](authorization-performance.md) for query budgets.
 
+Confirmed changes reach the pages that show them through an in-process
+hub in the API (`apps/api/src/live`). Each mutating route reports what it
+changed on the request; once the response is sent, the report becomes one
+numbered announcement, read only while some page of the space is watched:
+the states the route did not already hold, and the Events showing them, from
+`LiveChangeReadRepository` (a PostgreSQL implementation and a gateway one,
+selected with the other reads). Announcements are kept in memory for replay
+and filtered per viewer by `grantReaches`, the rule the role queries apply in
+SQL, over the viewer's membership and grants read when the page is first
+watched; a change to access resets the affected pages, which are then
+resolved again. Browsers hold one server-sent event stream, or poll the same
+buffer. The hub has no store and no relay between processes, so the API runs
+as one instance; a relay (PostgreSQL notifications on the direct path, a
+revision poll on the gateway) is required before a second one. See
+[Live changes](api.md#live-changes).
+
 `ObjectRestorationService` owns typed comparison, preview, and content
 restoration. Its allowlist preserves security state and immutable typed facts.
 The authorization package owns a workspace transaction boundary shared by
