@@ -83,6 +83,7 @@ import type { TaskFields } from "../../lib/task-fields";
 import { deriveTaskTree } from "../../lib/task-tree";
 import { useViewChoices } from "../../lib/view-choices";
 import { useOpenRow } from "../../lib/use-open-row";
+import { useIsPhone } from "../../lib/use-media";
 import { periodRange, usePeriod } from "../../lib/use-period";
 import {
   addRowSelector,
@@ -153,6 +154,18 @@ import {
 /** Whether a view places its rows by day: the week, the board, and the calendar. */
 function placesByDay(view: EventComponentView): boolean {
   return view === "week" || view === "board" || view === "month";
+}
+
+/**
+ * Whether a panel ends with its add row: an editor's, except under a
+ * phone's week, board, or calendar, where the add button adds instead.
+ */
+function useEndsWithAddRow(
+  canEdit: boolean,
+  view: EventComponentView,
+): boolean {
+  const phone = useIsPhone();
+  return canEdit && !(phone && placesByDay(view));
 }
 
 /** A panel's classes: the list column for a list layout, the page for a period grid or the board. */
@@ -477,6 +490,7 @@ export function CalendarPanel({
   const panel = useRef<HTMLElement>(null);
   const returnFocus = useReturnFocus(panel);
   const period = usePeriod(view);
+  const endsWithAddRow = useEndsWithAddRow(canEdit, view);
   const refresh = useRefreshEvent(eventId);
   const composer = useComposerSlots();
   const openHistory = useOpenHistory();
@@ -680,7 +694,7 @@ export function CalendarPanel({
         {announcement}
       </p>
       {items.length === 0 ? (
-        canEdit ? null : (
+        endsWithAddRow ? null : (
           <EmptyState title={panels("nothingScheduled")} />
         )
       ) : view === "agenda" ? (
@@ -738,7 +752,7 @@ export function CalendarPanel({
           {items.map((item) => scheduleRow(item))}
         </div>
       )}
-      {canEdit ? (
+      {endsWithAddRow ? (
         <div className="quick-add-item">
           <AddRecordRow
             composer={
@@ -973,6 +987,7 @@ export function ExpensesPanel({
   } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const totals = useMemo(() => sumMoneyByCurrency(expenses), [expenses]);
+  const endsWithAddRow = useEndsWithAddRow(canEdit, view);
   const canShare = useCanShareEvent(eventId);
   const panel = useRef<HTMLElement>(null);
   const returnFocus = useReturnFocus(panel);
@@ -1425,7 +1440,8 @@ export function ExpensesPanel({
         title={views("expenses")}
       />
       {sectioned ? notice : null}
-      {expenses.length === 0 && sections.length === 0 && !canEdit ? (
+      {expenses.length === 0 &&
+      (sectioned ? sections.length === 0 && !canEdit : !endsWithAddRow) ? (
         <EmptyState title={panels("noExpenses")} />
       ) : null}
       {sectioned ? (
@@ -1524,7 +1540,7 @@ export function ExpensesPanel({
               view={view}
             />
           ) : null}
-          {addRow(null)}
+          {endsWithAddRow ? addRow(null) : null}
         </>
       )}
       {totals.length > 0 ? (

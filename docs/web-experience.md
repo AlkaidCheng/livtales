@@ -1872,9 +1872,14 @@ the name); and Calendar, the month's weeks as a grid of day
 cells with the weekday names and day numbers at the right, today a filled
 circle, the days of other months muted and the first of a month named, and
 the grid ending with the week that holds the month's last day. Each
-cell holds its items as compact rows (a dot, the name clipped, the time at
-the right, done ones struck through), three of them and then "+n more",
-which opens the rest in place.
+cell holds its items as compact rows (a thin line in the accent, muted once
+done, the name clipped, the time at the right, done ones struck through),
+three of them and then "+n more", which opens the rest in place. On a phone
+the grid spans the screen's width and each name takes the rest of its day:
+up to two lines, cut at the day's edge, with neither the row menu (a tap
+opens the item) nor the time; a task is ticked in its editor there, as the
+line is too thin to tap. A phone's add button adds to By week, Board, and
+Calendar layouts, so on a phone they end without the add row a list keeps.
 Expenses and Reminders offer List, By day, By week, Board, and Calendar as
 well: a transaction sits on the day it happened and a reminder on the day it
 is due; an expense day heading carries the day's totals by currency, and a
