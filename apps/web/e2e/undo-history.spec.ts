@@ -13,7 +13,7 @@ async function openMore(page: Page, eventName: string) {
 test("undoes and redoes edits by name, keeps layout undo apart, and previews history rows @webkit-desktop @webkit-mobile", async ({
   page,
   request,
-}) => {
+}, testInfo) => {
   const email = `undo-${randomUUID()}@example.test`;
   const signedIn = await request.post("/api/auth/development/sign-in", {
     data: { email, displayName: "Planner" },
@@ -71,6 +71,10 @@ test("undoes and redoes edits by name, keeps layout undo apart, and previews his
   const undoItem = more.getByRole("menuitem", { name: /^Undo edit/ });
   await expect(undoItem).toHaveAttribute("aria-disabled", "true");
   await expect(undoItem).toContainText("Nothing to undo");
+  // Its keys show on a keyboard device only.
+  const keys = undoItem.locator(".quiet-menu-key");
+  if (testInfo.project.name.endsWith("mobile")) await expect(keys).toBeHidden();
+  else await expect(keys).toBeVisible();
   await page.keyboard.press("Escape");
 
   // A rename is a command: Undo edit names it and takes it back; Redo edit

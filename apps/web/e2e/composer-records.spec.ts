@@ -74,6 +74,10 @@ test("adds a schedule item, a reminder, and an expense from their add rows' comp
   await expect(
     schedule.getByLabel("Description", { exact: true }),
   ).toBeVisible();
+  // The keys hint is for a keyboard device; a phone shows none.
+  const keys = schedule.getByText("Enter saves, Esc cancels", { exact: true });
+  if (mobile) await expect(keys).toBeHidden();
+  else await expect(keys).toBeVisible();
   await setSpanChip(schedule, "2030-11-03", { start: "12:00", end: "13:00" });
   await expect(chip(schedule, /^Dates: /)).toContainText("Nov 3, 2030");
   await expect(chip(schedule, /^Dates: /)).toContainText("12:00");

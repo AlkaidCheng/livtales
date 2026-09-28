@@ -107,7 +107,7 @@ export function SectionEditor({
         </p>
       )}
       <div className="section-editor-foot">
-        <span className="section-editor-keys">{t("keys")}</span>
+        <span className="section-editor-keys keyboard-only">{t("keys")}</span>
         <button
           className="button button-quiet button-small"
           disabled={busy}
