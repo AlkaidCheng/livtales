@@ -3480,7 +3480,8 @@ p[role="alert"] {
   right: 0;
   top: 100%;
   width: 200px;
-  z-index: 4;
+  /* Over the event's pinned strip (5) when it opens upward, under sheets. */
+  z-index: 20;
 }
 
 /* The share sheet, under the Share control or a section's head: what is
