@@ -77,6 +77,15 @@ export {
 } from "./person-list.js";
 export { CloudBaseSearchReadRepository } from "./cloudbase-search-read-repository.js";
 export { CloudBaseLabelRepository } from "./cloudbase-label-repository.js";
+export { CloudBaseLiveChangeReadRepository } from "./cloudbase-live-change-read-repository.js";
+export {
+  maximumChangedObjects,
+  PostgresLiveChangeReadRepository,
+  type LiveChangeReadRepository,
+  type ShownObject,
+  type SightGrant,
+  type WorkspaceSight,
+} from "./live-change-reads.js";
 export { CloudBaseTaskReadRepository } from "./cloudbase-task-read-repository.js";
 export {
   LabelService,

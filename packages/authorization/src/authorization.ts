@@ -50,6 +50,38 @@ export const viewObjectTypes: Readonly<Record<ShareView, readonly string[]>> = {
   notes: ["note"],
 };
 
+/** A grant's reach: the resource it names and its narrowing. */
+export interface GrantReach {
+  readonly resourceId: string;
+  readonly scope: GrantScope;
+  readonly sectionId: string | null;
+}
+
+/** The facts of a record that decide which grants reach it. */
+export interface GrantedRecord {
+  readonly id: string;
+  readonly objectType: string;
+  readonly permissionScopeId: string;
+  /** The section of its view a task or expense sits in. */
+  readonly sectionId: string | null;
+}
+
+/**
+ * Whether an active grant lets its holder view a record in hand: a grant on
+ * the record itself whatever its narrowing, or one on the record's scope
+ * whose narrowing admits it. The rule the role queries apply in SQL.
+ */
+export function grantReaches(
+  grant: GrantReach,
+  record: GrantedRecord,
+): boolean {
+  if (grant.resourceId === record.id) return true;
+  if (grant.resourceId !== record.permissionScopeId) return false;
+  if (grant.scope === "all") return true;
+  if (!viewObjectTypes[grant.scope].includes(record.objectType)) return false;
+  return grant.sectionId === null || grant.sectionId === record.sectionId;
+}
+
 /**
  * What of an Event a principal sees through narrowed grants alone: the
  * views shared whole, and the sections shared on their own. Absent when

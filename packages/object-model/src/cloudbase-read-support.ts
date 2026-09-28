@@ -34,6 +34,9 @@ import type {
   TaskResource,
 } from "./types.js";
 
+/** The workspace a gateway read is confined to. */
+export type CloudBaseWorkspace = Pick<UserPrincipal, "workspaceId">;
+
 export const cloudbaseObjectColumns =
   "id,workspace_id,object_type,display_name,created_by,permission_scope_id,created_at,updated_at,version,archived_at,deleted_at,custom_properties,metadata";
 export const cloudbaseEventColumns =
@@ -562,7 +565,7 @@ interface CloudBaseLabelJoin {
 /** The labels of the given tasks in name order, by task id. */
 export function readCloudBaseTaskLabels(
   client: CloudBaseRdbReader,
-  principal: UserPrincipal,
+  principal: CloudBaseWorkspace,
   taskIds: readonly string[],
 ): Promise<ReadonlyMap<string, string[]>> {
   return readCloudBaseLabels(
@@ -576,7 +579,7 @@ export function readCloudBaseTaskLabels(
 /** The labels of the given persons in name order, by person id. */
 export function readCloudBasePersonLabels(
   client: CloudBaseRdbReader,
-  principal: UserPrincipal,
+  principal: CloudBaseWorkspace,
   personIds: readonly string[],
 ): Promise<ReadonlyMap<string, string[]>> {
   return readCloudBaseLabels(
@@ -597,7 +600,7 @@ type CloudBasePersonContactRow = {
 /** The contacts of the given persons in kept order, by person id. */
 export async function readCloudBasePersonContacts(
   client: CloudBaseRdbReader,
-  principal: UserPrincipal,
+  principal: CloudBaseWorkspace,
   personIds: readonly string[],
 ): Promise<ReadonlyMap<string, PersonContact[]>> {
   if (personIds.length === 0) return new Map();
@@ -630,7 +633,7 @@ export async function readCloudBasePersonContacts(
 
 async function readCloudBaseLabels(
   client: CloudBaseRdbReader,
-  principal: UserPrincipal,
+  principal: CloudBaseWorkspace,
   join: CloudBaseLabelJoin,
   ids: readonly string[],
 ): Promise<ReadonlyMap<string, string[]>> {
@@ -1109,7 +1112,7 @@ export async function readCloudBaseIncludes(
 /** The task rows whose parent is one of the given tasks. */
 export async function readCloudBaseSubtasks(
   client: CloudBaseRdbReader,
-  principal: UserPrincipal,
+  principal: CloudBaseWorkspace,
   parentIds: readonly string[],
 ): Promise<readonly CloudBaseTaskRow[]> {
   if (parentIds.length === 0) return [];

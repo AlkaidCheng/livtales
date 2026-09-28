@@ -31,6 +31,7 @@ import {
   cloudbaseText,
   type CloudBaseGrant,
   type CloudBaseObjectRow,
+  type CloudBaseWorkspace,
 } from "./cloudbase-read-support.js";
 import type { EventPlanningResource } from "./types.js";
 
@@ -335,7 +336,7 @@ async function selectInBatches<Row>(
 /** Canonical rows of any type by id; tombstones are included only on request. */
 export async function readCloudBaseObjectRows(
   client: CloudBaseRdbReader,
-  principal: UserPrincipal,
+  principal: CloudBaseWorkspace,
   ids: readonly string[],
   options: { readonly includeDeleted?: boolean | undefined } = {},
 ): Promise<readonly CloudBaseObjectRow[]> {
@@ -403,7 +404,7 @@ export async function readCloudBaseScopes(
 /** Complete typed states for canonical rows, keyed by object id. */
 export async function readCloudBaseResources(
   client: CloudBaseRdbReader,
-  principal: UserPrincipal,
+  principal: CloudBaseWorkspace,
   objects: readonly CloudBaseObjectRow[],
 ): Promise<ReadonlyMap<string, EventPlanningResource>> {
   const byType = new Map<EventPlanningResource["objectType"], string[]>();
