@@ -5055,7 +5055,7 @@ ul.resource-list {
   text-align: left;
 }
 
-/* A calendar cell's rows: a dot, the name clipped, the time at the right. */
+/* A calendar cell's rows: a thin line, the name clipped, the time at the right. */
 .resource-list-cell {
   gap: 0;
 }
@@ -5066,7 +5066,7 @@ ul.resource-list {
   border: 0;
   display: grid;
   gap: 4px;
-  grid-template-columns: 8px minmax(0, 1fr);
+  grid-template-columns: 2px minmax(0, 1fr);
   min-height: 22px;
   padding: 0 2px;
   position: relative;
@@ -5074,10 +5074,10 @@ ul.resource-list {
 
 .resource-list-cell > article::before {
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: 1px;
   content: "";
-  height: 8px;
-  width: 8px;
+  height: 14px;
+  width: 2px;
 }
 
 .resource-list-cell > article.is-done::before,
@@ -5088,11 +5088,19 @@ ul.resource-list {
 .resource-list-cell .task-check {
   background: var(--accent);
   border: 0;
-  border-radius: 999px;
-  height: 8px;
+  border-radius: 1px;
+  height: 14px;
   min-height: 0;
   padding: 0;
-  width: 8px;
+  position: relative;
+  width: 2px;
+}
+
+/* The check keeps a dot's click area around its line. */
+.resource-list-cell .task-check::after {
+  content: "";
+  inset: -4px -3px -4px -5px;
+  position: absolute;
 }
 
 .resource-list-cell .task-check svg,
@@ -5194,14 +5202,63 @@ ul.resource-list {
   opacity: 1;
 }
 
+/* A phone gives the calendar the screen's width and each name the rest of
+   its day: two lines, cut at the day's edge, without the row menu (a tap
+   opens the entry) or the time. A line is too thin to tap, so a task is
+   ticked in its editor. */
 @media (max-width: 760px) {
+  .month-grid {
+    margin-inline: calc(-1 * var(--page-gutter, 0px));
+    width: calc(100% + 2 * var(--page-gutter, 0px));
+  }
+
   .month-day {
     height: 64px;
+    padding: 3px 2px 2px;
+  }
+
+  .month-day:first-child {
+    border-left: 0;
+    padding-left: 4px;
+  }
+
+  .month-day:last-child {
+    border-right: 0;
+    padding-right: 4px;
+  }
+
+  .month-day .resource-list-cell > li,
+  .month-day .resource-list-cell > article {
+    align-items: stretch;
+    gap: 3px;
+    margin-bottom: 3px;
+    padding: 0;
+  }
+
+  .resource-list-cell > article::before,
+  .resource-list-cell .task-check {
+    height: auto;
+  }
+
+  .resource-list-cell .task-check {
+    pointer-events: none;
+  }
+
+  .resource-list-cell .row-actions,
+  .resource-list-cell .row-more,
+  .resource-list-cell :is(.resource-copy, .row-press) > p {
+    display: none;
   }
 
   .resource-list-cell :is(.resource-copy, .row-press) > strong,
   .resource-list-cell :is(.resource-copy, .row-press) > h3 {
     font-size: 0.72rem;
+    line-height: 1.25;
+    max-height: 2.5em;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
   }
 }
 
@@ -5848,7 +5905,8 @@ ul.resource-list {
 
   .workspace-page,
   .event-workspace {
-    padding: 28px 18px calc(36px + env(safe-area-inset-bottom));
+    --page-gutter: 18px;
+    padding: 28px var(--page-gutter) calc(36px + env(safe-area-inset-bottom));
   }
 
   .split-heading {
