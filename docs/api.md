@@ -790,6 +790,76 @@ kept in `eventTabs` on the account are copied into each account's views of
 live Events by the migration; `eventTabs` and its merge in `PATCH /auth/me`
 remain until a later release.
 
+## Live changes
+
+| Method | Path                    | Behavior                                                   |
+| ------ | ----------------------- | ---------------------------------------------------------- |
+| `GET`  | `/live`                 | Open the browser's stream of changes (server-sent events)  |
+| `PUT`  | `/live/streams/:stream` | Set the pages the stream watches, and where each one is    |
+| `POST` | `/live/poll`            | The same changes for a browser that cannot hold the stream |
+
+Every confirmed change to what an Event's page or a space's Tasks page shows
+is announced to the browsers watching it, as soon as the request that made
+it has answered. A page is `event:<event id>` or `tasks:<space id>`. An
+Event's page receives its own Event and the objects it includes, a document
+also on the pages of what it is attached to; a Tasks page receives every
+object of its space. Sections and the layout reach their Event's page;
+labels reach every page of their space.
+
+The stream is `text/event-stream`. It opens with `ready`
+(`{ stream, position }`), then carries `change` events whose `id` is the
+change's position, `presence` (`{ page, people }`: everyone showing the page
+in front, with the place they are on it, the viewer included), `view` (the
+account's own view of an Event or page changed on another of its devices:
+`{ target, tabId }`), and `reset` (`{ pages, position }`). A comment line
+keeps a quiet stream alive every 25 seconds; the API ends a stream after 15
+minutes and the browser reconnects. An account holds up to 8 streams, its
+oldest closing for a new one, and signing a session out ends the streams it
+opened.
+
+`PUT /live/streams/:stream` takes `{ pages: [{ page, since, here, place }] }`
+(up to 20 pages, each once) and answers `{ pages: [{ page, watching }] }`.
+It replaces the set: pages left out stop. A page watched for the first time
+replays the changes after `since`; `here` says a tab shows it in front and
+`place` (up to 64 characters) where on it that tab is. A page the account
+cannot open is not watched. Read a page's data, then watch it from the
+position held before the read, and apply a change only when its object's
+version is newer than the one held. A stream of another account, or one that
+closed, is HTTP 404 `stream_closed`.
+
+`POST /live/poll` takes `{ client, pages }` with the same pages and a random
+`client` id per browser, and answers `{ position, changes, presence, views,
+reset, unavailable }`, `changes` holding `{ position, change }` in order. A
+browser that polls counts as present on its pages until it stops for 15
+seconds; poll every 3 seconds while a page is in front.
+
+A `change` has `page`, `actor` (`{ userId, displayName, tabId }`, the tab
+id being what the request sent as `x-livtales-tab`), `at`, and a `kind`:
+`objects` (`cause` of `created`, `updated`, `trashed`, `recovered`,
+`restored`, `undone`, `redone`, `included`, or `excluded`; `objects`, the
+current state of each changed object the viewer may see, trashed ones
+included; and `removed`, objects that left the page for the viewer),
+`sections` (their states, and `removed` ids), `labels` (likewise), or
+`layout` (the new `version`; read the layout again). Each viewer receives
+what their membership or grants let them see: a grant narrowed to a view or
+section passes only its records and sections, and an object outside it is
+named in `removed`. Presence and view notices are not replayed.
+
+Positions are `<run>.<number>`. Changes are kept for ten minutes (5,000 at
+most); a `since` from another run of the API, older than that, or from before
+a change that went unannounced because nobody watched its pages, resets the
+page: read its data again and watch it from the reset's position. A change
+to what an account may see (a share granted or revoked, left, or narrowed to
+a deleted section, membership added or ended, a space deleted, or an Event
+moved to another space) resets the pages it affects, which are then watched
+with the access resolved anew.
+
+The API announces from memory. A change is read once, and only while some
+page of its space is watched: the objects a route does not already hold,
+and the Events showing them while an Event page there is watched, through
+`LiveChangeReadRepository` on either backend. Announcements are kept in the
+one API process, so the API runs as a single instance.
+
 ## Search
 
 | Method | Path      | Behavior                                   |
@@ -1452,7 +1522,9 @@ reviews is the count the move checks.
 
 Each mutation validates input, authenticates the caller, authorizes the
 resource, checks an expected version where applicable, writes inside a
-transaction, and appends an audit event in that transaction. File transfer
+transaction, and appends an audit event in that transaction. Once it has
+answered, what it changed is announced to the pages watching it (see
+[Live changes](#live-changes)). File transfer
 authorization and consumption are also audited mutations. Missing and
 unauthorized protected resources both return `resource_unavailable` with HTTP 404. Sharing writes `resource.shared`, revocation writes
 `resource.share_revoked`, and scope changes write
