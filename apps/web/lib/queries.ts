@@ -229,6 +229,9 @@ export function useUpdatePreferences() {
               weekStart: input.weekStart,
             }),
             ...(input.rail !== undefined && { rail: input.rail ?? {} }),
+            ...(input.changeNotices !== undefined && {
+              changeNotices: input.changeNotices ?? true,
+            }),
             ...(input.workspaceRecency !== undefined && {
               workspaceRecency: mergeWorkspaceRecency(
                 previous.user.workspaceRecency,

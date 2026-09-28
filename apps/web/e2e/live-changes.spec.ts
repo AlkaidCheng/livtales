@@ -29,7 +29,8 @@ async function bearer(
 
 /** An event of Ana's shared with Ben as an editor. */
 async function sharedEvent(request: APIRequestContext, benEmail: string) {
-  const ana = await bearer(request, `ana-${randomUUID()}@example.test`, "Ana");
+  const anaEmail = `ana-${randomUUID()}@example.test`;
+  const ana = await bearer(request, anaEmail, "Ana");
   // Ben's account exists before the event is shared with its email.
   await bearer(request, benEmail, "Ben");
   const created = await request.post("/api/events", {
@@ -54,7 +55,7 @@ async function sharedEvent(request: APIRequestContext, benEmail: string) {
     expect(response.status()).toBe(201);
     return (await response.json()).resource as { id: string; version: number };
   };
-  return { ana, event, addTask };
+  return { ana, anaEmail, event, addTask };
 }
 
 test("shows the tasks another person adds, renames, and trashes while the event is open @webkit-desktop", async ({
@@ -111,13 +112,135 @@ test("holds one stream for all of a browser's tabs and hands it on when that tab
   const second = await ben.context.newPage();
   await second.goto(`/events/${event.id}?view=todos`);
   await addTask("Order lanterns");
-  await expect(second.getByText("Order lanterns")).toBeVisible();
-  await expect(ben.page.getByText("Order lanterns")).toBeVisible();
+  await expect(
+    second.getByRole("row", { name: /Order lanterns/ }),
+  ).toBeVisible();
+  await expect(
+    ben.page.getByRole("row", { name: /Order lanterns/ }),
+  ).toBeVisible();
   expect(streams).toHaveLength(1);
 
   await ben.page.close();
   await expect.poll(() => streams.length).toBe(2);
   await addTask("Collect candles");
-  await expect(second.getByText("Collect candles")).toBeVisible();
+  await expect(
+    second.getByRole("row", { name: /Collect candles/ }),
+  ).toBeVisible();
   await ben.context.close();
+});
+
+test("shows who else is on the event and says what they change, until the account turns that off", async ({
+  browser,
+  request,
+}) => {
+  const benEmail = `ben-${randomUUID()}@example.test`;
+  const { ana, anaEmail, event, addTask } = await sharedEvent(
+    request,
+    benEmail,
+  );
+  const hall = await addTask("Book the hall");
+  const anaBrowser = await signedIn(browser, "Ana", anaEmail);
+  const ben = await signedIn(browser, "Ben", benEmail);
+  await anaBrowser.page.goto(`/events/${event.id}?view=todos`);
+  await ben.page.goto(`/events/${event.id}?view=overview`);
+
+  const here = (page: typeof ben.page) =>
+    page.getByRole("list", { name: "People here", exact: true });
+  await expect(
+    here(ben.page).getByRole("listitem", { name: "Ana", exact: true }),
+  ).toBeVisible();
+  await expect(
+    here(anaBrowser.page).getByRole("listitem", {
+      name: "Ben",
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  const renamed = await request.patch(`/api/tasks/${hall.id}`, {
+    headers: ana,
+    data: { expectedVersion: hall.version, displayName: "Book the town hall" },
+  });
+  expect(renamed.status()).toBe(200);
+  const notice = ben.page
+    .getByRole("status")
+    .filter({ hasText: "Ana renamed Book the hall to Book the town hall" });
+  await expect(notice).toBeVisible();
+  // Ana's own browser learns of her change without a pop-up.
+  await expect(
+    anaBrowser.page.getByRole("status").filter({ hasText: "Ana renamed" }),
+  ).toHaveCount(0);
+
+  await ben.page.goto(`/events/${event.id}?view=todos&settings=notifications`);
+  const toggle = ben.page.getByRole("switch", {
+    name: "Show when others make changes",
+  });
+  await expect(toggle).toBeChecked();
+  await toggle.click();
+  await expect(toggle).not.toBeChecked();
+  await ben.page.keyboard.press("Escape");
+  const version = ((await renamed.json()) as { version: number }).version;
+  await request.patch(`/api/tasks/${hall.id}`, {
+    headers: ana,
+    data: { expectedVersion: version, displayName: "Book the old hall" },
+  });
+  await expect(ben.page.getByText("Book the old hall")).toBeVisible();
+  await expect(
+    ben.page.getByRole("status").filter({ hasText: /^A?Ana / }),
+  ).toHaveCount(0);
+  await anaBrowser.context.close();
+  await ben.context.close();
+});
+
+test("stacks a crowd's faces newest first and lists everyone from the count", async ({
+  browser,
+  request,
+}, testInfo) => {
+  const shownFaces = testInfo.project.name.endsWith("mobile") ? 2 : 3;
+  const viewerEmail = `eve-${randomUUID()}@example.test`;
+  const { ana, event } = await sharedEvent(request, viewerEmail);
+  const guests = ["Ben", "Chen", "Dee", "Fay"].map((name) => ({
+    name,
+    email: `${name.toLowerCase()}-${randomUUID()}@example.test`,
+  }));
+  for (const guest of guests) {
+    await bearer(request, guest.email, guest.name);
+    const shared = await request.post("/api/shares", {
+      headers: ana,
+      data: {
+        resourceId: event.id,
+        principalEmail: guest.email,
+        role: "viewer",
+      },
+    });
+    expect(shared.status()).toBe(201);
+  }
+  const eve = await signedIn(browser, "Eve", viewerEmail);
+  await eve.page.goto(`/events/${event.id}?view=overview`);
+  const faces = eve.page.getByRole("list", {
+    name: "People here",
+    exact: true,
+  });
+  const opened = [];
+  // One at a time, so each arrives after the one before.
+  for (const [index, guest] of guests.entries()) {
+    const browserOf = await signedIn(browser, guest.name, guest.email);
+    await browserOf.page.goto(`/events/${event.id}?view=overview`);
+    opened.push(browserOf);
+    await expect(faces.first().getByRole("listitem")).toHaveCount(
+      Math.min(index + 1, shownFaces),
+    );
+  }
+  const newestFirst = ["Fay", "Dee", "Chen", "Ben"];
+  const shown = faces.first().getByRole("listitem");
+  for (const [index, name] of newestFirst.slice(0, shownFaces).entries())
+    await expect(shown.nth(index)).toHaveAccessibleName(name);
+  const count = eve.page.getByRole("button", { name: "4 people here" });
+  await expect(count).toHaveText(`+${newestFirst.length - shownFaces}`);
+  await count.click();
+  await expect(count).toHaveAttribute("aria-expanded", "true");
+  await expect(faces.last().getByRole("listitem")).toHaveText(newestFirst);
+  await eve.page.keyboard.press("Escape");
+  await expect(faces).toHaveCount(1);
+  for (const browserOf of opened) await browserOf.context.close();
+  await eve.context.close();
 });

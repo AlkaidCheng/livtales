@@ -27,5 +27,8 @@
   "byNameNote": "\"{name}\" in Find people.",
   "byEmail": "By email",
   "byEmailNote": "Someone who types {email} sees you. Off, they see nothing.",
-  "byEmailNoteNone": "This account has no email to be found by."
+  "byEmailNoteNone": "This account has no email to be found by.",
+  "notifications": "Notifications",
+  "othersChanges": "Show when others make changes",
+  "othersChangesNote": "On the page you are viewing"
 }

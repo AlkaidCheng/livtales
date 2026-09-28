@@ -11556,6 +11556,169 @@ html:has(.event-strip-block) {
   opacity: 1;
 }
 
+/* A person's face on a page: their initials, drawn from `data-initials` so
+   the page's text stays names, on one of the palette's tones, the same tone
+   for them everywhere. */
+:is(.live-face, .notice-toast-face) {
+  --face: var(--line-strong);
+  align-items: center;
+  background: var(--face);
+  border-radius: 50%;
+  color: var(--surface);
+  display: inline-flex;
+  flex: none;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.live-face::before {
+  content: attr(data-initials);
+}
+
+:is(.live-face, .notice-toast-face)[data-tone="0"] {
+  --face: var(--accent);
+}
+
+:is(.live-face, .notice-toast-face)[data-tone="1"] {
+  --face: var(--success);
+}
+
+:is(.live-face, .notice-toast-face)[data-tone="2"] {
+  --face: var(--warning);
+}
+
+:is(.live-face, .notice-toast-face)[data-tone="3"] {
+  --face: var(--expense-marker);
+}
+
+:is(.live-face, .notice-toast-face)[data-tone="4"] {
+  --face: var(--reminder-marker);
+}
+
+.live-faces {
+  align-items: center;
+  display: flex;
+  padding-right: 4px;
+  position: relative;
+}
+
+.live-faces-row {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.live-faces-row .live-face,
+.live-face-more {
+  border: 2px solid var(--canvas);
+  font-size: 0.74rem;
+  height: 32px;
+  width: 32px;
+}
+
+.live-faces-row li + li,
+.live-face-more {
+  margin-left: -8px;
+}
+
+.live-face-more {
+  --face: var(--surface-subtle);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0;
+}
+
+.live-face-more:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Everyone on the page, under the count that opens it. */
+.live-people {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  list-style: none;
+  margin: 0;
+  max-height: min(60vh, 360px);
+  min-width: 190px;
+  overflow-y: auto;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+}
+
+.live-people li {
+  align-items: center;
+  display: flex;
+  font-size: 0.9rem;
+  gap: 10px;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.live-people .live-face {
+  font-size: 0.66rem;
+  height: 24px;
+  width: 24px;
+}
+
+.split-heading-end {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+}
+
+.notice-toast > .notice-toast-face {
+  flex: none;
+  font-size: 0.72rem;
+  height: 24px;
+  margin-left: -4px;
+  width: 24px;
+}
+
+/* A pop-up that leads to its record: the message is the button. */
+.notice-toast-open {
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  padding: 4px 2px;
+  text-align: start;
+}
+
+.notice-toast-open:hover,
+.notice-toast-open:focus-visible {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* A row someone else just changed, once. */
+.live-flash {
+  animation: live-flash 1.4s ease-out;
+}
+
+@keyframes live-flash {
+  from {
+    background-color: var(--accent-soft);
+  }
+
+  to {
+    background-color: transparent;
+  }
+}
+
 @media (max-width: 760px) {
   .notice-stack {
     bottom: calc(72px + env(safe-area-inset-bottom, 0px));

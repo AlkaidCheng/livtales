@@ -19,6 +19,7 @@ import { PlusIcon, SearchIcon } from "../../components/icons";
 import { useAuthSession } from "../../lib/auth-session";
 import { useComposerSlots } from "../../lib/composer-slots";
 import { useLivePage } from "../../lib/live/live-provider";
+import { LiveFaces } from "../live/live-faces";
 import { rowSelector, useReturnFocus } from "../../lib/use-return-focus";
 import type { TaskFields } from "../../lib/task-fields";
 import { LayoutControl } from "../events/component-frame";
@@ -117,7 +118,8 @@ export function TasksPage() {
   const session = useSessionQuery();
   // Others' changes to the space's tasks reach the page while it is open.
   const workspaceId = useAuthSession().credential?.workspaceId ?? null;
-  useLivePage(workspaceId === null ? null : `tasks:${workspaceId}`, null);
+  const livePage = workspaceId === null ? null : `tasks:${workspaceId}`;
+  useLivePage(livePage);
   const {
     choices,
     change,
@@ -262,20 +264,23 @@ export function TasksPage() {
           <h1>{t("title")}</h1>
           <p>{t("intro")}</p>
         </div>
-        {phone ? null : (
-          <button
-            aria-haspopup="dialog"
-            className="button button-primary"
-            onClick={(event) => {
-              event.currentTarget.focus();
-              setAdding({});
-            }}
-            type="button"
-          >
-            <PlusIcon />
-            {t("new")}
-          </button>
-        )}
+        <span className="split-heading-end">
+          <LiveFaces page={livePage} />
+          {phone ? null : (
+            <button
+              aria-haspopup="dialog"
+              className="button button-primary"
+              onClick={(event) => {
+                event.currentTarget.focus();
+                setAdding({});
+              }}
+              type="button"
+            >
+              <PlusIcon />
+              {t("new")}
+            </button>
+          )}
+        </span>
       </header>
 
       {adding !== null ? (

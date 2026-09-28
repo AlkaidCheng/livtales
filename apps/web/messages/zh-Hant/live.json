@@ -1,0 +1,38 @@
+{
+  "here": "此頁上的人",
+  "tasksPage": "任務",
+  "thisEvent": "此活動",
+  "notice": {
+    "updated": "{name} 更新了「{object}」",
+    "changedOne": "{name} 更改了「{object}」的{part}",
+    "changedTwo": "{name} 更改了「{object}」的{first}與{second}",
+    "renamed": "{name} 將「{before}」重新命名為「{object}」",
+    "added": "{name} 新增了「{object}」",
+    "trashed": "{name} 將「{object}」移到垃圾桶",
+    "restored": "{name} 還原了「{object}」",
+    "undid": "{name} 復原了對「{object}」的更改",
+    "redid": "{name} 重做了對「{object}」的更改",
+    "removed": "{name} 將「{object}」移出此頁",
+    "several": "{name} 在{page}做了 {count} 處更改"
+  },
+  "parts": {
+    "name": "名稱",
+    "when": "時間",
+    "due": "截止日期",
+    "repeat": "重複規則",
+    "status": "狀態",
+    "assignee": "負責人",
+    "labels": "標籤",
+    "section": "分組",
+    "order": "順序",
+    "parent": "上層任務",
+    "location": "地點",
+    "description": "描述",
+    "amount": "金額",
+    "date": "日期",
+    "reminder": "提醒時間",
+    "text": "內文",
+    "contacts": "聯絡方式"
+  },
+  "everyone": "此頁上有 {count} 人"
+}

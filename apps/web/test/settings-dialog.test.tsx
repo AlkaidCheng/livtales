@@ -152,7 +152,7 @@ describe("the Settings dialog", () => {
     ).not.toHaveAttribute("aria-current");
     expect(
       nav.getAllByRole("button").map((entry) => entry.textContent),
-    ).toEqual(["General", "Language & time", "Appearance"]);
+    ).toEqual(["General", "Language & time", "Appearance", "Notifications"]);
     expect(nav.getByRole("list", { name: "Preferences" })).toBeVisible();
     expect(
       within(dialog).getByRole("region", { name: "General" }),
@@ -432,6 +432,31 @@ describe("the Settings dialog", () => {
     expect(document.cookie).not.toContain(`${localeCookie}=zh`);
   });
 
+  it("keeps whether others' changes pop up on the account", async () => {
+    const user = userEvent.setup();
+    renderAt("notifications");
+    const notices = await screen.findByRole("switch", {
+      name: "Show when others make changes",
+    });
+    expect(notices).toHaveAccessibleDescription("On the page you are viewing");
+    await waitFor(() => expect(notices).toBeChecked());
+    await user.click(notices);
+    await waitFor(() =>
+      expect(requests).toContainEqual({
+        method: "PATCH",
+        path: "/api/auth/me",
+        body: { changeNotices: false },
+      }),
+    );
+    expect(notices).not.toBeChecked();
+    await waitFor(async () =>
+      expect(
+        ((await storedPreferences()) as { changeNotices?: boolean })
+          .changeNotices,
+      ).toBe(false),
+    );
+  });
+
   it("repeats the Theme choices under Appearance, each kept on the browser at once", async () => {
     const user = userEvent.setup();
     renderAt("appearance");
@@ -517,7 +542,13 @@ describe("the Settings dialog", () => {
         .getAllByRole("button")
         .filter((entry) => entry.closest("nav") !== null)
         .map((entry) => entry.textContent),
-    ).toEqual(["General", "Language & time", "Appearance", "Keyboard"]);
+    ).toEqual([
+      "General",
+      "Language & time",
+      "Appearance",
+      "Notifications",
+      "Keyboard",
+    ]);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Keyboard" }));
     expect(window.location.search).toBe("?view=todos&settings=keyboard");
