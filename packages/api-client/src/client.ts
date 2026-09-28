@@ -216,6 +216,12 @@ import {
   eventLayoutWithViewResponseSchema,
   eventViewStateSchema,
   pageChoicesResponseSchema,
+  type LivePollRequest,
+  type LivePollResponse,
+  type LiveWatchRequest,
+  type LiveWatchResponse,
+  livePollResponseSchema,
+  liveWatchResponseSchema,
 } from "@livtales/schemas";
 import type { z } from "zod";
 
@@ -252,6 +258,8 @@ export interface LivTalesApiClientOptions {
   readonly requestTimeoutMs?: number | undefined;
   readonly signal?: AbortSignal | undefined;
   readonly signals?: readonly AbortSignal[] | undefined;
+  /** This browser tab's id, sent with each request so its own changes are known when they are announced. */
+  readonly tabId?: string | undefined;
   readonly transferTimeoutMs?: number | undefined;
   readonly transport?: JsonTransport | undefined;
 }
@@ -323,6 +331,7 @@ export class LivTalesApiClient {
   readonly #getCredential: () => ApiCredential | null;
   readonly #requestTimeoutMs: number;
   readonly #signals: readonly AbortSignal[];
+  readonly #tabId: string | undefined;
   readonly #transferTimeoutMs: number;
   readonly #transport: JsonTransport;
 
@@ -358,6 +367,7 @@ export class LivTalesApiClient {
       ...(options.signals ?? []),
       ...(options.signal === undefined ? [] : [options.signal]),
     ];
+    this.#tabId = options.tabId;
   }
 
   /** Bind a request to both its caller's cancellation and the session lifetime. */
@@ -410,6 +420,7 @@ export class LivTalesApiClient {
       requestTimeoutMs: this.#requestTimeoutMs,
       signals:
         signal === undefined ? this.#signals : [signal, ...this.#signals],
+      tabId: this.#tabId,
       transferTimeoutMs: this.#transferTimeoutMs,
       transport: this.#transport,
     });
@@ -1268,6 +1279,27 @@ export class LivTalesApiClient {
     );
   }
 
+  /** Sets the pages a live stream watches; pages left out stop. */
+  watchLive(
+    stream: string,
+    input: LiveWatchRequest,
+  ): Promise<LiveWatchResponse> {
+    return this.#request(
+      `/api/live/streams/${encodeURIComponent(stream)}`,
+      liveWatchResponseSchema,
+      jsonRequest(input, "PUT"),
+    );
+  }
+
+  /** The changes and presence on the given pages, for a browser that cannot hold the live stream. */
+  pollLive(input: LivePollRequest): Promise<LivePollResponse> {
+    return this.#request(
+      "/api/live/poll",
+      livePollResponseSchema,
+      jsonRequest(input, "POST"),
+    );
+  }
+
   /** The choices the account left a collection page with. */
   getPageChoices(page: AccountPage): Promise<PageChoicesResponse> {
     return this.#request(
@@ -1627,6 +1659,7 @@ export class LivTalesApiClient {
         headers.authorization = `Bearer ${credential.accessToken}`;
       }
       headers["x-workspace-id"] = credential.workspaceId;
+      if (this.#tabId !== undefined) headers["x-livtales-tab"] = this.#tabId;
     }
 
     let response: JsonTransportResponse;
