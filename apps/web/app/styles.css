@@ -3730,6 +3730,12 @@ p[role="alert"] {
   vertical-align: middle;
 }
 
+/* The list starts under the strip's rule or its own head, so its first row
+   draws no rule above it. */
+.task-table tbody > tr:first-child > td {
+  border-top: 0;
+}
+
 .task-table td:first-child {
   padding-left: 0;
   width: 34px;
