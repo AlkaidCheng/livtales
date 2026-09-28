@@ -72,7 +72,7 @@ and Done ends customize mode. A collection that ships later appends in its
 default place. The phone's drawer has no pencil: a finger held half a
 second on a collection enters customize mode in place (the tap that follows
 stays on the page), the Collections heading reads "Collections - Done" until
-Done is chosen, and Customize sidebar in the account sheet returns to the
+Done is chosen, and Customize sidebar in the More sheet returns to the
 drawer already customizing.
 
 On a window wide enough for the sidebar, a control beside the logo collapses
@@ -90,12 +90,10 @@ nothing, and a choice kept from a wide window waits until the window is wide
 again.
 
 More holds what acts on the app rather than on records: Trash, Theme,
-Customize sidebar, Keyboard shortcuts, and Help. Theme opens a panel beside
+Customize sidebar, and Keyboard shortcuts. Theme opens a panel beside
 the rail with the mode (System, Light, Dark), the palette and add button
 tiles, density, and motion choices, and a reset. Keyboard shortcuts opens Settings at Keyboard
-over the page and shows only on a device with a keyboard; Help has no
-surface yet and
-says so in a passing notice. The
+over the page and shows only on a device with a keyboard. The
 account block at the foot of the rail (the account's avatar and name, the
 current space in small text under it, a caret) opens the account menu: the current space as one row (its mark, name, and
 role), which opens the space switcher, then Friends, Settings, and Sign out.
@@ -183,16 +181,18 @@ closes it, and focus returns to the control that opened it). The space
 control in the app bar (the current space's mark and name) opens the
 switcher's list as a sheet, without the way
 back the rail's list has; Cmd/Ctrl+Shift+K opens and closes it too. The
-account block at the drawer's foot opens the account sheet over the
-drawer's foot, as wide as the drawer: the account's name and email, Friends (with the requests waiting),
-Settings, Sign out, then More's entries as a second group of the same menu
-(Trash, Theme, Customize sidebar, Help, and Keyboard shortcuts on a
-keyboard device), so the arrow keys walk the whole list. Dismissing the
-sheet leads back to the drawer, on the block; an entry taken closes the
-sheet and the drawer together, so a surface it opens (Settings, the
-install steps) returns focus to the menu control. Theme opens its own
-sheet with the same controls as the rail's panel, which leads back to the
-drawer as well, and Customize sidebar returns to the drawer customizing.
+drawer's foot holds the account block (without the rail's caret) and More
+beside it, as the rail's
+foot does, and each opens a sheet over the drawer's foot, as wide as the
+drawer. The account sheet holds the account's name and email, then
+Friends (with the requests waiting), Settings, and Sign out; the More
+sheet holds More's entries (Trash, Theme, Customize sidebar, and Keyboard
+shortcuts on a keyboard device). Dismissing a sheet leads back to the
+drawer, on its control; an entry taken closes the sheet and the drawer
+together, so a surface it opens (Settings, the install steps) returns focus
+to the menu control. Theme opens its own sheet with the same controls as
+the rail's panel, which leads back to the drawer, on More, and Customize
+sidebar returns to the drawer customizing.
 
 A phone also has an add button: a seal about 60px across, fixed 18px from
 the bottom right corner and clear of the home indicator, drawn in the shape

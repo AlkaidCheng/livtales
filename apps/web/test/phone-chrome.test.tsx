@@ -125,6 +125,10 @@ const accountSheet = () =>
   document.querySelector<HTMLDialogElement>(
     'dialog.bottom-sheet[aria-label="Account"]',
   );
+const moreSheet = () =>
+  document.querySelector<HTMLDialogElement>(
+    'dialog.bottom-sheet[aria-label="More"]',
+  );
 
 it("holds the menu and the space in the bar, without the account", () => {
   renderChrome();
@@ -150,7 +154,7 @@ it("carries the account's dot on the menu while friend requests wait", () => {
   expect(menu.querySelector(".profile-dot")).not.toBeNull();
 });
 
-it("ends the drawer with the account block, whose sheet rises over it and leads back to it", async () => {
+it("ends the drawer with the account block and More, whose sheets rise over it and lead back to it", async () => {
   const { user } = renderChrome();
   const menu = within(bar()).getByRole("button", { name: "Menu" });
   await user.click(menu);
@@ -173,15 +177,7 @@ it("ends the drawer with the account block, whose sheet rises over it and leads 
     within(account)
       .getAllByRole("menuitem")
       .map((item) => item.textContent),
-  ).toEqual([
-    "Friends",
-    "Settings",
-    "Sign out",
-    "Trash",
-    "Theme",
-    "Customize sidebar",
-    "Help",
-  ]);
+  ).toEqual(["Friends", "Settings", "Sign out"]);
 
   // Escape dismisses the sheet alone, back to the drawer.
   expect(
@@ -191,6 +187,25 @@ it("ends the drawer with the account block, whose sheet rises over it and leads 
   expect(accountSheet()).not.toHaveAttribute("open");
   expect(drawer()).toHaveAttribute("open");
   expect(block).toHaveAttribute("aria-expanded", "false");
+
+  // More beside it opens the rail's More entries in a sheet of its own.
+  const more = within(footer).getByRole("button", { name: "More" });
+  expect(more).toHaveAttribute("aria-haspopup", "dialog");
+  await user.click(more);
+  expect(moreSheet()).toHaveAttribute("open");
+  expect(more).toHaveAttribute("aria-expanded", "true");
+  const moreMenu = screen.getByRole("menu", { name: "More" });
+  expect(
+    within(moreMenu)
+      .getAllByRole("menuitem")
+      .map((item) => item.textContent),
+  ).toEqual(["Trash", "Theme", "Customize sidebar"]);
+  expect(
+    within(moreMenu).getByRole("menuitem", { name: "Trash" }),
+  ).toHaveFocus();
+  await user.keyboard("{Escape}");
+  expect(moreSheet()).not.toHaveAttribute("open");
+  expect(drawer()).toHaveAttribute("open");
 });
 
 it("closes the sheet and the drawer as an entry is taken", async () => {
@@ -203,12 +218,12 @@ it("closes the sheet and the drawer as an entry is taken", async () => {
   expect(drawer()).not.toHaveAttribute("open");
 });
 
-it("keeps the drawer open to customize it from the account sheet", async () => {
+it("keeps the drawer open to customize it from the More sheet", async () => {
   const { onCustomize, user } = renderChrome();
   await user.click(within(bar()).getByRole("button", { name: "Menu" }));
-  await user.click(screen.getByRole("button", { name: "Planner Personal" }));
+  await user.click(screen.getByRole("button", { name: "More" }));
   await user.click(screen.getByRole("menuitem", { name: "Customize sidebar" }));
   expect(onCustomize).toHaveBeenLastCalledWith(true);
-  expect(accountSheet()).not.toHaveAttribute("open");
+  expect(moreSheet()).not.toHaveAttribute("open");
   expect(drawer()).toHaveAttribute("open");
 });

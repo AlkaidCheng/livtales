@@ -108,8 +108,9 @@ export function AccountMenuItems({
 /**
  * The account as one block: the avatar (with a dot while friend requests
  * wait), the account's name, and the current space under it, then a
- * caret. The rail's foot and the phone's drawer end with it; the surface
- * gives it the menu it opens and the attributes that name that menu.
+ * caret (the rail's alone, as the phone's opens a sheet). The rail's foot
+ * and the phone's drawer end with it; the surface gives it the menu it
+ * opens and the attributes that name that menu.
  */
 export function AccountBlock({
   session,

@@ -10493,14 +10493,26 @@ html:has(.event-strip-block) {
 }
 
 .phone-drawer .account-trigger {
+  flex: 1;
   min-height: 52px;
+  min-width: 0;
   padding: 8px;
+}
+
+.phone-drawer .more-trigger {
+  height: 44px;
+  width: 44px;
 }
 
 .phone-drawer .account-trigger .profile-mark {
   font-size: 0.74rem;
   height: 34px;
   width: 34px;
+}
+
+/* The block opens a sheet there, not a menu under it: no caret. */
+.phone-drawer .account-caret {
+  display: none;
 }
 
 /* Customizing in the drawer: the heading offers Done in place of the pencil. */

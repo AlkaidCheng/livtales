@@ -162,8 +162,9 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await expect(menuControl(page)).toBeFocused();
 
   // The account sheet: the account's name and email, then Friends,
-  // Settings, Sign out, then what More offers; Trash is a link there and
-  // Customize sidebar is offered, as the drawer arranges with Done.
+  // Settings, Sign out. More beside the block opens what More offers in a
+  // sheet of its own; Trash is a link there and Customize sidebar is
+  // offered, as the drawer arranges with Done.
   await openDrawer(page);
   await account.click();
   const menu = page.getByRole("menu", { name: "Account", exact: true });
@@ -176,22 +177,32 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await expect(
     menu.getByRole("menuitem", { name: "Sign out", exact: true }),
   ).toBeVisible();
-  const more = menu.getByRole("group", { name: "More", exact: true });
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(account).toBeFocused();
+  const moreControl = drawer(page).getByRole("button", {
+    name: "More",
+    exact: true,
+  });
+  await moreControl.click();
+  const more = page.getByRole("menu", { name: "More", exact: true });
+  await expect(
+    more.getByRole("menuitem", { name: "Trash", exact: true }),
+  ).toBeFocused();
   await expect(
     more.getByRole("menuitem", { name: "Trash", exact: true }),
   ).toHaveAttribute("href", /\/trash$/u);
   await expect(
     more.getByRole("menuitem", { name: "Customize sidebar", exact: true }),
   ).toBeVisible();
-  // One menu: End reaches the last of More's entries. Escape leads back
-  // to the drawer, on the block, and again to the menu control.
+  // End reaches the last entry (Install app on an iPhone, else Customize
+  // sidebar). Escape leads back to the drawer, on More, and again to the
+  // menu control.
   await page.keyboard.press("End");
-  await expect(
-    more.getByRole("menuitem", { name: "Help", exact: true }),
-  ).toBeFocused();
+  await expect(more.getByRole("menuitem").last()).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(menu).toHaveCount(0);
-  await expect(account).toBeFocused();
+  await expect(more).toHaveCount(0);
+  await expect(moreControl).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(drawer(page)).toBeHidden();
 
@@ -218,8 +229,8 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   await expect(switcher).toHaveCount(0);
   await expect(control).toBeFocused();
 
-  // Theme's sheet rises from the account sheet over the drawer, and
-  // Escape leads back to the drawer, on the block.
+  // Theme's sheet rises from the More sheet over the drawer, and Escape
+  // leads back to the drawer, on More.
   const theme = await openThemePanel(page);
   await expect(
     theme.getByRole("group", { name: "Appearance" }).getByRole("radio", {
@@ -229,7 +240,7 @@ async function exercisePhoneUtilities(page: Page, testInfo: TestInfo) {
   ).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(theme).toHaveCount(0);
-  await expect(account).toBeFocused();
+  await expect(moreTrigger(page)).toBeFocused();
   await closeDrawer(page);
 
   await openEventView(page, "Tasks");
@@ -294,7 +305,7 @@ async function exerciseNarrowChrome(page: Page, testInfo: TestInfo) {
   await page.setViewportSize({ width: 320, height: 568 });
   await page.keyboard.press("Escape");
   await expect(theme).toHaveCount(0);
-  await expect(accountBlock(page)).toBeFocused();
+  await expect(moreTrigger(page)).toBeFocused();
   const navigation = await workspaceNavigation(page);
   await expect(
     navigation.getByRole("link", { name: "People", exact: true }),

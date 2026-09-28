@@ -177,6 +177,8 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
   const block = drawer(page).locator(".sidebar-footer .account-trigger");
   await expect(block).toHaveAccessibleName("Ben Wu Personal");
   await expect(block.locator(".profile-mark")).toHaveText("BW");
+  // It opens a sheet, not a menu under it, so it carries no caret.
+  await expect(block.locator(".account-caret")).toBeHidden();
   expect(await bottom(drawer(page))).toBeGreaterThan((await bottom(block)) - 1);
   expect((await bottom(drawer(page))) - (await bottom(block))).toBeLessThan(24);
   await page.screenshot({ path: testInfo.outputPath("drawer.png") });
@@ -272,11 +274,11 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
 
   // The account block at the drawer's foot opens the account sheet over
   // the drawer's foot, as wide as the drawer: the account's name and
-  // email, Friends, Settings, Sign out,
-  // then More's entries under them; no shortcuts entry, as a phone has no
+  // email, Friends, Settings, Sign out. More beside it opens the rail's
+  // More entries in a sheet as wide; no shortcuts entry, as a phone has no
   // keyboard to list them for. Escape leads back to the drawer. Customize
   // sidebar leaves the drawer open, customizing; Theme opens its own
-  // sheet, and Escape from it lands back on the block.
+  // sheet, and Escape from it lands back on More.
   await menuControl(page).click();
   await block.click();
   const account = page.getByRole("menu", { name: "Account", exact: true });
@@ -304,11 +306,6 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
     /^Friends/,
     "Settings",
     "Sign out",
-    "Trash",
-    "Theme",
-    "Customize sidebar",
-    ...(ios ? ["Install app"] : []),
-    "Help",
   ]);
   await expect(
     account.getByRole("menuitem", { name: /^Friends/ }),
@@ -317,16 +314,32 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
   await page.keyboard.press("Escape");
   await expect(account).toHaveCount(0);
   await expect(drawer(page)).toBeVisible();
-  await block.click();
-  await account
+  const moreControl = drawer(page).getByRole("button", {
+    name: "More",
+    exact: true,
+  });
+  await moreControl.click();
+  const more = page.getByRole("menu", { name: "More", exact: true });
+  const moreSheet = page.getByRole("dialog", { name: "More", exact: true });
+  await expect(more.getByRole("menuitem")).toHaveText([
+    "Trash",
+    "Theme",
+    "Customize sidebar",
+    ...(ios ? ["Install app"] : []),
+  ]);
+  expect(Math.round((await boxOf(moreSheet)).width)).toBe(
+    Math.round(drawerBox.width),
+  );
+  await page.screenshot({ path: testInfo.outputPath("more-sheet.png") });
+  await more
     .getByRole("menuitem", { name: "Customize sidebar", exact: true })
     .click();
-  await expect(account).toHaveCount(0);
+  await expect(more).toHaveCount(0);
   await expect(drawer(page)).toBeVisible();
   await expect(done).toBeVisible();
   await done.click();
-  await block.click();
-  await account.getByRole("menuitem", { name: "Theme", exact: true }).click();
+  await moreControl.click();
+  await more.getByRole("menuitem", { name: "Theme", exact: true }).click();
   const theme = page.getByRole("dialog", { name: "Theme", exact: true });
   await expect(theme).toBeVisible();
   await expect(theme).toBeInViewport();
@@ -353,7 +366,7 @@ test("gives the phone an app bar whose menu opens the sidebar as a drawer ending
   await page.keyboard.press("Escape");
   await expect(theme).toHaveCount(0);
   await expect(drawer(page)).toBeVisible();
-  await expect(accountBlock(page)).toBeFocused();
+  await expect(moreControl).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(drawer(page)).toBeHidden();
 

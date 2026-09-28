@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   DownloadIcon,
-  HelpIcon,
   KeyboardIcon,
   MoreGridIcon,
   PencilIcon,
@@ -15,7 +14,6 @@ import {
 import { useKeyboardDevice } from "../lib/use-keyboard-device";
 import type { InstallMode } from "../lib/use-install-app";
 import { useInstallControl } from "./install-app";
-import { useNotices } from "./notices";
 import {
   focusFirstMenuItem,
   moveMenuFocus,
@@ -26,9 +24,9 @@ import { ThemePanel } from "./theme-panel";
 
 /**
  * What More offers: Trash, Theme, Customize sidebar, Keyboard shortcuts
- * (the Keyboard section of Settings, on a keyboard device), Install app
- * while the browser can install it from here, and Help. The rail's menu
- * and the phone's account sheet both list them; `onChoose` runs as an
+ * (the Keyboard section of Settings, on a keyboard device), and Install
+ * app while the browser can install it from here. The rail's menu and the
+ * phone's More sheet both list them; `onChoose` runs as an
  * entry is taken, before it acts, `onSettings` in its place as Keyboard
  * shortcuts opens Settings (the surface closes and puts focus where
  * closing the dialog returns it), and the surface decides how Theme and
@@ -53,7 +51,6 @@ export function MoreMenuItems({
   const theme = useTranslations("theme");
   const installText = useTranslations("install");
   const keyboard = useKeyboardDevice();
-  const { post } = useNotices();
   return (
     <>
       <Link
@@ -122,19 +119,6 @@ export function MoreMenuItems({
           <span>{installText("title")}</span>
         </button>
       )}
-      <button
-        type="button"
-        role="menuitem"
-        tabIndex={-1}
-        className="quiet-menu-item"
-        onClick={() => {
-          onChoose();
-          post({ message: t("notAvailableYet", { name: t("help") }) });
-        }}
-      >
-        <HelpIcon />
-        <span>{t("help")}</span>
-      </button>
     </>
   );
 }
@@ -143,9 +127,8 @@ export function MoreMenuItems({
  * The More control beside the profile block: what acts on the app rather
  * than on records. Trash, Theme (the panel opens beside the rail),
  * Customize sidebar, Keyboard shortcuts (the Keyboard section of
- * Settings, offered on keyboard devices only), Install app while the
- * browser can install it from here, then Help, which has no surface yet:
- * choosing it posts a passing notice saying so. Escape or a press outside
+ * Settings, offered on keyboard devices only), and Install app while the
+ * browser can install it from here. Escape or a press outside
  * closes the menu or the panel and, from the keyboard, returns focus to
  * the control.
  */

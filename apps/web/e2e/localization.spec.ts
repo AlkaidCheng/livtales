@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "./fixtures";
 import {
   closeDrawer,
-  isPhone,
   openDrawer,
   pressMoreControl,
   workspaceNavigation,
@@ -159,10 +158,7 @@ test("switches the workspace to Simplified and Traditional Chinese and back @web
   await expect(rail).toContainText(hans.people);
   await pressMoreControl(page);
   await expect(
-    page.getByRole(isPhone(page) ? "group" : "menu", {
-      name: hans.more,
-      exact: true,
-    }),
+    page.getByRole("menu", { name: hans.more, exact: true }),
   ).toContainText(hans.trash);
   await page.keyboard.press("Escape");
   await page.goto(eventUrl);
