@@ -6,7 +6,7 @@ import { useState } from "react";
 import { CountedField } from "../../components/counted-field";
 import { personDisplayName } from "../../lib/person-fields";
 import {
-  useCreatePerson,
+  useCreateAssignee,
   usePersonNames,
   usePersonsQuery,
   useSessionQuery,
@@ -17,6 +17,8 @@ import {
  * and reads the people only when one is set; open, it lists the workspace's
  * people as a choice with Unassigned, adds a person who does not exist yet,
  * and assigns to the signed-in user, creating their person on first use.
+ * On an Event shared from another space, the people are that space's the
+ * viewer may see, and a new person is added inside the Event.
  */
 export function AssigneePicker({
   disabled = false,
@@ -66,7 +68,7 @@ export function AssigneeChoices({
 }) {
   const session = useSessionQuery();
   const t = useTranslations("assignee");
-  const create = useCreatePerson();
+  const create = useCreateAssignee();
   const [draft, setDraft] = useState("");
   const me = session.data?.user;
   const myPerson = persons.data?.items.find(

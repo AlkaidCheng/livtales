@@ -15,7 +15,7 @@ async function account(
   return { authorization: `Bearer ${(await signedIn.json()).accessToken}` };
 }
 
-test("names a shared event's assignees and labels for a guest who may not open the owner's people", async ({
+test("names a shared event's assignees and labels for a guest, and lets the guest assign themselves and new people", async ({
   page,
   request,
 }) => {
@@ -57,6 +57,15 @@ test("names a shared event's assignees and labels for a guest who may not open t
     },
   });
   expect(added.status()).toBe(201);
+  const call = await request.post(`/api/events/${event.id}/resources`, {
+    headers: jane,
+    data: {
+      commandId: randomUUID(),
+      resource: { objectType: "task", displayName: "Call the band" },
+    },
+  });
+  expect(call.status()).toBe(201);
+  const band = (await call.json()).resource;
   const shared = await request.post("/api/shares", {
     headers: jane,
     data: { resourceId: event.id, principalEmail: guestEmail, role: "editor" },
@@ -86,4 +95,58 @@ test("names a shared event's assignees and labels for a guest who may not open t
   await expect(
     main.getByRole("button", { name: "Labels: Venue", exact: true }),
   ).toBeVisible();
+
+  // The guest is no one's friend there, yet Assign to me adds them inside
+  // the event and the save keeps it.
+  const hall = page.getByRole("form", { name: "Edit Book the hall" });
+  await hall
+    .getByRole("button", { name: "Assignee: Mei", exact: true })
+    .click();
+  const choices = page.getByRole("dialog", { name: "Assignee", exact: true });
+  await choices
+    .getByRole("button", { name: "Assign to me", exact: true })
+    .click();
+  await expect(
+    hall.getByRole("button", { name: "Assignee: Guest", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  // An edit is saved as an undoable command.
+  const saved = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/api/commands",
+  );
+  await hall.getByRole("textbox").first().press("Enter");
+  expect((await saved).status()).toBe(200);
+  await expect(row.locator(".task-assignee")).toHaveText(/Guest$/u);
+
+  // A new person is added inside the event the same way.
+  await pressRow(page, "Call the band");
+  const bandForm = page.getByRole("form", { name: "Edit Call the band" });
+  await bandForm.getByRole("button", { name: "Assignee", exact: true }).click();
+  await choices.getByRole("textbox", { name: "New person" }).fill("Lin");
+  await choices
+    .getByRole("button", { name: "Add person", exact: true })
+    .click();
+  await expect(
+    bandForm.getByRole("button", { name: "Assignee: Lin", exact: true }),
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  const bandSaved = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/api/commands",
+  );
+  await bandForm.getByRole("textbox").first().press("Enter");
+  expect((await bandSaved).status()).toBe(200);
+  const lin = await (
+    await request.get(`/api/tasks/${band.id}`, { headers: jane })
+  ).json();
+  const linCard = await (
+    await request.get(`/api/persons/${lin.assigneeId}`, { headers: jane })
+  ).json();
+  expect(linCard).toMatchObject({
+    displayName: "Lin",
+    permissionScopeId: event.id,
+  });
 });
