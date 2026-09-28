@@ -497,6 +497,17 @@ the copy do not reach the views. On CloudBase, apply it through the console
 SQL editor with the API stopped, then redeploy the API, because readiness
 requires the four functions.
 
+Migration `0080_add_user_change_notices_preference.sql` adds
+`users.change_notices` (`boolean NOT NULL DEFAULT true`), whether a pop-up
+names the changes others make on the page being viewed, and redefines
+`chronelle_user_preferences_update` with it among the keys it merges,
+revoking browser-role execution and granting `service_role` execution where
+those managed roles exist. Adding a column with a constant default takes a
+brief lock on `users`. Apply 0080 after 0079 and before deploying the API:
+the new API reads the column on every sign-in and session, and older API
+versions ignore it. The runtime-role script needs no rerun. On CloudBase,
+apply it through the console SQL editor, then redeploy the API and the web.
+
 Enable the WeChat routes only after CloudBase authentication is configured:
 
 ```dotenv

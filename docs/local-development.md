@@ -360,6 +360,12 @@ Event, with the Event's current page order and component layouts. After
 [Deployment](deployment.md)) if the API connects as the runtime role, then
 restart the API.
 
+Migration `0080_add_user_change_notices_preference.sql` adds
+`users.change_notices` (on by default), whether a pop-up names the changes
+others make on the page being viewed, and redefines
+`chronelle_user_preferences_update` to merge it. Run `pnpm db:migrate` and
+restart the API; the runtime role script needs no rerun.
+
 Migration `0021_add_object_search_function.sql` adds `chronelle_object_search`,
 the read-only function the CloudBase search adapter calls. It changes no
 tables and needs no baseline.
