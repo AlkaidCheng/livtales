@@ -216,8 +216,8 @@ describe.sequential("CloudBase Person writes", () => {
     }
     expect(outcomes[1]).toEqual(outcomes[0]);
     expect(outcomes[0]).toEqual([
-      "userId must name a member of this workspace or a friend of one.",
-      "userId must name a member of this workspace or a friend of one.",
+      "userId must name a member of this workspace, a friend of one, or an account it shares with.",
+      "userId must name a member of this workspace, a friend of one, or an account it shares with.",
       "userId is already linked to another person.",
       "email must be a valid address.",
       "email must be a valid address.",
