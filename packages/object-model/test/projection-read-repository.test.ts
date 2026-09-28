@@ -93,6 +93,10 @@ function service(
   attached: readonly DocumentResource[] = [],
 ) {
   const repository: ProjectionReadRepository = {
+    readPersonNames: vi.fn().mockResolvedValue([
+      { id: "ben", displayName: "ben", nickname: null },
+      { id: "ana", displayName: "Ana", nickname: "Annie" },
+    ]),
     readAttachmentTargets: vi.fn().mockResolvedValue({
       event: { id: "root", displayName: "root" },
       included: [],
@@ -118,6 +122,38 @@ function service(
 }
 
 describe("projection read repository boundary", () => {
+  it("names each assignee of the visible tasks once, by name", async () => {
+    const assigned = (id: string, assigneeId: string | null) => ({
+      ...task(id, null),
+      assigneeId,
+    });
+    const { repository, service: projections } = service([
+      assigned("book", "ana"),
+      assigned("call", "ben"),
+      assigned("pack", "ana"),
+      assigned("rest", null),
+    ]);
+
+    const assignees = await projections.getAssignees(principal, "root");
+
+    expect(repository.listIncludedResources).toHaveBeenCalledWith(
+      principal,
+      "root",
+      ["task"],
+    );
+    expect(repository.readPersonNames).toHaveBeenCalledWith(principal, [
+      "ana",
+      "ben",
+    ]);
+    expect(assignees).toEqual({
+      sourceEventId: "root",
+      items: [
+        { id: "ana", displayName: "Ana", nickname: "Annie" },
+        { id: "ben", displayName: "ben", nickname: null },
+      ],
+    });
+  });
+
   it("partitions the detail rows by type and lists each Document once", async () => {
     const runSheet = document("run-sheet");
     const { repository, service: projections } = service(

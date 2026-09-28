@@ -20,6 +20,7 @@ import type {
   UpdateTaskInput,
 } from "@livtales/object-model";
 import {
+  assigneeProjectionResponseSchema,
   eventCreateRequestSchema,
   eventDetailResponseSchema,
   eventAttachmentTargetsResponseSchema,
@@ -480,6 +481,19 @@ export function registerEventPlanningRoutes(
       );
       return reminderResourceProjectionResponseSchema.parse(
         serializeResourceProjection(projection),
+      );
+    },
+  );
+  app.get(
+    "/api/events/:id/assignees",
+    { preHandler: app.authenticate },
+    async (request) => {
+      const { id } = parseRequest(objectIdParamsSchema, request.params);
+      return assigneeProjectionResponseSchema.parse(
+        await dependencies.projections.getAssignees(
+          requirePrincipal(request),
+          id,
+        ),
       );
     },
   );

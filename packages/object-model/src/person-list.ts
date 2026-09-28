@@ -30,8 +30,8 @@ export interface PersonReadRepository {
 }
 
 export function comparePersonNames(
-  first: PersonResource,
-  second: PersonResource,
+  first: Pick<PersonResource, "id" | "displayName">,
+  second: Pick<PersonResource, "id" | "displayName">,
 ): number {
   return (
     first.displayName

@@ -3,6 +3,7 @@ import type { UserPrincipal } from "@livtales/authorization";
 import {
   objectRelations,
   objects,
+  persons,
   type Database,
   type DatabaseTransaction,
 } from "@livtales/db";
@@ -24,6 +25,8 @@ import {
   type SectionReadRepository,
 } from "./sections.js";
 import type {
+  AssigneeName,
+  AssigneeProjection,
   DocumentResource,
   EventDetailProjection,
   EventPlanningResource,
@@ -133,6 +136,15 @@ export interface AttachmentTargetsReadResult {
  * shaping stay in the projection service so both backends share them.
  */
 export interface ProjectionReadRepository {
+  /**
+   * The names of the live people with these ids in the principal's
+   * workspace. It checks no permission on the people: callers pass only the
+   * assignees of tasks the principal may view.
+   */
+  readPersonNames(
+    principal: UserPrincipal,
+    personIds: readonly string[],
+  ): Promise<readonly AssigneeName[]>;
   readAttachmentTargets(
     principal: UserPrincipal,
     eventId: string,
@@ -153,6 +165,35 @@ export class PostgresProjectionReadRepository implements ProjectionReadRepositor
 
   constructor(database: Database) {
     this.#database = database;
+  }
+
+  async readPersonNames(
+    principal: UserPrincipal,
+    personIds: readonly string[],
+  ): Promise<readonly AssigneeName[]> {
+    if (personIds.length === 0) return [];
+    return this.#database
+      .select({
+        id: objects.id,
+        displayName: objects.displayName,
+        nickname: persons.nickname,
+      })
+      .from(objects)
+      .innerJoin(
+        persons,
+        and(
+          eq(persons.workspaceId, objects.workspaceId),
+          eq(persons.objectId, objects.id),
+        ),
+      )
+      .where(
+        and(
+          eq(objects.workspaceId, principal.workspaceId),
+          inArray(objects.id, [...personIds]),
+          eq(objects.objectType, "person"),
+          isNull(objects.deletedAt),
+        ),
+      );
   }
 
   readAttachmentTargets(
@@ -534,6 +575,32 @@ export class EventPlanningProjectionService {
       compareDates(first.remindAt, second.remindAt, first.id, second.id),
     );
     return { sourceEventId: eventId, items };
+  }
+
+  /**
+   * The people the Event's tasks are assigned to, by name: a task the
+   * principal may view names its assignee even where the principal may not
+   * open the person, and nothing more of the person is returned.
+   */
+  async getAssignees(
+    principal: UserPrincipal,
+    eventId: string,
+  ): Promise<AssigneeProjection> {
+    const tasks = await this.#getProjectionResources(principal, eventId, [
+      "task",
+    ]);
+    const ids = [
+      ...new Set(
+        tasks.flatMap(({ assigneeId }) =>
+          assigneeId === null ? [] : [assigneeId],
+        ),
+      ),
+    ];
+    const names = await this.#projectionReads.readPersonNames(principal, ids);
+    return {
+      sourceEventId: eventId,
+      items: [...names].sort(comparePersonNames),
+    };
   }
 
   async getPeople(

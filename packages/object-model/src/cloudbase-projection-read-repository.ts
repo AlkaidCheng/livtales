@@ -25,6 +25,7 @@ import {
   cloudbaseEventResource,
   cloudbaseExpenseResource,
   cloudbaseFilters,
+  cloudbaseNullableText,
   cloudbaseNoteColumns,
   cloudbaseNoteResource,
   cloudbasePersonColumns,
@@ -47,6 +48,7 @@ import type {
   ProjectionReadRepository,
 } from "./projection-service.js";
 import type {
+  AssigneeName,
   DocumentResource,
   EventPlanningResource,
   EventResource,
@@ -119,6 +121,37 @@ export class CloudBaseProjectionReadRepository implements ProjectionReadReposito
   ) {
     this.#client = client;
     this.#clock = clock;
+  }
+
+  async readPersonNames(
+    principal: UserPrincipal,
+    personIds: readonly string[],
+  ): Promise<readonly AssigneeName[]> {
+    const [rows, people] = await Promise.all([
+      readCloudBaseObjectRows(this.#client, principal, personIds, ["person"]),
+      this.#typedRows<CloudBasePersonRow>(
+        principal,
+        "persons",
+        cloudbasePersonColumns,
+        personIds,
+      ),
+    ]);
+    return rows.flatMap((row) => {
+      const id = cloudbaseText(row.id, "person id");
+      const person = people.get(id);
+      return person === undefined
+        ? []
+        : [
+            {
+              id,
+              displayName: cloudbaseText(row.display_name, "person name"),
+              nickname: cloudbaseNullableText(
+                person.nickname,
+                "person nickname",
+              ),
+            },
+          ];
+    });
   }
 
   async listIncludedResources<Type extends ProjectionObjectType>(

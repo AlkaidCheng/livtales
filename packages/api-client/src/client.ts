@@ -99,6 +99,8 @@ import {
   type PersonListQueryInput,
   type PersonListResponse,
   type PersonResourceProjectionResponse,
+  type AssigneeProjectionResponse,
+  assigneeProjectionResponseSchema,
   type PersonResponse,
   type PersonShareListResponse,
   type PersonUpdatePayload,
@@ -1573,6 +1575,14 @@ export class LivTalesApiClient {
     return this.#request(
       `/api/events/${id}/people`,
       personResourceProjectionResponseSchema,
+    );
+  }
+
+  /** The people the Event's visible tasks are assigned to, by name alone. */
+  getEventAssignees(id: string): Promise<AssigneeProjectionResponse> {
+    return this.#request(
+      `/api/events/${id}/assignees`,
+      assigneeProjectionResponseSchema,
     );
   }
 

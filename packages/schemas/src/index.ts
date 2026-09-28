@@ -83,6 +83,8 @@ export * from "./event-list.js";
 export * from "./event-pages.js";
 export * from "./personal-views.js";
 export {
+  type AssigneeProjectionResponse,
+  assigneeProjectionResponseSchema,
   type DocumentResponse,
   documentResponseSchema,
   type EventAttachmentTargetsResponse,
