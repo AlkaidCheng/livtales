@@ -97,14 +97,12 @@ describe("collection return state", () => {
     vi.spyOn(window, "sessionStorage", "get").mockImplementation(() => {
       throw new Error("Storage denied");
     });
-    const first = renderHook(useEventCollectionState, {
-      wrapper: EventCollectionProvider,
-    });
+    const first = renderHook(useEventCollectionState, { wrapper: Providers });
     act(() => first.result.current.change({ query: "Private plans" }));
     expect(first.result.current.criteria.query).toBe("Private plans");
     first.unmount();
     const reloaded = renderHook(useEventCollectionState, {
-      wrapper: EventCollectionProvider,
+      wrapper: Providers,
     });
     expect(reloaded.result.current.criteria.query).toBe("");
   });

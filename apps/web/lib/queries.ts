@@ -50,6 +50,7 @@ import {
   useQueryClient,
   useInfiniteQuery,
   type InfiniteData,
+  type QueryClient,
 } from "@tanstack/react-query";
 
 import {
@@ -72,7 +73,6 @@ import {
 } from "./commands";
 import { personDisplayName } from "./person-fields";
 import { useAuthSession } from "./auth-session";
-import { mergeEventTabs } from "./event-tabs";
 import type { EventView } from "./event-views";
 import { newId } from "./new-id";
 import { mergeWorkspaceRecency } from "./workspace-recency";
@@ -129,6 +129,25 @@ export function useDevelopmentSignIn() {
       startSession({ workspaceId: session.workspace.id });
     },
   });
+}
+
+/**
+ * The signed-in account's id, from the session already read or read now
+ * alongside the session query; undefined when the session cannot be read.
+ */
+export async function sessionAccountId(
+  client: LivTalesApiClient,
+  cache: QueryClient,
+): Promise<string | undefined> {
+  try {
+    const session = await cache.ensureQueryData({
+      queryKey: queryKeys.session,
+      queryFn: ({ signal }) => client.withSignal(signal).getSession(),
+    });
+    return session.user.id;
+  } catch {
+    return undefined;
+  }
 }
 
 export function useSessionQuery() {
@@ -210,12 +229,6 @@ export function useUpdatePreferences() {
               weekStart: input.weekStart,
             }),
             ...(input.rail !== undefined && { rail: input.rail ?? {} }),
-            ...(input.eventTabs !== undefined && {
-              eventTabs: mergeEventTabs(
-                previous.user.eventTabs,
-                input.eventTabs,
-              ),
-            }),
             ...(input.workspaceRecency !== undefined && {
               workspaceRecency: mergeWorkspaceRecency(
                 previous.user.workspaceRecency,
@@ -294,7 +307,10 @@ export function useNoteWorkspaceOpened() {
   );
 }
 
-export function useEventsQuery(input: Omit<EventListQueryInput, "cursor">) {
+export function useEventsQuery(
+  input: Omit<EventListQueryInput, "cursor">,
+  enabled = true,
+) {
   const client = useApiClient();
   const { credential } = useAuthSession();
   const queryClient = useQueryClient();
@@ -305,7 +321,7 @@ export function useEventsQuery(input: Omit<EventListQueryInput, "cursor">) {
     credential?.workspaceId,
   ];
   const result = useInfiniteQuery({
-    enabled: credential !== null,
+    enabled: enabled && credential !== null,
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam, signal }) =>
       client.withSignal(signal).listEvents({

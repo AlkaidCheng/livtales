@@ -27,24 +27,20 @@ vi.mock("next/navigation", () => ({
 }));
 
 let store: SandboxStore;
-let stored: Record<string, string>;
+
+/** The Tasks page's choices the sample account keeps. */
+async function keptChoices(): Promise<Record<string, unknown>> {
+  const response = await store.fetch("/api/account/pages/tasks");
+  return ((await response.json()) as { choices: Record<string, unknown> })
+    .choices;
+}
 
 beforeEach(() => {
-  stored = {};
   let saved: string | null = null;
   store = new SandboxStore({
     getItem: () => saved,
     setItem: (_key, value) => {
       saved = value;
-    },
-  });
-  vi.stubGlobal("localStorage", {
-    getItem: (key: string) => stored[key] ?? null,
-    setItem: (key: string, value: string) => {
-      stored[key] = value;
-    },
-    removeItem: (key: string) => {
-      delete stored[key];
     },
   });
   window.sessionStorage.setItem(
@@ -107,7 +103,7 @@ async function chooseLayout(
 }
 
 describe("TasksPage", () => {
-  it("lists open tasks from the workspace, filters, and remembers the view", async () => {
+  it("lists open tasks from the workspace, filters, and keeps the view on the account", async () => {
     const user = userEvent.setup();
     render(
       <Providers>
@@ -142,7 +138,9 @@ describe("TasksPage", () => {
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.queryByRole("region", { name: /No due date/ })).toBeNull();
     expect(screen.getByRole("heading", { name: "Finished · 1" })).toBeVisible();
-    expect(stored["chronelle.task-view"]).toBe("by-day");
+    await waitFor(async () =>
+      expect((await keptChoices()).layout).toBe("by-day"),
+    );
     // The week and the calendar ask the server for their days in this time
     // zone, so the undated task is not in them.
     await chooseLayout(user, "Calendar");
@@ -151,13 +149,17 @@ describe("TasksPage", () => {
       monthDays(new Date()).length,
     );
     expect(screen.queryByRole("region", { name: "No due date" })).toBeNull();
-    expect(stored["chronelle.task-view"]).toBe("month");
+    await waitFor(async () =>
+      expect((await keptChoices()).layout).toBe("month"),
+    );
     await chooseLayout(user, "By week");
     expect(screen.getByRole("group", { name: "Period" })).toBeVisible();
     await waitFor(() =>
       expect(document.querySelector(".week-day.is-today")).not.toBeNull(),
     );
-    expect(stored["chronelle.task-view"]).toBe("week");
+    await waitFor(async () =>
+      expect(await keptChoices()).toEqual({ show: "all", layout: "week" }),
+    );
     const requests = vi
       .mocked(fetch)
       .mock.calls.map(([url]) => String(url))
@@ -177,8 +179,11 @@ describe("TasksPage", () => {
       );
   });
 
-  it("opens on a remembered month and loads every page of its days", async () => {
-    stored["chronelle.task-view"] = "month";
+  it("opens on a kept month and loads every page of its days", async () => {
+    await store.fetch("/api/account/pages/tasks", {
+      method: "PATCH",
+      body: JSON.stringify({ choices: { layout: "month" } }),
+    });
     // More tasks due today than one page holds.
     const today = new Date();
     const pad = (part: number) => String(part).padStart(2, "0");

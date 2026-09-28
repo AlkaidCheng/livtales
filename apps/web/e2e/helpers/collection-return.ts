@@ -7,11 +7,17 @@ import {
   openSearchPage,
 } from "./quiet-chrome";
 
+/**
+ * Filters, sorts, and lays out the Events list, opens a card, and returns
+ * to it. The name typed lasts for the tab; `choicesKept` says whether the
+ * page's other choices outlive a reload, as the account keeps them.
+ */
 export async function exerciseCollectionReturn(
   page: Page,
   testInfo: TestInfo,
   name: string,
   total: number,
+  { choicesKept = true }: { readonly choicesKept?: boolean } = {},
 ) {
   const input = page.getByLabel("Filter events by name");
   await input.fill(name);
@@ -98,5 +104,5 @@ export async function exerciseCollectionReturn(
   await expect(input).toHaveValue("");
   await expect(
     page.getByRole("button", { name: "Sort events" }),
-  ).toHaveAttribute("data-value", "date");
+  ).toHaveAttribute("data-value", choicesKept ? "name" : "date");
 }

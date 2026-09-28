@@ -188,31 +188,32 @@ test("starts a new event's strip minimal and keeps the account's tabs through th
   expect(await viewTabs(page)).toEqual(arranged);
 
   // The arrangement is the account's: a reload shows it again, and the
-  // session carries it for this event alone.
+  // account's view of this event keeps it.
   await page.reload();
   await expect(
     page.getByRole("tab", { name: "Overview", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   expect(await viewTabs(page)).toEqual(arranged);
-  const me = await request.get("/api/auth/session", { headers });
-  expect((await me.json()).user.eventTabs).toEqual({
-    [event.id]: {
-      order: [
-        "overview",
-        "todos",
-        "sharing",
-        "removed-links",
-        "itinerary",
-        "expenses",
-        "reminders",
-        "calendar",
-        "people",
-        "notes",
-        "timeline",
-      ],
-      hidden: ["sharing", "removed-links", "expenses"],
-      removed: ["files"],
-    },
+  const view = await request.get(
+    `/api/events/${event.id}/layout?include=yours`,
+    { headers },
+  );
+  expect((await view.json()).yours.tabs).toEqual({
+    order: [
+      "overview",
+      "todos",
+      "sharing",
+      "removed-links",
+      "itinerary",
+      "expenses",
+      "reminders",
+      "calendar",
+      "people",
+      "notes",
+      "timeline",
+    ],
+    hidden: ["sharing", "removed-links", "expenses"],
+    removed: ["files"],
   });
 
   // A hidden view still opens from its address, on the strip while shown;
@@ -307,25 +308,23 @@ test("keeps a strip arranged before the minimal defaults, and starts a view it n
   ).json();
   // A strip kept whole names every view it showed; Notes is left out, as
   // a view the app gained after the strip was arranged would be.
-  const kept = await request.patch("/api/auth/me", {
+  const kept = await request.patch(`/api/events/${event.id}/view`, {
     headers,
     data: {
-      eventTabs: {
-        [event.id]: {
-          order: [
-            "overview",
-            "todos",
-            "calendar",
-            "timeline",
-            "itinerary",
-            "expenses",
-            "reminders",
-            "files",
-            "people",
-            "sharing",
-            "removed-links",
-          ],
-        },
+      tabs: {
+        order: [
+          "overview",
+          "todos",
+          "calendar",
+          "timeline",
+          "itinerary",
+          "expenses",
+          "reminders",
+          "files",
+          "people",
+          "sharing",
+          "removed-links",
+        ],
       },
     },
   });
@@ -361,7 +360,7 @@ test("keeps a strip arranged before the minimal defaults, and starts a view it n
   ).toHaveAttribute("aria-pressed", "false");
 });
 
-test("opens an event where the account left it in this browser, else on its Overview", async ({
+test("opens an event where the account left it, else on its Overview", async ({
   page,
   request,
 }) => {

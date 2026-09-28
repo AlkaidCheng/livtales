@@ -27,3 +27,7 @@ export function useApiClient() {
   if (client === null) throw new Error("Sandbox API provider required.");
   return client;
 }
+/** The sample store answers at once, so a request sent as the page is left needs no client of its own. */
+export function useLeavingApiClient() {
+  return useApiClient();
+}

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, renderHook } from "@testing-library/react";
+import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { localeCookie, localeStorageKey } from "../i18n/locales";
@@ -10,10 +10,7 @@ import {
   displayChoices,
   displayStorageKey,
 } from "../lib/display-preferences";
-import {
-  EventCollectionProvider,
-  useEventCollectionState,
-} from "../lib/event-collection-state";
+import { keptViewStores } from "../lib/kept-views";
 import {
   sessionCookieName,
   sessionPresenceCookieName,
@@ -61,11 +58,15 @@ describe("names browsers already store", () => {
     expect(displayBootstrap).toContain('getItem("chronelle."+name)');
   });
 
-  it("keeps the Event collection layout key", () => {
-    const { result } = renderHook(() => useEventCollectionState(), {
-      wrapper: EventCollectionProvider,
+  it("reads the view stores under the names they were kept by", () => {
+    expect(keptViewStores).toEqual({
+      places: "chronelle.event-places",
+      choices: "chronelle.view-choices",
+      eventLayout: "chronelle.event-layout",
+      peopleLayout: "chronelle.people-layout",
+      taskView: "chronelle.task-view",
+      folds: expect.any(Function),
     });
-    act(() => result.current.changeLayout("list"));
-    expect(window.localStorage.getItem("chronelle.event-layout")).toBe("list");
+    expect(keptViewStores.folds("home")).toBe("livtales.event-folds.home");
   });
 });

@@ -21,12 +21,20 @@ function reorder<T extends { id: string }>(
     : remaining;
 }
 
-export function moveEventPage(
-  pages: EventPage[],
-  pageId: string,
-  beforeId: string | null,
-): EventPage[] {
-  return reorder(pages, pageId, beforeId);
+/**
+ * The event's pages in an account's order, each page as it is; a page the
+ * order does not name follows in the event's order.
+ */
+export function pagesInOrder(
+  pages: readonly EventPage[],
+  order: readonly string[] | undefined,
+): readonly EventPage[] {
+  if (order === undefined) return pages;
+  const ordered = order.flatMap((id) => {
+    const page = pages.find((candidate) => candidate.id === id);
+    return page === undefined ? [] : [page];
+  });
+  return [...ordered, ...pages.filter((page) => !order.includes(page.id))];
 }
 
 /** Layout moves preserve component identities and never touch canonical records. */

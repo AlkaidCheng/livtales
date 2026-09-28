@@ -100,21 +100,18 @@ function ProjectionResult<T>({
   );
 }
 
-/** A component's own kept choices: its layout (null for the kind's default) and the Notes order. */
+/** A component's own kept choices: a tab's layout (none for the kind's default) and the Notes order. */
 type ComponentChoices = {
-  readonly layout: EventComponentView | null;
+  readonly layout?: EventComponentView;
   readonly noteSort: NoteListQuery["sort"];
 };
 
-const defaultComponentChoices: ComponentChoices = {
-  layout: null,
-  noteSort: "edited",
-};
+const defaultComponentChoices: ComponentChoices = { noteSort: "edited" };
 
 function readComponentChoices(stored: StoredChoices): ComponentChoices {
   const layout = eventComponentViewSchema.safeParse(stored.layout);
   return {
-    layout: layout.success ? layout.data : null,
+    ...(layout.success ? { layout: layout.data } : {}),
     noteSort: stored.noteSort === "title" ? "title" : "edited",
   };
 }
@@ -138,12 +135,11 @@ export function EventComponent({
 }) {
   const client = useApiClient();
   useForgetInaccessibleEventDrafts(eventId, !canEdit);
-  // Shown as the event's tab, the layout and the Notes order are the
-  // view's kept choices; inside a page, the layout is the page's and the
-  // order lasts while the component is open.
+  // The Notes order is one of the choices the account keeps for the tab
+  // or the page component; so is the layout of a tab, while a page
+  // component's layout comes with the page (`view`).
   const tab = useViewTab();
   const [choices, change] = useViewChoices(
-    tab?.choicesKey ?? null,
     defaultComponentChoices,
     readComponentChoices,
   );
@@ -153,7 +149,7 @@ export function EventComponent({
   const kind = storedKind;
   const view = viewOf({
     kind,
-    view: tab === null ? storedView : (choices.layout ?? undefined),
+    view: tab === null ? storedView : choices.layout,
   });
   const onChangeView =
     tab === null

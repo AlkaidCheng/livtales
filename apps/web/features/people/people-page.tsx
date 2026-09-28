@@ -18,9 +18,11 @@ import {
   defaultPersonFilters,
   filterPersons,
   isPersonLayout,
+  personAccountFilters,
   type PersonFilters,
   type PersonLayout,
   type PersonSort,
+  personSorts,
   sortPersons,
 } from "../../lib/person-collection";
 import {
@@ -30,6 +32,7 @@ import {
 } from "../../lib/queries";
 import { useIsPhone } from "../../lib/use-media";
 import { usePersonConnections } from "../../lib/use-person-connections";
+import { type StoredChoices, usePageChoices } from "../../lib/view-choices";
 import { InviteFriendDialog } from "../friends/invite-friend-dialog";
 import {
   PersonChips,
@@ -41,14 +44,39 @@ import { PersonForm } from "./person-form";
 import { PersonInspector } from "./person-inspector";
 import { PersonListing } from "./person-row";
 
-const layoutStorageKey = "chronelle.people-layout";
+/** The People page's choices the account keeps: its layout, sort, and filters. */
+type PeoplePageChoices = PersonFilters & {
+  readonly layout: PersonLayout;
+  readonly sort: PersonSort;
+};
+
+const defaultPeoplePageChoices: PeoplePageChoices = {
+  ...defaultPersonFilters,
+  layout: "list",
+  sort: "name",
+};
+
+function readPeoplePageChoices(stored: StoredChoices): PeoplePageChoices {
+  return {
+    layout: isPersonLayout(stored.layout) ? stored.layout : "list",
+    sort: personSorts.includes(stored.sort as PersonSort)
+      ? (stored.sort as PersonSort)
+      : "name",
+    account: personAccountFilters.includes(
+      stored.account as PersonFilters["account"],
+    )
+      ? (stored.account as PersonFilters["account"])
+      : "all",
+    label: typeof stored.label === "string" ? stored.label : "",
+  };
+}
 
 /**
  * Everyone the workspace keeps track of, as rows or as namecards, in name
  * order unless another is chosen, narrowed by connection and label from
- * the Filter menu or the chips under the toolbar. The layout is a device
- * preference like the Event collection's; the filter, sort, and name
- * query live with the tab. Invite a friend opens from the toolbar too.
+ * the Filter menu or the chips under the toolbar. The layout, sort, and
+ * filters are kept on the account; the name query lives with the tab.
+ * Invite a friend opens from the toolbar too.
  */
 export function PeoplePage() {
   const t = useTranslations("people");
@@ -56,9 +84,14 @@ export function PeoplePage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isComposing, setIsComposing] = useState(false);
-  const [filters, setFilters] = useState<PersonFilters>(defaultPersonFilters);
-  const [sort, setSort] = useState<PersonSort>("name");
-  const [layout, setLayout] = useState<PersonLayout>("list");
+  const kept = usePageChoices(
+    "people",
+    defaultPeoplePageChoices,
+    readPeoplePageChoices,
+  );
+  const { layout, sort, account, label } = kept.choices;
+  const filters = useMemo(() => ({ account, label }), [account, label]);
+  const setFilters = kept.change;
   const [isAdding, setIsAdding] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -67,14 +100,6 @@ export function PeoplePage() {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [query, isComposing]);
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(layoutStorageKey);
-      if (isPersonLayout(stored)) setLayout(stored);
-    } catch {
-      // The list stays usable when browser storage is unavailable.
-    }
-  }, []);
   const people = usePersonsQuery(true, { query: debouncedQuery });
   const labels = useLabelsQuery();
   const session = useSessionQuery();
@@ -92,15 +117,6 @@ export function PeoplePage() {
   const filtered =
     debouncedQuery !== "" || activePersonFilterCount(filters) > 0;
 
-  function changeLayout(next: PersonLayout) {
-    setLayout(next);
-    try {
-      window.localStorage.setItem(layoutStorageKey, next);
-    } catch {
-      // A preference that cannot be stored still applies to this page.
-    }
-  }
-
   const labelChoices = labels.data?.items ?? [];
   const context = {
     canEdit: true,
@@ -109,6 +125,13 @@ export function PeoplePage() {
     me,
     onEdit: setEditingId,
   };
+
+  if (kept.isPending)
+    return (
+      <main className="workspace-page">
+        <LoadingState label={t("loading")} />
+      </main>
+    );
 
   return (
     <main className="workspace-page" tabIndex={-1}>
@@ -136,8 +159,14 @@ export function PeoplePage() {
             labels={labelChoices}
             onChange={setFilters}
           />
-          <PersonSortControl onChange={setSort} sort={sort} />
-          <PersonLayoutControl layout={layout} onChange={changeLayout} />
+          <PersonSortControl
+            onChange={(next) => kept.change({ sort: next })}
+            sort={sort}
+          />
+          <PersonLayoutControl
+            layout={layout}
+            onChange={(next) => kept.change({ layout: next })}
+          />
           <IconButton
             disabled={people.isFetching || changingQuery}
             label={t("refresh")}

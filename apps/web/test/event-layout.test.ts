@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { EventPage } from "@livtales/schemas";
 import {
   moveEventComponent,
-  moveEventPage,
+  pagesInOrder,
   setEventComponentView,
 } from "../lib/event-layout";
 
@@ -23,16 +23,12 @@ function fixture(): EventPage[] {
 }
 
 describe("event layout moves", () => {
-  it("reorders pages without changing their identity or contents", () => {
+  it("orders pages as an account keeps them without changing their identity or contents", () => {
     const pages = fixture();
-    const moved = moveEventPage(pages, "work", "later");
-    expect(moved.map((page) => page.id)).toEqual(["day", "work", "later"]);
-    expect(moved[1]).toBe(pages[0]);
-    expect(moveEventPage(moved, "day", null).map((page) => page.id)).toEqual([
-      "work",
-      "later",
-      "day",
-    ]);
+    const ordered = pagesInOrder(pages, ["later", "missing", "work"]);
+    expect(ordered.map((page) => page.id)).toEqual(["later", "work", "day"]);
+    expect(ordered[1]).toBe(pages[0]);
+    expect(pagesInOrder(pages, undefined)).toBe(pages);
     expect(pages.map((page) => page.id)).toEqual(["work", "day", "later"]);
   });
 
@@ -76,9 +72,6 @@ describe("event layout moves", () => {
       ["a", "day", "missing"],
     ] as const)
       expect(moveEventComponent(pages, id, target, before)).toBe(pages);
-    expect(moveEventPage(pages, "work", "day")).toBe(pages);
-    expect(moveEventPage(pages, "missing", null)).toBe(pages);
-    expect(moveEventPage(pages, "work", "missing")).toBe(pages);
     const full = pages.map((page) =>
       page.id === "day"
         ? {

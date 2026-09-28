@@ -1,13 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { ErrorNotice, LoadingState } from "../../components/feedback";
 import { AccessLine } from "../../components/access-line";
@@ -53,17 +47,16 @@ import {
   useEventAddress,
   useEventView,
 } from "../../lib/use-event-view";
-import {
-  rememberEventPlace,
-  rememberedEventPlace,
-} from "../../lib/event-place";
-import { viewChoicesKey } from "../../lib/view-choices";
+import { useEventViewState } from "../../lib/event-layout-queries";
+import { type EventPlace, placeOf } from "../../lib/event-place";
+import { ViewChoicesScope } from "../../lib/view-choices";
 import { EventOverview } from "./event-overview";
 import { EventPages } from "./event-pages";
 import { EventStrip } from "./event-strip";
 import { EventSwipe, type SwipeTab } from "./event-swipe";
 import { EventViewGallery } from "./event-view-gallery";
 import { ManageTabsDialog } from "./manage-tabs-dialog";
+import { useKeepEventPlace } from "./use-event-place";
 import { useEventPagesState } from "./use-event-pages";
 import { narrowedViews, useEventTabs } from "./use-event-tabs";
 import { type TabCount, type ViewTab, ViewTabProvider } from "./view-head";
@@ -95,11 +88,10 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   );
   const [copied, setCopied] = useState("");
   const [moving, setMoving] = useState(false);
-  const sessionQuery = useSessionQuery();
-  const session = sessionQuery.data;
+  const session = useSessionQuery().data;
   const phone = useIsPhone();
   // The shown view's controls and chips go on the strip and its count on
-  // its tab; its choices are kept per view in this browser.
+  // its tab; its choices are kept in the account's view of the event.
   const [controlsSlot, setControlsSlot] = useState<HTMLElement | null>(null);
   const [chipsSlot, setChipsSlot] = useState<HTMLElement | null>(null);
   const [tabCount, setTabCount] = useState<{
@@ -139,44 +131,32 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
     narrowing,
   );
   // An event opened without a view or page returns to where the account
-  // left it in this browser (a page only while it still exists), else to
-  // its Overview; the address then names that place. Without an account
-  // to read the place for, the event opens on its Overview.
+  // left it, on any device (a page only while it still exists), else to
+  // its Overview; the address then names that place. The place comes with
+  // the account's view of the event; without it, the event opens on its
+  // Overview.
   const address = useEventAddress(eventId);
   const bare = address === "bare";
-  const accountId = session?.user.id;
-  const sessionSettled = !sessionQuery.isPending;
-  const selectedPageId = pagesState.selectedPage?.id;
+  const keptPlace = useEventViewState(eventId)?.place ?? null;
+  // The account's view has loaded, or its first read failed.
+  const viewSettled = !layout.isPending || layout.failureCount > 0;
   useLayoutEffect(() => {
-    if (!bare || !sessionSettled) return;
-    const place =
-      accountId === undefined ? null : rememberedEventPlace(accountId, eventId);
-    if (place !== null && "page" in place) {
-      if (layout.isPending) return;
-      landOnEventPlace(
-        pagesState.pages.some((page) => page.id === place.page)
-          ? place
-          : { view: "overview" },
-      );
-      return;
-    }
-    landOnEventPlace(place ?? { view: "overview" });
-  }, [
-    bare,
-    sessionSettled,
-    accountId,
-    eventId,
-    layout.isPending,
-    pagesState.pages,
-  ]);
-  useEffect(() => {
-    if (address !== "placed" || accountId === undefined || activeTab === null)
-      return;
-    if (activeTab !== "pages")
-      rememberEventPlace(accountId, eventId, { view: activeTab });
-    else if (selectedPageId !== undefined)
-      rememberEventPlace(accountId, eventId, { page: selectedPageId });
-  }, [address, accountId, eventId, activeTab, selectedPageId]);
+    if (!bare || !viewSettled) return;
+    landOnEventPlace(placeOf(keptPlace) ?? { view: "overview" });
+  }, [bare, viewSettled, keptPlace]);
+  const selectedPageId = pagesState.selectedPage?.id;
+  const place = useMemo<EventPlace | null>(
+    () =>
+      address !== "placed" || activeTab === null
+        ? null
+        : activeTab !== "pages"
+          ? { view: activeTab }
+          : selectedPageId === undefined
+            ? null
+            : { page: selectedPageId },
+    [address, activeTab, selectedPageId],
+  );
+  const savePlace = useKeepEventPlace(eventId, place);
   const essentialQueries = [queries.event, queries.access];
   const failedQuery =
     essentialQueries.find(
@@ -330,10 +310,6 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
   const viewTab: ViewTab = {
     controls: controlsSlot,
     chips: chipsSlot,
-    choicesKey:
-      session === undefined
-        ? null
-        : viewChoicesKey(session.user.id, eventId, shownTab),
     onCount,
   };
 
@@ -428,7 +404,13 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
                 </>
               ) : null}
               {canMove ? (
-                <MenuItem icon={<MoveIcon />} onSelect={() => setMoving(true)}>
+                <MenuItem
+                  icon={<MoveIcon />}
+                  onSelect={() => {
+                    savePlace();
+                    setMoving(true);
+                  }}
+                >
                   {spaces("menu")}
                 </MenuItem>
               ) : null}
@@ -458,7 +440,11 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
                   <MenuItem
                     icon={<TrashIcon />}
                     tone="danger"
-                    onSelect={() => openLifecycle(event)}
+                    onSelect={() => {
+                      // The place is kept before the event can go to Trash.
+                      savePlace();
+                      openLifecycle(event);
+                    }}
                   >
                     {t("moveToTrash")}
                   </MenuItem>
@@ -547,7 +533,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
             id={`event-panel-${shownTab}`}
             role="tabpanel"
           >
-            {activeProjection?.isPending ? (
+            {!viewSettled || activeProjection?.isPending ? (
               <LoadingState label={t("loadingView")} />
             ) : activeProjection?.isError ? (
               <ErrorNotice
@@ -556,23 +542,27 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
               />
             ) : (
               <ViewTabProvider value={viewTab}>
-                {shownTab === "overview" && detail !== undefined ? (
-                  <EventOverview detail={detail} onOpen={setActiveTab} />
-                ) : null}
-                {component.success ? (
-                  <EventComponent
-                    key={component.data}
-                    kind={component.data}
-                    eventId={eventId}
-                    canEdit={canEdit}
-                  />
-                ) : null}
-                {shownTab === "sharing" && canShare && detail !== undefined ? (
-                  <SharingPanel detail={detail} eventId={eventId} />
-                ) : null}
-                {shownTab === "removed-links" ? (
-                  <RemovedLinksPanel objectId={eventId} />
-                ) : null}
+                <ViewChoicesScope eventId={eventId} choicesKey={shownTab}>
+                  {shownTab === "overview" && detail !== undefined ? (
+                    <EventOverview detail={detail} onOpen={setActiveTab} />
+                  ) : null}
+                  {component.success ? (
+                    <EventComponent
+                      key={component.data}
+                      kind={component.data}
+                      eventId={eventId}
+                      canEdit={canEdit}
+                    />
+                  ) : null}
+                  {shownTab === "sharing" &&
+                  canShare &&
+                  detail !== undefined ? (
+                    <SharingPanel detail={detail} eventId={eventId} />
+                  ) : null}
+                  {shownTab === "removed-links" ? (
+                    <RemovedLinksPanel objectId={eventId} />
+                  ) : null}
+                </ViewChoicesScope>
               </ViewTabProvider>
             )}
           </div>
@@ -604,7 +594,7 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
       {tabsDialog === "manage" ? (
         <ManageTabsDialog
           eventId={eventId}
-          layout={layout.data}
+          pages={pagesState.pages}
           canEdit={canEdit}
           tabs={eventTabs}
           onClose={() => setTabsDialog(null)}

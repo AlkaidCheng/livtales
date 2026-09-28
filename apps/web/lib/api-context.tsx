@@ -5,7 +5,13 @@ import { createContext, type ReactNode, useContext, useMemo } from "react";
 
 import { useAuthSession } from "./auth-session";
 
-const ApiClientContext = createContext<LivTalesApiClient | null>(null);
+interface ApiClients {
+  readonly client: LivTalesApiClient;
+  /** Requests that outlive the page, sent as it is left. */
+  readonly leaving: LivTalesApiClient;
+}
+
+const ApiClientContext = createContext<ApiClients | null>(null);
 
 export function ApiClientProvider({
   children,
@@ -14,26 +20,42 @@ export function ApiClientProvider({
 }) {
   const { credential, signal } = useAuthSession();
 
-  const client = useMemo(
-    () =>
-      new LivTalesApiClient({
+  const clients = useMemo(
+    () => ({
+      client: new LivTalesApiClient({
         getCredential: () => credential,
         signal,
       }),
+      leaving: new LivTalesApiClient({
+        getCredential: () => credential,
+        signal,
+        fetch: (input, init) =>
+          globalThis.fetch(input, { ...init, keepalive: true }),
+      }),
+    }),
     [credential, signal],
   );
 
   return (
-    <ApiClientContext.Provider value={client}>
+    <ApiClientContext.Provider value={clients}>
       {children}
     </ApiClientContext.Provider>
   );
 }
 
-export function useApiClient(): LivTalesApiClient {
-  const client = useContext(ApiClientContext);
-  if (client === null) {
+function useApiClients(): ApiClients {
+  const clients = useContext(ApiClientContext);
+  if (clients === null) {
     throw new Error("useApiClient must be used within ApiClientProvider.");
   }
-  return client;
+  return clients;
+}
+
+export function useApiClient(): LivTalesApiClient {
+  return useApiClients().client;
+}
+
+/** The client for a request sent as the page is left, which the browser completes after the page is gone. */
+export function useLeavingApiClient(): LivTalesApiClient {
+  return useApiClients().leaving;
 }

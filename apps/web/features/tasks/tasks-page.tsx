@@ -39,9 +39,10 @@ import {
   defaultTaskPageChoices,
   readTaskPageChoices,
   standingChoices,
+  type TaskPageChoices,
 } from "../../lib/task-choices";
 import { useIsPhone } from "../../lib/use-media";
-import { useViewChoices, viewChoicesKey } from "../../lib/view-choices";
+import { type StoredChoices, usePageChoices } from "../../lib/view-choices";
 import { ManageLabelsButton } from "./label-manager";
 import { AddTaskRow } from "./add-task-row";
 import { FinishedFoot, FinishedHead } from "./finished-tasks";
@@ -53,7 +54,26 @@ import {
 } from "./task-controls";
 import { TaskListView } from "./task-list-view";
 
-const viewStorageKey = "chronelle.task-view";
+/** The Tasks page's choices the account keeps: the list's, and its layout. */
+type TasksPageChoices = TaskPageChoices & {
+  readonly layout: EventComponentView;
+};
+
+const defaultTasksPageChoices: TasksPageChoices = {
+  ...defaultTaskPageChoices,
+  layout: "list",
+};
+
+function readTasksPageChoices(stored: StoredChoices): TasksPageChoices {
+  const layout = eventComponentViewSchema.safeParse(stored.layout);
+  return {
+    ...readTaskPageChoices(stored),
+    layout:
+      layout.success && viewsOf("todos").includes(layout.data)
+        ? layout.data
+        : "list",
+  };
+}
 
 /** How many finished tasks the foot counts before it says "50+". */
 const finishedCountLimit = 50;
@@ -61,11 +81,10 @@ const finishedCountLimit = 50;
 /**
  * Every task the user may view in the workspace, on its own or inside an
  * Event, as a list or by day, in manual order unless another sort is
- * chosen. The layout is a device preference like the Event collection's;
- * what the list shows, its sort, and its filters (Show, From, Assigned to,
- * Label) are kept for the account in this browser and show as chips, and
- * the search lives with the tab. While the finished tasks are hidden, the
- * list's foot counts them and shows them on request.
+ * chosen. The layout, what the list shows, its sort, and its filters
+ * (Show, From, Assigned to, Label) are kept on the account, the filters
+ * showing as chips; the search lives with the tab. While the finished
+ * tasks are hidden, the list's foot counts them and shows them on request.
  */
 export function TasksPage() {
   const t = useTranslations("tasksPage");
@@ -74,7 +93,6 @@ export function TasksPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [isComposing, setIsComposing] = useState(false);
-  const [view, setView] = useState<EventComponentView>("list");
   const [eventQuery, setEventQuery] = useState("");
   // The full editor for a new task opens from the header, or from an add
   // row's composer with its fields; for a task, from its row's composer.
@@ -98,25 +116,13 @@ export function TasksPage() {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [query, isComposing]);
-  useEffect(() => {
-    try {
-      const stored = eventComponentViewSchema.safeParse(
-        window.localStorage.getItem(viewStorageKey),
-      );
-      if (stored.success && viewsOf("todos").includes(stored.data))
-        setView(stored.data);
-    } catch {
-      // The list stays usable when browser storage is unavailable.
-    }
-  }, []);
   const session = useSessionQuery();
-  const [choices, change] = useViewChoices(
-    session.data === undefined
-      ? null
-      : viewChoicesKey(session.data.user.id, "tasks"),
-    defaultTaskPageChoices,
-    readTaskPageChoices,
-  );
+  const {
+    choices,
+    change,
+    isPending: choicesPending,
+  } = usePageChoices("tasks", defaultTasksPageChoices, readTasksPageChoices);
+  const view = choices.layout;
   const labels = useLabelsQuery();
   const persons = usePersonsQuery();
   // The person linked to the signed-in account, when one exists.
@@ -154,12 +160,14 @@ export function TasksPage() {
           limit: 50,
         }),
   };
-  const tasks = useTasksQuery(listed);
+  // The list waits for the choices the account keeps, so it is read once
+  // and never shown in the defaults first.
+  const tasks = useTasksQuery(listed, !choicesPending);
   // While Show hides them, the finished tasks the same filters keep are
   // counted for the list's foot, up to a page.
   const finished = useTasksQuery(
     { ...listed, filter: "done", limit: finishedCountLimit },
-    show === "open",
+    show === "open" && !choicesPending,
   );
   const { fetchNextPage, hasNextPage, isFetching: isFetchingTasks } = tasks;
   useEffect(() => {
@@ -258,14 +266,12 @@ export function TasksPage() {
     [],
   );
 
-  function changeView(next: EventComponentView) {
-    setView(next);
-    try {
-      window.localStorage.setItem(viewStorageKey, next);
-    } catch {
-      // A preference that cannot be stored still applies to this page.
-    }
-  }
+  if (choicesPending)
+    return (
+      <main className="workspace-page">
+        <LoadingState label={t("loading")} />
+      </main>
+    );
 
   return (
     <main className="workspace-page" ref={pageRoot} tabIndex={-1}>
@@ -334,7 +340,7 @@ export function TasksPage() {
               options={filterOptions}
             />
             <LayoutControl
-              onChange={changeView}
+              onChange={(next) => change({ layout: next })}
               view={view}
               views={viewsOf("todos")}
             />

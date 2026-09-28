@@ -8,9 +8,19 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { PageChoicesUpdate, ViewChoices } from "@livtales/schemas";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  vi,
+} from "vitest";
 import { Providers } from "../app/providers";
 import { EventList } from "../features/events/event-list";
+import { mergeChoices } from "../lib/personal-views";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
@@ -47,10 +57,34 @@ const page = (items: (typeof event)[], nextCursor: string | null = null) =>
     asOf: "2026-09-07T00:00:00.000000Z",
   });
 
+/**
+ * Answers the Events page's kept choices from memory, as the account keeps
+ * them, and every other request with `list`; returns the choices kept.
+ */
+function serveEvents(
+  list: Mock<typeof globalThis.fetch>,
+  kept: Record<string, ViewChoices[string]> = {},
+) {
+  const choices = { current: kept as ViewChoices };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>(async (input, init) => {
+      if (String(input) !== "/api/account/pages/events")
+        return list(input, init);
+      if (init?.method === "PATCH")
+        choices.current = mergeChoices(
+          choices.current,
+          (JSON.parse(String(init.body)) as PageChoicesUpdate).choices,
+        );
+      return Response.json({ page: "events", choices: choices.current });
+    }),
+  );
+  return choices;
+}
+
 describe("EventList", () => {
   beforeEach(() => {
     vi.spyOn(window, "scrollTo").mockImplementation(() => {});
-    vi.stubGlobal("localStorage", { getItem: vi.fn(), setItem: vi.fn() });
     window.sessionStorage.setItem(
       "chronelle.session",
       JSON.stringify({ accessToken: "test-session", workspaceId }),
@@ -72,7 +106,7 @@ describe("EventList", () => {
       )
       .mockResolvedValueOnce(page([]))
       .mockResolvedValueOnce(page([event]));
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     render(
       <Providers>
@@ -107,7 +141,7 @@ describe("EventList", () => {
       .fn<typeof globalThis.fetch>()
       .mockResolvedValueOnce(page([event]))
       .mockImplementation(async () => page([]));
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     render(
       <Providers>
@@ -150,7 +184,7 @@ describe("EventList", () => {
       .mockImplementationOnce(async () => error())
       .mockImplementationOnce(async () => error())
       .mockResolvedValueOnce(page([another]));
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     render(
       <Providers>
@@ -181,7 +215,7 @@ describe("EventList", () => {
           ? page([another])
           : page([event], "next_page"),
       );
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     const view = render(
       <Providers>
@@ -254,7 +288,7 @@ describe("EventList", () => {
           dated(5, "A quiet studio weekend", null),
         ]),
       );
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     render(
       <Providers>
@@ -333,7 +367,7 @@ describe("EventList", () => {
           past(4, "Autumn walk", "2025-10-19"),
         ]),
       );
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     render(
       <Providers>
@@ -371,7 +405,7 @@ describe("EventList", () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockImplementation(async () => page([dated, another]));
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     render(
       <Providers>
@@ -402,7 +436,7 @@ describe("EventList", () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockImplementation(async () => page([earlierEvent, laterEvent]));
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     const user = userEvent.setup();
     render(
       <Providers>
@@ -426,11 +460,69 @@ describe("EventList", () => {
     ).toBeVisible();
   });
 
+  it("keeps the layout, the chips, the sort, and the folds on the account, never the name typed", async () => {
+    const past = { ...event, startsOn: "2025-10-19" };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockImplementation(async () => page([past]));
+    const kept = serveEvents(fetch);
+    const user = userEvent.setup();
+    const first = render(
+      <Providers>
+        <EventList />
+      </Providers>,
+    );
+    await user.click(await screen.findByRole("button", { name: "Mine" }));
+    await user.click(screen.getByRole("button", { name: "Event layout" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "List" }));
+    await user.click(
+      await screen.findByRole("button", { name: "2025 1 event" }),
+    );
+    await user.type(screen.getByLabelText("Filter events by name"), "Garden");
+    await waitFor(() =>
+      expect(kept.current).toEqual({
+        scope: "mine",
+        layout: "list",
+        "folds.all": { "2025": false },
+      }),
+    );
+    first.unmount();
+
+    // Another device reads them back; the name typed stays behind.
+    render(
+      <Providers>
+        <EventList />
+      </Providers>,
+    );
+    expect(await screen.findByRole("button", { name: "Mine" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByLabelText("Filter events by name")).toHaveValue("");
+    expect(
+      screen.getByRole("button", { name: "Event layout" }),
+    ).toHaveAttribute("data-value", "list");
+    expect(await screen.findByRole("button", { name: "2025" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(fetch.mock.calls.at(-1)?.[0]).toBe(
+      "/api/events?query=&scope=mine&filter=all&sort=date",
+    );
+
+    // Back to the defaults, nothing is kept.
+    await user.click(screen.getByRole("button", { name: "All" }));
+    await user.click(screen.getByRole("button", { name: "Event layout" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "Grid" }));
+    await user.click(screen.getByRole("button", { name: "2025" }));
+    await waitFor(() => expect(kept.current).toEqual({}));
+  });
+
   it("waits for committed composition text before sending a name request", async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockImplementation(async () => page([]));
-    vi.stubGlobal("fetch", fetch);
+    serveEvents(fetch);
     render(
       <Providers>
         <EventList />
