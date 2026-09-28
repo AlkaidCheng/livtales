@@ -135,6 +135,8 @@ export const users = pgTable("users", {
     .$type<WorkspaceRecencyRow>()
     .notNull()
     .default(sql`'{}'::jsonb`),
+  /** Whether a pop-up names the changes others make on the page the user is viewing. */
+  changeNotices: boolean("change_notices").notNull().default(true),
   createdAt: createCreatedAtColumn(),
   updatedAt: createUpdatedAtColumn(),
 });

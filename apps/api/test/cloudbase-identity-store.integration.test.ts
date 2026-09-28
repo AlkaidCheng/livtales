@@ -551,6 +551,7 @@ describe.sequential("CloudBase identity store", () => {
       rail: users.rail,
       eventTabs: users.eventTabs,
       workspaceRecency: users.workspaceRecency,
+      changeNotices: users.changeNotices,
     };
     const kyoto = "01a0b355-cad8-73d2-89f8-0a12abf666a8";
     const lisbon = "01a0b355-cad8-73d2-89f8-0a12abf666a9";
@@ -571,6 +572,7 @@ describe.sequential("CloudBase identity store", () => {
         rail: {},
         eventTabs: {},
         workspaceRecency: {},
+        changeNotices: true,
       });
       const chosen = await store.updatePreferences(signedIn.user.id, {
         locale: "zh-Hant",
@@ -586,6 +588,7 @@ describe.sequential("CloudBase identity store", () => {
         weekStart: 7,
         eventTabs: { [lisbon]: { hidden: ["files"] } },
         workspaceRecency: { [lisbon]: "2026-09-19T08:00:00+08:00" },
+        changeNotices: false,
       });
       const read = await store.resolveSession(signedIn.user.id, undefined);
       const untouched = await store.updatePreferences(signedIn.user.id, {});
@@ -595,6 +598,7 @@ describe.sequential("CloudBase identity store", () => {
         rail: null,
         eventTabs: { [kyoto]: { hidden: ["sharing"] }, [lisbon]: null },
         workspaceRecency: { [kyoto]: "2026-09-21T00:00:00Z", [lisbon]: null },
+        changeNotices: null,
       });
       const crowded = await store.updatePreferences(signedIn.user.id, {
         workspaceRecency: Object.fromEntries(
@@ -675,6 +679,11 @@ describe.sequential("CloudBase identity store", () => {
             workspaceRecency: { [kyoto]: "yesterday" },
           }),
         ),
+        changeNotices: await outcome(
+          store.updatePreferences(signedIn.user.id, {
+            changeNotices: "no" as unknown as boolean,
+          }),
+        ),
         unknownUser: await outcome(
           store.updatePreferences(createId(), { locale: "en" }),
         ),
@@ -691,6 +700,7 @@ describe.sequential("CloudBase identity store", () => {
         rail: user.rail,
         eventTabs: user.eventTabs,
         workspaceRecency: user.workspaceRecency,
+        changeNotices: user.changeNotices,
       });
       results[name] = {
         chosen: shape(chosen),
@@ -716,6 +726,7 @@ describe.sequential("CloudBase identity store", () => {
           [kyoto]: { order: ["todos", "overview"], removed: ["timeline"] },
         },
         workspaceRecency: { [kyoto]: "2026-09-20T00:10:00.000Z" },
+        changeNotices: true,
       },
       merged: {
         locale: "zh-Hant",
@@ -731,6 +742,7 @@ describe.sequential("CloudBase identity store", () => {
           [kyoto]: "2026-09-20T00:10:00.000Z",
           [lisbon]: "2026-09-19T08:00:00+08:00",
         },
+        changeNotices: false,
       },
       read: {
         locale: "zh-Hant",
@@ -746,6 +758,7 @@ describe.sequential("CloudBase identity store", () => {
           [kyoto]: "2026-09-20T00:10:00.000Z",
           [lisbon]: "2026-09-19T08:00:00+08:00",
         },
+        changeNotices: false,
       },
       untouched: {
         locale: "zh-Hant",
@@ -761,6 +774,7 @@ describe.sequential("CloudBase identity store", () => {
           [kyoto]: "2026-09-20T00:10:00.000Z",
           [lisbon]: "2026-09-19T08:00:00+08:00",
         },
+        changeNotices: false,
       },
       cleared: {
         locale: null,
@@ -770,6 +784,7 @@ describe.sequential("CloudBase identity store", () => {
         rail: {},
         eventTabs: { [kyoto]: { hidden: ["sharing"] } },
         workspaceRecency: { [kyoto]: "2026-09-21T00:00:00Z" },
+        changeNotices: true,
       },
       // The 50 most recent instants stay: the oldest days fall off, the
       // key deciding between equal instants.
@@ -790,6 +805,7 @@ describe.sequential("CloudBase identity store", () => {
         rail: {},
         eventTabs: { [kyoto]: { hidden: ["sharing"] } },
         workspaceRecency: expect.any(Object),
+        changeNotices: true,
       },
       refusals: {
         locale: "refused",
@@ -805,6 +821,7 @@ describe.sequential("CloudBase identity store", () => {
         recencyKey: "refused",
         recencyShape: "refused",
         recencyInstant: "refused",
+        changeNotices: "refused",
         unknownUser: "refused",
       },
       touched: true,

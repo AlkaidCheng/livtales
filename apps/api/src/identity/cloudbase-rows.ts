@@ -129,6 +129,7 @@ export function userRow(row: CloudBaseRow): UserRow {
     rail: railPreference(row.rail),
     eventTabs: eventTabs(row.event_tabs),
     workspaceRecency: workspaceRecency(row.workspace_recency),
+    changeNotices: flag(row.change_notices, "change_notices"),
     createdAt: instant(row.created_at, "created_at"),
     updatedAt: instant(row.updated_at, "updated_at"),
   };

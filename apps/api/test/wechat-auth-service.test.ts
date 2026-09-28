@@ -31,6 +31,7 @@ const user = {
   rail: {},
   eventTabs: {},
   workspaceRecency: {},
+  changeNotices: true,
   createdAt: now,
   updatedAt: now,
 } satisfies UserRow;

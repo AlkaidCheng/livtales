@@ -112,7 +112,7 @@ export const workspaceRecencySchema = z.record(z.uuid(), z.string());
  * object replaces that event's tabs and null drops them, while events not
  * named keep theirs. `workspaceRecency` merges one workspace at a time the
  * same way, an instant replacing when it was last opened and null dropping
- * it.
+ * it. `changeNotices` null turns the pop-ups back on.
  */
 export const preferencesRequestSchema = z.object({
   locale: localeTagSchema.nullable().optional(),
@@ -126,6 +126,8 @@ export const preferencesRequestSchema = z.object({
   workspaceRecency: z
     .record(z.uuid(), z.iso.datetime({ offset: true }).nullable())
     .optional(),
+  /** Whether a pop-up names the changes others make on the page being viewed. */
+  changeNotices: z.boolean().nullable().optional(),
 });
 
 export const emailRequestSchema = z.object({
@@ -220,6 +222,7 @@ const userSchema = z.object({
   rail: railPreferenceSchema.default({}),
   eventTabs: eventTabsSchema.default({}),
   workspaceRecency: workspaceRecencySchema.default({}),
+  changeNotices: z.boolean().default(true),
 });
 
 /** The account as the session and account routes return it. */
