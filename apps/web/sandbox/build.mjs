@@ -10,6 +10,7 @@ const overrides = new Map([
   ["api-context", "api-context.tsx"],
   ["auth-session", "auth-session.tsx"],
   ["location-store", "location-store.ts"],
+  ["live-transport", "live-transport.ts"],
 ]);
 const result = await build({
   absWorkingDir: resolve(directory, ".."),
@@ -34,7 +35,10 @@ const result = await build({
       name: "sandbox-boundaries",
       setup(build) {
         build.onResolve(
-          { filter: /(?:api-context|auth-session|location-store)$/ },
+          {
+            filter:
+              /(?:api-context|auth-session|location-store|live-transport)$/,
+          },
           ({ path }) => {
             const name = path.split("/").at(-1);
             const replacement = overrides.get(name);

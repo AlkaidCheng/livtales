@@ -1401,6 +1401,70 @@ describe("LivTalesApiClient", () => {
   });
 });
 
+describe("live changes", () => {
+  const page = `event:${event.id}`;
+
+  it("sends the tab id with each request of the session and its scoped clients", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json({ pages: [{ page, watching: true }] }),
+    );
+    const client = new LivTalesApiClient({
+      fetch,
+      getCredential: () => ({ workspaceId: event.workspaceId }),
+      tabId: "tab-desk-0001",
+    });
+    await client.watchLive("stream-0123456789abcdef", {
+      pages: [{ page, since: "0a1b2c3d.4", here: true, place: "todos" }],
+    });
+    await client
+      .withSignal(new AbortController().signal)
+      .watchLive("stream-0123456789abcdef", { pages: [] });
+    for (const [url, init] of fetch.mock.calls) {
+      expect(url).toBe("/api/live/streams/stream-0123456789abcdef");
+      expect(new Headers(init?.headers).get("x-livtales-tab")).toBe(
+        "tab-desk-0001",
+      );
+      expect(init?.method).toBe("PUT");
+    }
+    expect(JSON.parse(String(fetch.mock.calls[0]?.[1]?.body))).toEqual({
+      pages: [{ page, since: "0a1b2c3d.4", here: true, place: "todos" }],
+    });
+  });
+
+  it("polls the live pages and validates the answer", async () => {
+    const answer = {
+      position: "0a1b2c3d.5",
+      changes: [],
+      presence: [{ page, people: [] }],
+      views: [],
+      reset: [],
+      unavailable: [],
+    };
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json(answer),
+    );
+    const client = new LivTalesApiClient({
+      fetch,
+      getCredential: () => ({ workspaceId: event.workspaceId }),
+    });
+    const clientId = "019d6e7d-0000-7000-8000-0000000000c1";
+    expect(
+      await client.pollLive({
+        client: clientId,
+        pages: [{ page, since: null, here: false, place: null }],
+      }),
+    ).toEqual(answer);
+    expect(fetch.mock.calls[0]?.[0]).toBe("/api/live/poll");
+    expect(
+      new Headers(fetch.mock.calls[0]?.[1]?.headers).has("x-livtales-tab"),
+    ).toBe(false);
+    fetch.mockResolvedValueOnce(Response.json({ ...answer, position: "5" }));
+    await expect(
+      client.pollLive({ client: clientId, pages: [] }),
+    ).rejects.toThrow();
+  });
+});
+
 describe("friends", () => {
   const credential: ApiCredential = {
     accessToken: "test-session",

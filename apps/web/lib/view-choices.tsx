@@ -128,7 +128,7 @@ export function useViewChoices<T extends ChoicesOf<T>>(
   return [choices, change] as const;
 }
 
-const pageChoicesKey = (page: AccountPage) =>
+export const pageChoicesKey = (page: AccountPage) =>
   ["account", "pages", page] as const;
 const pageChoicesUpdateKey = (page: AccountPage) =>
   ["page-choices-update", page] as const;

@@ -14,6 +14,7 @@ import {
   submitComposer,
 } from "./helpers/record-composers";
 import { chooseRowAction } from "./helpers/row-menu";
+import { withoutLiveChanges } from "./helpers/live";
 
 // The chips read times in the shown zone; pinned, so they read the same on
 // every machine.
@@ -207,6 +208,8 @@ test("edits a schedule row, an expense row, and a Timeline entry in place, and r
   page,
   request,
 }) => {
+  // The edit made elsewhere is learned only when the save is refused.
+  await withoutLiveChanges(page);
   const { event, headers } = await signInWithEvent(page, request, "rows");
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

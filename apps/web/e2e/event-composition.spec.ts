@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "./fixtures";
 import { dragComponent } from "./helpers/drag-component";
+import { withoutLiveChanges } from "./helpers/live";
 import { choosePageOption } from "./helpers/quiet-chrome";
 
 test("persists composition moves through the authorized versioned layout API", async ({
@@ -8,6 +9,8 @@ test("persists composition moves through the authorized versioned layout API", a
   request,
   isMobile,
 }) => {
+  // The layout saved elsewhere is learned only when the move is refused.
+  await withoutLiveChanges(page);
   const email = `composition-${randomUUID()}@example.test`;
   const signedIn = await request.post("/api/auth/development/sign-in", {
     data: { email, displayName: "Planner" },
