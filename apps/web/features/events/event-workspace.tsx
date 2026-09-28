@@ -49,6 +49,7 @@ import {
 } from "../../lib/use-event-view";
 import { useEventViewState } from "../../lib/event-layout-queries";
 import { type EventPlace, placeOf } from "../../lib/event-place";
+import { useLivePage } from "../../lib/live/live-provider";
 import { ViewChoicesScope } from "../../lib/view-choices";
 import { EventOverview } from "./event-overview";
 import { EventPages } from "./event-pages";
@@ -157,6 +158,12 @@ export function EventWorkspace({ eventId }: { readonly eventId: string }) {
     [address, activeTab, selectedPageId],
   );
   const savePlace = useKeepEventPlace(eventId, place);
+  // Others' changes to the event reach it while it is open, and the
+  // account counts as on it, at this view or page.
+  useLivePage(
+    `event:${eventId}`,
+    place === null ? null : "view" in place ? place.view : place.page,
+  );
   const essentialQueries = [queries.event, queries.access];
   const failedQuery =
     essentialQueries.find(

@@ -4,6 +4,7 @@ import { LivTalesApiClient } from "@livtales/api-client";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 
 import { useAuthSession } from "./auth-session";
+import { liveTabId } from "./live/live-signals";
 
 interface ApiClients {
   readonly client: LivTalesApiClient;
@@ -25,10 +26,12 @@ export function ApiClientProvider({
       client: new LivTalesApiClient({
         getCredential: () => credential,
         signal,
+        tabId: liveTabId(),
       }),
       leaving: new LivTalesApiClient({
         getCredential: () => credential,
         signal,
+        tabId: liveTabId(),
         fetch: (input, init) =>
           globalThis.fetch(input, { ...init, keepalive: true }),
       }),

@@ -16,7 +16,9 @@ import {
   LoadingState,
 } from "../../components/feedback";
 import { PlusIcon, SearchIcon } from "../../components/icons";
+import { useAuthSession } from "../../lib/auth-session";
 import { useComposerSlots } from "../../lib/composer-slots";
+import { useLivePage } from "../../lib/live/live-provider";
 import { rowSelector, useReturnFocus } from "../../lib/use-return-focus";
 import type { TaskFields } from "../../lib/task-fields";
 import { LayoutControl } from "../events/component-frame";
@@ -117,6 +119,9 @@ export function TasksPage() {
     return () => window.clearTimeout(timer);
   }, [query, isComposing]);
   const session = useSessionQuery();
+  // Others' changes to the space's tasks reach the page while it is open.
+  const workspaceId = useAuthSession().credential?.workspaceId ?? null;
+  useLivePage(workspaceId === null ? null : `tasks:${workspaceId}`, null);
   const {
     choices,
     change,
