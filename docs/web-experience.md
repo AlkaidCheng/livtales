@@ -309,28 +309,27 @@ the space's people, found by typing part of a name), and Label (Any, then
 the space's labels, searchable too), with Clear filters while any is on;
 a row with a list opens it in the panel's place, with a way back, and each
 choice applies at once. The button counts the choices that differ from
-their defaults. Each choice that differs, and a sort other than Manual,
-shows as a chip under the toolbar ("From Autumn gathering ×", "Sorted by
-name ×") that sets it back, with Clear all when there are several. The
+their defaults. Each filter that differs shows as a chip under the toolbar
+("From Autumn gathering ×", "Assigned to you ×") that sets it back, with
+Clear all when there are several; the sort names itself on its own control
+and has no chip. The
 sort, what shows, where the tasks come from, the label, and the assignee
 are applied by the server, so a page holds only what matches. Load more
 tasks extends the list page by page.
 
-The list opens on the open tasks. While the finished ones are hidden, the
-list's foot counts them ("3 finished", "50+ finished" past a page) with
-Show, which switches to All; with All the finished tasks follow the open
-ones apart, under "Finished · 3" with Hide, in the List and By day
-layouts (the week, the board, and the calendar keep them in their days).
+The list opens on the open tasks, and Show in Filter lists the finished ones
+too: with All they follow the open ones apart, under "Finished · 3", in the
+List and By day layouts (the week and the board keep them in their days).
 The layout, Show, Sort, and the filters are kept on the account, the same
 on every device, as an event's tabs keep theirs (see Component views).
 
-The page offers the same List, By day, By week, Board, and Calendar layouts
-as the Tasks component, from the same rows: the completion check, the name and its
+The page offers the same List, By day, By week, and Board layouts as the
+Tasks component, from the same rows: the completion check, the name and its
 details (a button that opens the row in place as the composer), the status,
-and the row menu. The week and the calendar ask the server for the tasks
-due on the days shown (in the browser's time zone) and load all of them, so
-Load more does not appear there; tasks with no due date are in no week or
-month, and the other filters still apply. Moving the period asks again. A task inside an event names that event under its title, as a link to
+and the row menu. The week asks the server for the tasks due on the days
+shown (in the browser's time zone) and loads all of them, so Load more does
+not appear there; tasks with no due date are in no week, and the other
+filters still apply. Moving the period asks again. A task inside an event names that event under its title, as a link to
 the event, when the user may view the event; a task held through a direct
 grant inside an event the user cannot see shows no event.
 
@@ -1656,10 +1655,10 @@ then Share, for whoever may share the event, and the Itinerary's Copy day.
 A choice applies at once; Escape in a list goes back to the rows, and
 Escape or Done closes the pop-up and returns focus to the button. The
 Overview, People, Sharing, and Removed links have no options, so no
-button shows there. Each choice that differs from its default shows as a
-chip under the strip ("Assigned to Mei ×", "Sorted by name ×"; for Files
-the task or expense whose files are shown), a press setting it back, with
-Clear all when there are several; while any is on, the options button
+button shows there. Each filter that differs from its default shows as a
+chip under the strip ("Assigned to Mei ×"; for Files the task or expense
+whose files are shown), a press setting it back, with Clear all when there
+are several, and the sort names itself on its own control; while any is on, the options button
 carries a small dot in the accent. The strip and its chips stay pinned
 under the top of the screen (under the app bar on a phone) as the view
 scrolls. Each tab's choices (its layout, Show, Sort, and filters, and the
@@ -1816,18 +1815,18 @@ which stays even when empty so its add row has a home; the days between are
 absent, so a month of tasks reads in one sweep; the columns hold the week's
 cards, an overdue task sitting in Overdue alone, a card dragged to another
 column taking that day, each column ending in an Add task row that presets
-its day, and tasks with no due date closing the board as a last column; and
-Calendar, the month's weeks as a grid of day
+its day, and tasks with no due date closing the board as a last column.
+Calendar offers List; Agenda, the numbered
+running order of its items with the same Edit, History, and Actions on each;
+By week and Board, a scheduled item sitting on every day it covers, the
+week's columns holding the same cards as Tasks (the time or the place under
+the name); and Calendar, the month's weeks as a grid of day
 cells with the weekday names and day numbers at the right, today a filled
 circle, the days of other months muted and the first of a month named, and
-the grid ending with the week that holds the month's last day. Each calendar
-cell holds its tasks as compact rows (a dot, the name clipped, the time at
+the grid ending with the week that holds the month's last day. Each
+cell holds its items as compact rows (a dot, the name clipped, the time at
 the right, done ones struck through), three of them and then "+n more",
-which opens the rest in place. Calendar offers List; Agenda, the numbered
-running order of its items with the same Edit, History, and Actions on each;
-and By week, Board, and Calendar, a scheduled item sitting on every day it
-covers, the week's columns holding the same cards as Tasks (the time or the
-place under the name).
+which opens the rest in place.
 Expenses and Reminders offer List, By day, By week, Board, and Calendar as
 well: a transaction sits on the day it happened and a reminder on the day it
 is due; an expense day heading carries the day's totals by currency, and a
@@ -1863,12 +1862,10 @@ choice applies at once and combines with the others, the button counts
 the choices that differ from the defaults, the count beside a page
 component's title reads "2 of 7 open" while any are on, and a kept person
 or label that has since gone falls back to any. The list opens on the open
-tasks; while the finished ones are hidden, its foot reads how many there
-are ("3 finished") with Show, which switches to All, and with All the
-finished tasks follow the open ones apart in the List and By day layouts,
-under "Finished · 3" with Hide, out of the sections and never dragged
-among the open rows (the week, the board, and the calendar keep them in
-their days). A choice other than Open shows as a chip ("Showing finished",
+tasks, and Show lists the finished ones too: with All they follow the open
+ones apart in the List and By day layouts, under "Finished · 3", out of the
+sections and never dragged among the open rows (the week and the board keep
+them in their days). A choice other than Open shows as a chip ("Showing finished",
 "Finished only"). Inside a page these choices are kept per component in
 the account's view of the event, as a tab's are. On a page, a component's
 layout is the account's own too, and a viewer chooses it as an editor

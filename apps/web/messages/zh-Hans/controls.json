@@ -51,11 +51,6 @@
     "noLabel": "无标签",
     "label": "标签：{name}",
     "timed": "有具体时间",
-    "overdue": "已逾期",
-    "sorted": {
-      "due": "按截止日期排序",
-      "name": "按名称排序",
-      "updated": "按更新时间排序"
-    }
+    "overdue": "已逾期"
   }
 }

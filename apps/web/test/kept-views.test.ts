@@ -191,7 +191,7 @@ describe("the one-time move of what this browser kept", () => {
       past: { "2025": false, bad: "yes" },
       upcoming: {},
     });
-    keep(keptViewStores.taskView, "month");
+    keep(keptViewStores.taskView, "week");
     keep(keptViewStores.choices, [
       [`${me}:tasks`, { show: "all", sort: "manual", fromName: "" }],
       [`${other}:tasks`, { show: "done" }],
@@ -210,7 +210,7 @@ describe("the one-time move of what this browser kept", () => {
     });
     expect((await client.getPageChoices("tasks")).choices).toEqual({
       show: "all",
-      layout: "month",
+      layout: "week",
     });
     // The account already keeps the People page's choices.
     expect((await client.getPageChoices("people")).choices).toEqual({

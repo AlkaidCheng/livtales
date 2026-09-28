@@ -926,7 +926,7 @@ describe("insertable event components", () => {
     expect(await client.getEventLayout(eventId)).toEqual(layout);
   });
 
-  it("shows Tasks and Calendar by week and by month around today without saving the period", async () => {
+  it("shows Tasks by week, and Calendar by week and by month, around today without saving the period", async () => {
     await client.updateEventLayout(eventId, {
       expectedVersion: 0,
       pages: [page("Plan", ["todos", "calendar"])],
@@ -1018,29 +1018,11 @@ describe("insertable event components", () => {
       }),
     ).toBeVisible();
 
-    // Tasks as a calendar: today's cell holds its task as a row with the
-    // same check; the grid ends with the week of the month's last day.
-    await choose(todos, "Calendar");
-    const todayCell = todos.getByRole("cell", {
-      name: `${fullDay(today)}, 1 item`,
-    });
-    expect(
-      within(todayCell).getByText("Confirm the caterer").closest("li"),
-    ).toHaveClass("is-done");
-    expect(
-      within(todayCell).getByRole("button", {
-        name: "Reopen Confirm the caterer",
-      }),
-    ).toBeInTheDocument();
+    // Tasks offer no calendar layout; that is the Calendar component's.
+    await user.click(todos.getByRole("button", { name: /^Layout: / }));
+    expect(todos.queryByRole("menuitemradio", { name: "Calendar" })).toBeNull();
+    await user.keyboard("{Escape}");
     const monthCells = monthDays(new Date());
-    const cells = todos.getAllByRole("cell");
-    expect(cells).toHaveLength(monthCells.length);
-    // The last cell ends the week of the month's last day; the sample task
-    // two weeks out lands on it on some days, so only the day is checked.
-    expect(cells.at(-1)).toHaveAccessibleName(
-      new RegExp(`^${fullDay(monthCells.at(-1) as DayKey)}(,|$)`),
-    );
-    await waitFor(async () => expect(await version()).toBe(3));
 
     // Calendar by week and by month: a two-day item sits on both of its
     // days; the sample item two weeks out stays outside the current period.
@@ -1063,11 +1045,11 @@ describe("insertable event components", () => {
         calendar.getByRole("cell", { name: `${fullDay(today)}, 1 item` }),
       ).getByRole("heading", { name: "Setup weekend" }),
     ).toBeVisible();
-    await waitFor(async () => expect(await version()).toBe(5));
+    await waitFor(async () => expect(await version()).toBe(4));
     const layout = await client.getEventLayout(eventId);
     expect(
       layout.pages[0]?.components.map((component) => component.view),
-    ).toEqual(["month", "month"]);
+    ).toEqual(["week", "month"]);
   });
 
   it("shows Expenses and Reminders by day, by week, and by month with the same rows", async () => {

@@ -117,14 +117,9 @@ describe("standingChoices", () => {
 });
 
 describe("chooseEventTasks", () => {
-  it("shows the open tasks and counts the finished ones the filters keep", () => {
-    const { shown, finished } = chooseEventTasks(
-      tasks,
-      defaultEventTaskChoices,
-      on,
-    );
+  it("shows the open tasks", () => {
+    const { shown } = chooseEventTasks(tasks, defaultEventTaskChoices, on);
     expect(names(shown)).toEqual(["a-venue", "b-menu", "c-cake"]);
-    expect(finished).toBe(2);
   });
 
   it("shows all, or the done ones alone", () => {
@@ -145,13 +140,11 @@ describe("chooseEventTasks", () => {
     ).toEqual(["d-invitations"]);
   });
 
-  it("narrows by whom, by label, by time, and by lateness, and counts the finished ones among them", () => {
+  it("narrows by whom, by label, by time, and by lateness", () => {
     const choose = (changes: Partial<typeof defaultEventTaskChoices>) =>
       chooseEventTasks(tasks, { ...defaultEventTaskChoices, ...changes }, on);
     expect(names(choose({ assignee: "me" }).shown)).toEqual(["a-venue"]);
-    const leo = choose({ assignee: "leo" });
-    expect(names(leo.shown)).toEqual(["b-menu"]);
-    expect(leo.finished).toBe(1);
+    expect(names(choose({ assignee: "leo" }).shown)).toEqual(["b-menu"]);
     expect(names(choose({ assignee: "none" }).shown)).toEqual(["c-cake"]);
     expect(names(choose({ label: "food" }).shown)).toEqual([
       "b-menu",
@@ -159,10 +152,7 @@ describe("chooseEventTasks", () => {
     ]);
     expect(names(choose({ label: "none" }).shown)).toEqual(["a-venue"]);
     expect(names(choose({ timed: true }).shown)).toEqual(["c-cake"]);
-    const late = choose({ overdue: true });
-    expect(names(late.shown)).toEqual(["a-venue"]);
-    // Overdue is open by nature: nothing finished is late.
-    expect(late.finished).toBe(0);
+    expect(names(choose({ overdue: true }).shown)).toEqual(["a-venue"]);
   });
 
   it("orders the shown tasks as Sort says", () => {

@@ -45,7 +45,7 @@ import { useIsPhone } from "../../lib/use-media";
 import { type StoredChoices, usePageChoices } from "../../lib/view-choices";
 import { ManageLabelsButton } from "./label-manager";
 import { AddTaskRow } from "./add-task-row";
-import { FinishedFoot, FinishedHead } from "./finished-tasks";
+import { FinishedHead } from "./finished-tasks";
 import {
   TaskFilterControl,
   TaskSortControl,
@@ -75,16 +75,12 @@ function readTasksPageChoices(stored: StoredChoices): TasksPageChoices {
   };
 }
 
-/** How many finished tasks the foot counts before it says "50+". */
-const finishedCountLimit = 50;
-
 /**
  * Every task the user may view in the workspace, on its own or inside an
  * Event, as a list or by day, in manual order unless another sort is
  * chosen. The layout, what the list shows, its sort, and its filters
  * (Show, From, Assigned to, Label) are kept on the account, the filters
- * showing as chips; the search lives with the tab. While the finished
- * tasks are hidden, the list's foot counts them and shows them on request.
+ * showing as chips; the search lives with the tab.
  */
 export function TasksPage() {
   const t = useTranslations("tasksPage");
@@ -163,12 +159,6 @@ export function TasksPage() {
   // The list waits for the choices the account keeps, so it is read once
   // and never shown in the defaults first.
   const tasks = useTasksQuery(listed, !choicesPending);
-  // While Show hides them, the finished tasks the same filters keep are
-  // counted for the list's foot, up to a page.
-  const finished = useTasksQuery(
-    { ...listed, filter: "done", limit: finishedCountLimit },
-    show === "open" && !choicesPending,
-  );
   const { fetchNextPage, hasNextPage, isFetching: isFetchingTasks } = tasks;
   useEffect(() => {
     if (range !== null && hasNextPage && !isFetchingTasks) void fetchNextPage();
@@ -241,20 +231,6 @@ export function TasksPage() {
   const listShown =
     items.length > 0 ||
     (range !== null && tasks.data !== undefined && !changingQuery);
-  // While Show hides them, the list's foot counts the finished tasks, in
-  // the list's column when the list shows.
-  const finishedFoot =
-    show === "open" &&
-    !changingQuery &&
-    tasks.data !== undefined &&
-    (finished.data?.items.length ?? 0) > 0 ? (
-      <FinishedFoot
-        count={finished.data?.items.length ?? 0}
-        more={finished.hasNextPage}
-        onShow={() => change({ show: "all" })}
-      />
-    ) : null;
-
   // Stable, so the row cells keep their identity and focus across renders.
   const addSubtask = useCallback(
     (task: TaskResponse) =>
@@ -453,13 +429,9 @@ export function TasksPage() {
             contexts={tasks.data?.contexts}
             finishedAfter={
               show === "all" && finishedListed > 0 ? (
-                <FinishedHead
-                  count={finishedListed}
-                  onHide={() => change({ show: "open" })}
-                />
+                <FinishedHead count={finishedListed} />
               ) : undefined
             }
-            foot={finishedFoot ?? undefined}
             labelNames={labels.data?.names}
             manual={sort === "manual"}
             onAddDetails={setAdding}
@@ -484,7 +456,6 @@ export function TasksPage() {
             {tasks.isFetchingNextPage ? t("loadingMore") : t("loadMore")}
           </button>
         ) : null}
-        {listShown ? null : finishedFoot}
       </section>
       {editing !== null ? (
         <TaskInspector

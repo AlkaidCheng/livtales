@@ -32,9 +32,9 @@ test("keeps a component's chosen view in the shared layout @webkit-desktop @webk
   ).json();
   // Each chosen view and the added component saved a version; moving the
   // period saved none.
-  expect(layout.version).toBe(7);
+  expect(layout.version).toBe(6);
   expect(layout.pages[0].components).toEqual([
-    { id: expect.any(String), kind: "todos", view: "month" },
+    { id: expect.any(String), kind: "todos", view: "week" },
     { id: expect.any(String), kind: "expenses", view: "month" },
   ]);
   const history = await (
@@ -42,6 +42,6 @@ test("keeps a component's chosen view in the shared layout @webkit-desktop @webk
   ).json();
   expect(
     history.items.map((item: { version: number }) => item.version),
-  ).toEqual([7, 6, 5, 4, 3, 2, 1]);
+  ).toEqual([6, 5, 4, 3, 2, 1]);
   expect(errors).toEqual([]);
 });

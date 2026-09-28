@@ -88,7 +88,7 @@ export async function exerciseComponentViews(page: Page) {
     .getByRole("button", { name: "Create task", exact: true })
     .click();
   await expect(editor).toHaveCount(0);
-  // A third task due today, which the week and month views open on.
+  // A third task due today, which the week opens on.
   await openTaskEditor(page, todos);
   await editor.getByLabel("Task", { exact: true }).fill("Confirm the caterer");
   await setDue(editor, today());
@@ -155,35 +155,13 @@ export async function exerciseComponentViews(page: Page) {
     todayColumn.getByRole("button", { name: "Reopen Confirm the caterer" }),
   ).toBeVisible();
 
-  // The calendar opens on today's month; today's cell holds the row, and
-  // the grid ends with the week of the month's last day.
-  await chooseLayout(reopened, "Calendar");
-  const grid = reopened.getByRole("table");
-  await expect(grid).toBeVisible();
-  const todayCell = reopened.locator(".month-day.is-today");
-  await expect(todayCell.locator(".is-done")).toContainText(
-    "Confirm the caterer",
-  );
-  await expect(
-    todayCell.getByRole("button", { name: "Reopen Confirm the caterer" }),
-  ).toBeAttached();
-  await expect(
-    period.getByRole("button", { name: "This month" }),
-  ).toBeVisible();
-  const cells = await grid.getByRole("cell").count();
-  expect(cells % 7).toBe(0);
-  expect(cells).toBeLessThanOrEqual(42);
-  await expect(
-    grid.locator("tr").last().locator(".is-outside"),
-  ).not.toHaveCount(7);
-
+  // The week is kept on the page: a reload opens it again.
   await page.reload();
-  await expect(reopened.getByRole("table")).toBeVisible();
   await expect(
-    reopened.getByRole("button", { name: "Layout: Calendar", exact: true }),
+    reopened.getByRole("button", { name: "Layout: By week", exact: true }),
   ).toBeVisible();
   await showTasks(page, "All", reopened);
-  await expect(reopened.locator(".month-day.is-today")).toContainText(
+  await expect(reopened.locator(".week-day.is-today")).toContainText(
     "Confirm the caterer",
   );
 

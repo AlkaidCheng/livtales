@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { APIRequestContext, Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
+import { showTasks } from "./helpers/view-options";
 
 // The calendar file writes timed items in UTC; a fixed zone keeps the
 // journey's dates the same wherever it runs.
@@ -147,32 +148,40 @@ test("puts a tab's controls on the strip, shows its count, and keeps its choices
   await expect(filter).toBeHidden();
   expect(await taskNames(page)).toEqual(["Plan the menu", "Arrange rides"]);
 
-  // Sort by name adds a second chip, and Clear all appears beside them.
+  // The sort names itself on its own control and adds no chip.
   await strip.getByRole("button", { name: "Sort" }).click();
   await page.getByRole("menuitemradio", { name: "By name" }).click();
+  await expect(strip.getByRole("button", { name: "Sort" })).toContainText(
+    "By name",
+  );
   const chips = page.getByRole("list", { name: "Choices on this view" });
+  await expect(chips.getByRole("button")).toHaveText(["Assigned to Leo Park×"]);
+  expect(await taskNames(page)).toEqual(["Arrange rides", "Plan the menu"]);
+  // A second filter adds its chip, and Clear all appears beside them.
+  await showTasks(page, "All");
   await expect(chips.getByRole("button")).toHaveText([
+    "Showing finished×",
     "Assigned to Leo Park×",
-    "Sorted by name×",
     "Clear all",
   ]);
-  expect(await taskNames(page)).toEqual(["Arrange rides", "Plan the menu"]);
   await page.screenshot({ path: testInfo.outputPath("chips-desktop.png") });
 
   // The choices are kept for this view: a reload opens it as it was left.
   await page.reload();
   await expect(chips.getByRole("button")).toHaveText([
+    "Showing finished×",
     "Assigned to Leo Park×",
-    "Sorted by name×",
     "Clear all",
   ]);
-  expect(await taskNames(page)).toEqual(["Arrange rides", "Plan the menu"]);
+  await expect(strip.getByRole("button", { name: "Sort" })).toContainText(
+    "By name",
+  );
   // One chip clears its own choice; Clear all clears the rest.
-  await chips.getByRole("button", { name: "Sorted by name, remove" }).click();
+  await chips.getByRole("button", { name: "Showing finished, remove" }).click();
   await expect(chips.getByRole("button")).toHaveText(["Assigned to Leo Park×"]);
-  await chips
-    .getByRole("button", { name: "Assigned to Leo Park, remove" })
-    .click();
+  expect(await taskNames(page)).toEqual(["Arrange rides", "Plan the menu"]);
+  await showTasks(page, "All");
+  await chips.getByRole("button", { name: "Clear all" }).click();
   await expect(chips).toBeHidden();
   expect(await taskNames(page)).toHaveLength(9);
 
@@ -181,17 +190,20 @@ test("puts a tab's controls on the strip, shows its count, and keeps its choices
   await expect(strip.getByRole("button", { name: "Filter" })).toBeHidden();
 });
 
-test("hides the finished tasks behind a foot that shows them after the open ones, and hides them again", async ({
+test("lists the finished tasks after the open ones when Show asks for them, and hides them again", async ({
   page,
   request,
 }, testInfo) => {
   const { email, event } = await seedEvent(request);
   await signIn(page, email);
   await page.goto(`/events/${event.id}?view=todos`);
-  const foot = page.getByRole("button", { name: /3 finished/ });
-  await expect(foot).toBeVisible();
+  await expect(page.getByText("Plan the menu", { exact: true })).toBeVisible();
   expect(await taskNames(page)).not.toContain("Send invitations");
-  await foot.click();
+  // No foot counts the hidden ones; Show in Filter lists them.
+  await expect(page.getByRole("button", { name: /\d+ finished/ })).toHaveCount(
+    0,
+  );
+  await showTasks(page, "All");
   const heading = page.getByRole("heading", { name: "Finished · 3" });
   await expect(heading).toBeVisible();
   const names = await taskNames(page);
@@ -201,19 +213,19 @@ test("hides the finished tasks behind a foot that shows them after the open ones
     "Send invitations",
   ]);
   expect(names.slice(0, 9)).not.toContain("Send invitations");
+  const chip = page.getByRole("button", { name: "Showing finished, remove" });
+  await expect(chip).toBeVisible();
+  // The heading carries no Hide; the chip sets Show back.
   await expect(
-    page.getByRole("button", { name: "Showing finished, remove" }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Hide", exact: true }),
+  ).toHaveCount(0);
   await heading.scrollIntoViewIfNeeded();
   await page.screenshot({
     path: testInfo.outputPath(`finished-${testInfo.project.name}.png`),
   });
-  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  await chip.click();
   await expect(heading).toBeHidden();
-  await expect(foot).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Showing finished, remove" }),
-  ).toBeHidden();
+  await expect(chip).toBeHidden();
 });
 
 test("gathers a tab's options in one pop-up on a phone, with a dot while any is on", async ({

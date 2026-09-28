@@ -279,8 +279,9 @@ export function TaskFilterControl({
 }
 
 /**
- * The chips of a task list's choices that differ from their defaults:
- * what it shows, whose and which tasks, and its order. `names` finds a
+ * The chips of a task list's filters that differ from their defaults:
+ * what it shows, and whose and which tasks; the sort shows in its own
+ * control. `names` finds a
  * person's, a label's, or an event's name; a choice whose name is not
  * known yet shows no chip.
  */
@@ -352,9 +353,5 @@ export function useTaskChips(
     add("timed", t("timed"), () => onChange({ timed: false }));
   if (choices.overdue === true)
     add("overdue", t("overdue"), () => onChange({ overdue: false }));
-  if (choices.sort !== "manual")
-    add("sort", t(`sorted.${choices.sort}`), () =>
-      onChange({ sort: "manual" }),
-    );
   return chips;
 }

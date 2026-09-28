@@ -214,8 +214,7 @@ const taskColumns = [
  * section opens the composer empty. Under manual order a row can be
  * dragged to another place, day, or section, or moved a step from its
  * menu. With `finishedAfter`, the list and by-day layouts list the tasks
- * that are no longer open apart, after the others, under that heading;
- * `foot` closes the list, in its column.
+ * that are no longer open apart, after the others, under that heading.
  */
 export function TaskListView({
   canEdit,
@@ -223,7 +222,6 @@ export function TaskListView({
   contexts,
   eventId,
   finishedAfter,
-  foot,
   labelNames,
   manual = false,
   now,
@@ -247,8 +245,6 @@ export function TaskListView({
   readonly eventId?: string | undefined;
   /** The heading of the finished tasks, listed after the open ones. */
   readonly finishedAfter?: ReactNode;
-  /** The list's foot, after its rows: how many finished tasks it hides. */
-  readonly foot?: ReactNode;
   /** Label names by id; a label the container has not loaded shows nothing. */
   readonly labelNames?: ReadonlyMap<string, string> | undefined;
   /** The tasks arrive in manual order, so they may be reordered. */
@@ -265,7 +261,7 @@ export function TaskListView({
   readonly onRefresh: () => Promise<unknown>;
   /** The parent of each subtask, by subtask ID. */
   readonly parents: Readonly<Record<string, TaskParent>>;
-  /** The period the week and month views show, owned by the container. */
+  /** The period the week view shows, owned by the container. */
   readonly period: Period;
   /** Subtask progress of each parent, by parent ID. */
   readonly progress: Readonly<Record<string, TaskProgress>>;
@@ -309,7 +305,7 @@ export function TaskListView({
   const store = useEditorDraftStore();
   const today = dayKeyOf(new Date());
   // The week, the calendar, and the board place the tasks by day.
-  const byDay = view === "week" || view === "month" || view === "board";
+  const byDay = view === "week" || view === "board";
   /** Opens a row in place as the composer. */
   const press = useMemo(
     () =>
@@ -721,7 +717,7 @@ export function TaskListView({
   const reorder = manual && canEdit;
   // The rows move by drag in the list, by day, and by week; a calendar
   // cell is too small to drag from, so its rows step from the menu alone.
-  const draggable = reorder && view !== "month";
+  const draggable = reorder;
   const { drag, gapAt, gripProps, groupProps, rootProps, rowClass, rowProps } =
     useRowDrag({
       canDrop,
@@ -1168,67 +1164,53 @@ export function TaskListView({
   // The board: a column per day that holds something, Overdue and Today
   // first, the undated last; a drop on a column writes its day, and
   // Overdue's head moves every overdue task to today at once.
-  // The list's foot keeps to the rows: past the grips' gutter when they
-  // have one; the grids take their full width.
-  const footRow =
-    foot === undefined ? null : (
-      <div className={`list-foot${reorder && !byDay ? " has-grips" : ""}`}>
-        {foot}
-      </div>
-    );
   if (view === "board")
     return (
-      <>
-        <BoardView
-          columns={boardColumns({
-            overdue,
-            overdueAction:
-              canEdit && overdue.length > 0 ? (
-                <button
-                  className="board-action"
-                  onClick={() => void rescheduleOverdue()}
-                  type="button"
-                >
-                  {board("reschedule")}
-                </button>
-              ) : undefined,
-            overdueLabel: board("overdue"),
-            placed,
-            undated,
-            undatedLabel: t("groups.noDueDate"),
-          })}
-          notice={notice}
-          renderFooter={
-            canEdit
-              ? (column) =>
-                  column.tone === "overdue" ? null : dayAddRow(column.day)
-              : undefined
-          }
-          renderList={placedRows}
-          rootProps={rootProps()}
-        />
-        {footRow}
-      </>
+      <BoardView
+        columns={boardColumns({
+          overdue,
+          overdueAction:
+            canEdit && overdue.length > 0 ? (
+              <button
+                className="board-action"
+                onClick={() => void rescheduleOverdue()}
+                type="button"
+              >
+                {board("reschedule")}
+              </button>
+            ) : undefined,
+          overdueLabel: board("overdue"),
+          placed,
+          undated,
+          undatedLabel: t("groups.noDueDate"),
+        })}
+        notice={notice}
+        renderFooter={
+          canEdit
+            ? (column) =>
+                column.tone === "overdue" ? null : dayAddRow(column.day)
+            : undefined
+        }
+        renderList={placedRows}
+        rootProps={rootProps()}
+      />
     );
   // By week each day's rows are cards in its column and a drop target of
   // its own, the strips above are lists; a drop on a day writes that day.
-  if (view === "week" || view === "month")
+  if (view === "week")
     return (
-      <>
-        <PeriodView
-          notice={notice}
-          overdue={overdue}
-          period={period}
-          placed={placed}
-          renderDayFooter={canEdit && view === "week" ? dayAddRow : undefined}
-          renderList={placedRows}
-          rootProps={rootProps()}
-          undated={undated}
-          undatedLabel={t("groups.noDueDate")}
-          view={view}
-        />
-        {footRow}
-      </>
+      <PeriodView
+        notice={notice}
+        overdue={overdue}
+        period={period}
+        placed={placed}
+        renderDayFooter={canEdit ? dayAddRow : undefined}
+        renderList={placedRows}
+        rootProps={rootProps()}
+        undated={undated}
+        undatedLabel={t("groups.noDueDate")}
+        view={view}
+      />
     );
   const header = (
     <thead>
@@ -1339,7 +1321,6 @@ export function TaskListView({
           </section>
         ))}
         {finishedList}
-        {footRow}
       </div>
     );
   const columns = taskColumns.length;
@@ -1372,7 +1353,6 @@ export function TaskListView({
           <div className="quick-add-item quick-add-table">{addRow(null)}</div>
         ) : null}
         {finishedList}
-        {footRow}
       </div>
     );
 
@@ -1520,7 +1500,6 @@ export function TaskListView({
         )}
       </table>
       {finishedList}
-      {footRow}
     </div>
   );
 }

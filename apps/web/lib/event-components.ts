@@ -8,7 +8,7 @@ import { tr } from "../i18n/active-locale";
 export const eventComponents = {
   todos: {
     keywords: "tasks checklist todo",
-    views: ["list", "by-day", "week", "board", "month"],
+    views: ["list", "by-day", "week", "board"],
   },
   calendar: {
     keywords: "schedule activities agenda running order",
