@@ -52,7 +52,7 @@ function renderMenu() {
   };
 }
 
-it("opens a menu with Trash, Theme, Customize sidebar, Keyboard shortcuts, and Help, and starts customizing", async () => {
+it("opens a menu with Trash, Theme, Customize sidebar, and Keyboard shortcuts, and starts customizing", async () => {
   const { onCustomize, trigger, user } = renderMenu();
   await user.click(trigger);
   const menu = screen.getByRole("menu", { name: "More" });
@@ -60,33 +60,22 @@ it("opens a menu with Trash, Theme, Customize sidebar, Keyboard shortcuts, and H
     within(menu)
       .getAllByRole("menuitem")
       .map((item) => item.textContent),
-  ).toEqual([
-    "Trash",
-    "Theme",
-    "Customize sidebar",
-    "Keyboard shortcuts",
-    "Help",
-  ]);
+  ).toEqual(["Trash", "Theme", "Customize sidebar", "Keyboard shortcuts"]);
   expect(within(menu).getByRole("menuitem", { name: "Trash" })).toHaveAttribute(
     "href",
     "/trash",
   );
   expect(within(menu).getByRole("menuitem", { name: "Trash" })).toHaveFocus();
-  // Help has no surface yet: choosing it closes the menu and says so in a
-  // passing notice. Keyboard shortcuts opens Settings at Keyboard over the
-  // page, on a keyboard device.
+  // Keyboard shortcuts opens Settings at Keyboard over the page, on a
+  // keyboard device.
   expect(
     within(menu).getByRole("menuitem", { name: "Keyboard shortcuts" }),
   ).toHaveAttribute("href", "/tasks?settings=keyboard");
   await user.keyboard("{End}");
-  expect(within(menu).getByRole("menuitem", { name: "Help" })).toHaveFocus();
-  await user.keyboard("{Enter}");
-  expect(screen.queryByRole("menu")).not.toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Help is not available yet",
-  );
+  expect(
+    within(menu).getByRole("menuitem", { name: "Keyboard shortcuts" }),
+  ).toHaveFocus();
   expect(onCustomize).not.toHaveBeenCalled();
-  await user.click(trigger);
   await user.click(screen.getByRole("menuitem", { name: "Customize sidebar" }));
   expect(onCustomize).toHaveBeenCalledTimes(1);
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();

@@ -18,7 +18,7 @@ import { useCurrentWorkspaceIdentity } from "../lib/use-workspace-identity";
 import { AccountBlock, AccountMenuItems } from "./account-menu";
 import { BottomSheet } from "./bottom-sheet";
 import { BrandLogo } from "./brand-logo";
-import { MenuIcon } from "./icons";
+import { MenuIcon, MoreGridIcon } from "./icons";
 import { useInstallControl } from "./install-app";
 import { MoreMenuItems } from "./more-menu";
 import { moveMenuFocus } from "./quiet-menu";
@@ -36,21 +36,20 @@ import {
  * What is open: the drawer, the switcher's sheet, or one of the sheets
  * that rise over the open drawer (the account's, and Theme from it).
  */
-type Sheet = "drawer" | "workspace" | "account" | "theme";
+type Sheet = "drawer" | "workspace" | "account" | "more" | "theme";
 
 /**
  * The phone's app bar and what opens from it. At the left the menu
  * control opens the sidebar as a drawer: the brand, then the collections
  * (Search, Events, Tasks, People) in the account's order, and at its foot
- * the account block as the rail's foot shows it (the avatar, the
- * account's name, and the current space). A long press on a collection
- * enters customization, and the Collections header offers Done until it
- * is left. The account block opens the account sheet over the drawer's
- * foot, as wide as the drawer:
- * Friends, Settings, Sign out, and what More offers under them (Trash,
- * Theme, Customize sidebar, Help, and Keyboard shortcuts on a keyboard
- * device). Dismissing that sheet, or Theme's from it, returns to the
- * drawer; an entry taken closes both. Beside the menu control the current
+ * the account block and the More control as the rail's foot shows them.
+ * A long press on a collection enters customization, and the Collections
+ * header offers Done until it is left. Over the drawer's foot, as wide as
+ * the drawer, the account block opens the account sheet (Friends,
+ * Settings, Sign out) and More opens the More sheet (Trash, Theme,
+ * Customize sidebar, and Keyboard shortcuts on a keyboard device).
+ * Dismissing a sheet, or Theme's from More, returns to the drawer; an
+ * entry taken closes both. Beside the menu control the current
  * workspace as a mark and its name (the home symbol and "Personal" for the
  * account's own, the owner's initials and name for one shared with it),
  * opening the switcher as a sheet from the bottom, and on an event's page
@@ -91,9 +90,13 @@ export function PhoneChrome({
   const spaceDialogs = useSpaceDialogs();
   const workspaceMenu = useRef<HTMLDivElement>(null);
   const accountMenu = useRef<HTMLDivElement>(null);
+  const moreMenu = useRef<HTMLDivElement>(null);
   const themeSheet = useRef<HTMLDivElement>(null);
   const drawerOpen =
-    sheet === "drawer" || sheet === "account" || sheet === "theme";
+    sheet === "drawer" ||
+    sheet === "account" ||
+    sheet === "more" ||
+    sheet === "theme";
   const onEvent = pathname.startsWith("/events/");
 
   const close = useCallback(() => setSheet(null), []);
@@ -131,13 +134,13 @@ export function PhoneChrome({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [sheet]);
 
-  // The account sheet opens on Friends and the theme sheet on the chosen
-  // appearance, as the rail's panels do; the switcher's list places its own.
+  // The account and More sheets open on their first entry and the theme
+  // sheet on the chosen appearance, as the rail's panels do; the
+  // switcher's list places its own.
   useEffect(() => {
-    if (sheet === "account")
-      accountMenu.current
-        ?.querySelector<HTMLElement>('[role="menuitem"]')
-        ?.focus();
+    const menu =
+      sheet === "account" ? accountMenu : sheet === "more" ? moreMenu : null;
+    menu?.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     if (sheet === "theme")
       themeSheet.current?.querySelector<HTMLElement>("input:checked")?.focus();
   }, [sheet]);
@@ -248,8 +251,6 @@ export function PhoneChrome({
           <strong>{session.user.displayName}</strong>
           <span>{session.user.email}</span>
         </p>
-        {/* One menu, so the arrow keys walk from the account's entries
-            into More's group under them. */}
         <div
           ref={accountMenu}
           role="menu"
@@ -266,21 +267,32 @@ export function PhoneChrome({
             onChoose={closeDrawer}
             onSettings={closeDrawer}
           />
-          <hr className="quiet-menu-separator" />
-          {/* biome-ignore lint/a11y/useSemanticElements: A group of menu items, not a form fieldset. */}
-          <div role="group" aria-label={nav("more")} className="sheet-menu">
-            <MoreMenuItems
-              onChoose={closeDrawer}
-              onSettings={closeDrawer}
-              onTheme={() => setSheet("theme")}
-              onCustomize={() => {
-                setSheet("drawer");
-                onCustomize(true);
-              }}
-              installMode={install.mode}
-              onInstall={() => closeThen(install.activate)}
-            />
-          </div>
+        </div>
+      </BottomSheet>
+      <BottomSheet
+        className="bottom-sheet-drawer"
+        open={sheet === "more"}
+        label={nav("more")}
+        onClose={backToDrawer}
+      >
+        <div
+          ref={moreMenu}
+          role="menu"
+          aria-label={nav("more")}
+          className="sheet-menu"
+          onKeyDown={onMenuKeyDown}
+        >
+          <MoreMenuItems
+            onChoose={closeDrawer}
+            onSettings={closeDrawer}
+            onTheme={() => setSheet("theme")}
+            onCustomize={() => {
+              setSheet("drawer");
+              onCustomize(true);
+            }}
+            installMode={install.mode}
+            onInstall={() => closeThen(install.activate)}
+          />
         </div>
       </BottomSheet>
       <BottomSheet
@@ -346,6 +358,16 @@ export function PhoneChrome({
             aria-expanded={sheet === "account"}
             onClick={() => setSheet("account")}
           />
+          <button
+            type="button"
+            className="more-trigger"
+            aria-label={nav("more")}
+            aria-haspopup="dialog"
+            aria-expanded={sheet === "more"}
+            onClick={() => setSheet("more")}
+          >
+            <MoreGridIcon />
+          </button>
         </div>
       </PhoneDrawer>
       {install.steps}

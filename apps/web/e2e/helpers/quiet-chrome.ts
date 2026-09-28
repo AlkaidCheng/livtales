@@ -189,18 +189,15 @@ export async function openWorkspaceSwitcher(page: Page) {
   return menu;
 }
 
-/** The rail's More control beside the account block: Trash, Theme, Customize sidebar, Keyboard shortcuts, Help. */
+/** More beside the account block, at the foot of the rail or of the phone's drawer: Trash, Theme, Customize sidebar, Keyboard shortcuts. */
 export const moreTrigger = (page: Page) => page.locator(".more-trigger");
 
 /**
- * More's entries: the rail's popover menu, or the group under the
- * account's own entries in the phone's account sheet, which opens from
- * the account block at the foot of the drawer.
+ * More's entries: the rail's popover menu, or the phone's More sheet over
+ * the drawer's foot.
  */
 export async function openMoreMenu(page: Page) {
-  const menu = isPhone(page)
-    ? page.getByRole("group", { name: "More", exact: true })
-    : page.getByRole("menu", { name: "More", exact: true });
+  const menu = page.getByRole("menu", { name: "More", exact: true });
   if (!(await menu.isVisible())) await pressMoreControl(page);
   await expect(menu).toBeVisible();
   return menu;
@@ -208,12 +205,10 @@ export async function openMoreMenu(page: Page) {
 
 /**
  * The control More's entries open from, and the one focus returns to once
- * Theme closes: the rail's More, or the account block at the foot of the
- * phone's drawer (its sheet lists them, and the drawer stays open under
- * Theme's sheet).
+ * Theme closes: More, on the rail or at the foot of the phone's drawer
+ * (the drawer stays open under Theme's sheet).
  */
-export const moreControl = (page: Page) =>
-  isPhone(page) ? accountBlock(page) : moreTrigger(page);
+export const moreControl = (page: Page) => moreTrigger(page);
 
 /** Presses the control More's entries open from, through the drawer on a phone. */
 export async function pressMoreControl(page: Page) {
