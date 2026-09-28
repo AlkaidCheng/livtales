@@ -382,6 +382,11 @@ describe.each(Object.entries(backends))(
         commandId: string;
         stackVersion: number;
       };
+      // The edit's change is read before the undo, which would otherwise
+      // show in it when its announcement reads the task after the undo.
+      expect((await changeWith("updated"))?.objects[0]?.displayName).toBe(
+        "Book it",
+      );
       await request(alice, {
         method: "POST",
         url: "/api/commands/undo",
@@ -391,9 +396,6 @@ describe.each(Object.entries(backends))(
           expectedStackVersion: receipt.stackVersion,
         },
       });
-      expect((await changeWith("updated"))?.objects[0]?.displayName).toBe(
-        "Book it",
-      );
       const undone = (await changeWith("undone"))?.objects[0];
       expect(undone?.displayName).toBe("Book the hall");
       const latest = undone?.version;
