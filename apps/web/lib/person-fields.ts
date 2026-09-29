@@ -1,5 +1,6 @@
 import type { PersonContactKind, PersonResponse } from "@livtales/schemas";
 
+import { changedFields } from "./changed-entries";
 import { joinLabelIds, splitLabelIds } from "./task-fields";
 
 /** One custom field as the editor holds it: the key and the value's text. */
@@ -127,4 +128,19 @@ export function personFieldsPayload(
     labelIds: splitLabelIds(fields.labels),
     customProperties,
   };
+}
+
+/** What a person's draft changed from the version it stands on, as the API takes it. */
+export function personChanges(
+  fields: ReturnType<typeof readPersonFields>,
+  baseline: ReturnType<typeof readPersonFields>,
+  source: Pick<PersonResponse, "customProperties"> | undefined,
+  te: (key: "fieldRepeats", values: { name: string }) => string,
+) {
+  return changedFields(
+    (draft: ReturnType<typeof readPersonFields>) =>
+      personFieldsPayload(draft, source, te),
+    fields,
+    baseline,
+  );
 }

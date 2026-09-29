@@ -392,7 +392,6 @@ export function TasksPage() {
                 }
                 dueOn={null}
                 onMore={setAdding}
-                onRefresh={refresh}
                 slots={composer}
               />
             </div>
@@ -426,7 +425,6 @@ export function TasksPage() {
                 }
                 dueOn={null}
                 onMore={setAdding}
-                onRefresh={refresh}
                 slots={composer}
               />
             </div>

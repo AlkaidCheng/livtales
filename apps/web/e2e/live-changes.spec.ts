@@ -97,6 +97,55 @@ test("shows the tasks another person adds, renames, and trashes while the event 
   await ben.context.close();
 });
 
+test("keeps an open editor on the newest version, so its save carries only its own change @webkit-desktop", async ({
+  browser,
+  request,
+}) => {
+  const benEmail = `ben-${randomUUID()}@example.test`;
+  const { ana, event, addTask } = await sharedEvent(request, benEmail);
+  const hall = await addTask("Book the hall");
+  const ben = await signedIn(browser, "Ben", benEmail);
+  const refused: string[] = [];
+  ben.page.on("response", (response) => {
+    if (response.status() === 409) refused.push(response.url());
+  });
+  await ben.page.goto(`/events/${event.id}?view=todos`);
+  const row = ben.page.getByRole("row", { name: /Book the hall/ });
+  await row.getByRole("button", { name: "Edit Book the hall" }).click();
+  const composer = ben.page.getByRole("form", { name: "Edit Book the hall" });
+  await composer
+    .getByLabel("Task name", { exact: true })
+    .fill("Book the town hall");
+
+  // Ana sets the place while Ben's row is open: the row takes it, and
+  // Ben's name stays as he typed it.
+  const placed = await request.patch(`/api/tasks/${hall.id}`, {
+    headers: ana,
+    data: { expectedVersion: hall.version, location: "Riverside" },
+  });
+  expect(placed.status()).toBe(200);
+  await expect(
+    composer.getByRole("button", { name: "Location: Riverside", exact: true }),
+  ).toBeVisible();
+  await expect(composer.getByLabel("Task name", { exact: true })).toHaveValue(
+    "Book the town hall",
+  );
+
+  await composer.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(composer).toHaveCount(0);
+  const saved = await (
+    await request.get(`/api/tasks/${hall.id}`, { headers: ana })
+  ).json();
+  expect(saved).toMatchObject({
+    version: hall.version + 2,
+    displayName: "Book the town hall",
+    location: "Riverside",
+  });
+  // The save was made on the newest version, never refused.
+  expect(refused).toEqual([]);
+  await ben.context.close();
+});
+
 test("holds one stream for all of a browser's tabs and hands it on when that tab closes", async ({
   browser,
   request,

@@ -97,11 +97,6 @@ export function isDraftAccessError(error: unknown): boolean {
   );
 }
 
-/** A save refused because a newer version exists: the draft is kept as it is, for the comparison. */
-export function isDraftConflictError(error: unknown): boolean {
-  return error instanceof ApiClientError && error.code === "version_conflict";
-}
-
 interface KeptDraft {
   readonly snapshot: RetainedDraftSnapshot;
   readonly pending: boolean;
@@ -180,11 +175,7 @@ export class EditorDraftStore {
       if (this.get(id) === saving) {
         if (isDraftAccessError(error)) this.forget(id);
         else {
-          this.drafts.set(id, {
-            ...draft,
-            pending: false,
-            failed: !isDraftConflictError(error),
-          });
+          this.drafts.set(id, { ...draft, pending: false, failed: true });
           this.notify();
         }
       }

@@ -18,7 +18,6 @@ import {
 import {
   type ReminderDraftSnapshot,
   eventCreationDraftKeys,
-  isDraftConflictError,
 } from "../../lib/editor-draft-store";
 import {
   formatDateTime,
@@ -34,11 +33,11 @@ import {
   quickReminderInstant,
   readReminderFields,
   type ReminderFields,
+  reminderChanges,
   reminderFieldsPayload,
 } from "../../lib/reminder-fields";
 import { useComposerCare, useComposerChips } from "../../lib/use-composer-care";
 import { useEditorDraft } from "../../lib/use-editor-draft";
-import { ConflictNotice } from "./conflict-notice";
 
 type ReminderChip = "remindAt";
 
@@ -62,7 +61,6 @@ export function ReminderComposer({
   eventId,
   now = new Date(),
   onMore,
-  onRefresh,
   onSaved,
   reminder: latest,
   slotKey,
@@ -77,8 +75,6 @@ export function ReminderComposer({
   readonly now?: Date;
   /** Opens the full editor with the composer's fields. */
   readonly onMore: (fields: ReminderFields) => void;
-  /** Reloads the list, so a stale save can be compared with the newest version. */
-  readonly onRefresh: () => Promise<unknown>;
   /** A saved edit, for the list to announce. */
   readonly onSaved?: ((reminder: ReminderResponse) => void) | undefined;
   /** The reminder being edited; absent for a new one. */
@@ -139,23 +135,14 @@ export function ReminderComposer({
   const [status, setStatus] = useState("");
   const nameInput = useRef<HTMLInputElement>(null);
   const chips = useComposerChips<ReminderChip>();
-  const { submitOnceRebased } = useComposerCare({
-    hasNewerVersion: draft.hasNewerVersion,
-    isDirty: draft.isDirty,
-    nameInput,
-    onRefresh,
-    slotKey,
-    slots,
-    stale: update.isError && isDraftConflictError(update.error),
-    staleError: update.error,
-  });
+  useComposerCare({ isDirty: draft.isDirty, nameInput, slotKey, slots });
   const discard = () => {
     recovery.discard();
     close();
   };
 
   function submit() {
-    if (busy || draft.hasNewerVersion || !recovery.isRetained) return;
+    if (busy || !recovery.isRetained) return;
     let input: ReturnType<typeof reminderFieldsPayload>;
     try {
       input = reminderFieldsPayload(fields, reminder);
@@ -175,11 +162,17 @@ export function ReminderComposer({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = reminderChanges(fields, draft.baseline, reminder);
+    if (Object.keys(changes).length === 0) {
+      discard();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: reminder.id,
-          input: { ...input, expectedVersion: reminder.version },
+          input: { ...changes, expectedVersion: reminder.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -190,27 +183,7 @@ export function ReminderComposer({
   }
 
   const instant = fromDateTimeInput(fields.remindAt);
-  const comparing = !adding && draft.hasNewerVersion;
-  const notice = comparing ? (
-    <ConflictNotice
-      draft={draft}
-      objectId={reminder.id}
-      onKeepMine={() => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(draft.fields);
-      }}
-      onMerge={(merged) => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(merged);
-      }}
-      onTakeTheirs={() => {
-        draft.loadLatest();
-        update.reset();
-      }}
-    />
-  ) : mutation.isError ? (
+  const notice = mutation.isError ? (
     <ErrorNotice error={mutation.error} />
   ) : null;
   const asked = slots.open === slotKey && slots.pending !== null;
@@ -295,11 +268,7 @@ export function ReminderComposer({
           : undefined
       }
       status={status}
-      submitDisabled={
-        fields.displayName.trim() === "" ||
-        draft.hasNewerVersion ||
-        !recovery.isRetained
-      }
+      submitDisabled={fields.displayName.trim() === "" || !recovery.isRetained}
       submitLabel={adding ? t("addReminder") : t("save")}
     />
   );

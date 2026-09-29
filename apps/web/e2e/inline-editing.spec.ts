@@ -138,8 +138,8 @@ test("edits a task row in place: chips, Save, Cancel, a stale save, and the row 
   await expect(composer).toHaveCount(0);
 
   // The row menu's Edit opens the composer as well; a save refused as
-  // stale (the task edited elsewhere) shows the comparison, and Take
-  // theirs loads the newest version.
+  // stale (the task edited elsewhere) goes again on the newest version,
+  // which keeps the location saved elsewhere.
   await chooseRowAction(page, row, "Edit");
   await expect(name).toBeFocused();
   await name.fill("Book the ryokan early");
@@ -149,19 +149,16 @@ test("edits a task row in place: chips, Save, Cancel, a stale save, and the row 
   });
   expect(elsewhere.status()).toBe(200);
   await composer.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(
-    composer.getByText("Saved elsewhere while you edited"),
-  ).toBeVisible();
-  await composer
-    .getByRole("button", { name: "Take theirs", exact: true })
-    .click();
-  await expect(name).toHaveValue("Book the ryokan");
-  await expect(
-    composer.getByRole("button", { name: "Location: Kyoto", exact: true }),
-  ).toBeVisible();
-  await name.press("Escape");
   await expect(composer).toHaveCount(0);
+  await expect(row).toContainText("Book the ryokan early");
   await expect(row.getByText("Kyoto")).toBeVisible();
+  expect(
+    await (await request.get(`/api/tasks/${task.id}`, { headers })).json(),
+  ).toMatchObject({
+    version: task.version + 3,
+    displayName: "Book the ryokan early",
+    location: "Kyoto",
+  });
   expect(errors).toEqual([]);
 });
 

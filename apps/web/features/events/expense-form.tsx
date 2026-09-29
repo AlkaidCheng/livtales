@@ -9,10 +9,12 @@ import {
   DiscardActions,
   EditorDialogHeader,
 } from "../../components/editor-dialog-controls";
-import { EditorControls, useConflictSlot } from "./editor-controls";
+import { EditorControls } from "./editor-controls";
 import { SectionField } from "../sections/section-field";
 import {
   type ExpenseFields,
+  expenseChanges,
+  expenseFieldGroups,
   expenseFieldsPayload,
   readExpenseFields,
 } from "../../lib/expense-fields";
@@ -82,8 +84,12 @@ function ExpenseEditor({
   readonly draftId: string;
   readonly initialDraft: ExpenseDraftSnapshot | undefined;
 }) {
-  const conflictSlot = useConflictSlot();
-  const draft = useEditorDraft(latestExpense, readExpenseFields, initialDraft);
+  const draft = useEditorDraft(
+    latestExpense,
+    readExpenseFields,
+    initialDraft,
+    expenseFieldGroups,
+  );
   // A composer's fields seed a fresh draft once; a recovered draft keeps
   // what it had.
   const seeded = useRef(false);
@@ -143,13 +149,7 @@ function ExpenseEditor({
 
   function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
-    if (
-      isConfirming ||
-      draft.hasNewerVersion ||
-      mutation.isPending ||
-      !recovery.isRetained
-    )
-      return;
+    if (isConfirming || mutation.isPending || !recovery.isRetained) return;
     let input: ReturnType<typeof expenseFieldsPayload>;
     try {
       input = expenseFieldsPayload(draft.fields, expense);
@@ -169,11 +169,17 @@ function ExpenseEditor({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = expenseChanges(draft.fields, draft.baseline, expense);
+    if (Object.keys(changes).length === 0) {
+      close();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: expense.id,
-          input: { ...input, expectedVersion: expense.version },
+          input: { ...changes, expectedVersion: expense.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -248,7 +254,6 @@ function ExpenseEditor({
         onSubmit={handleSubmit}
       >
         <div className="event-create-body event-inspector-fields">
-          <div className="editor-conflict-slot" ref={conflictSlot.ref} />
           <CountedField
             className="field-wide"
             disabled={mutation.isPending}
@@ -312,13 +317,7 @@ function ExpenseEditor({
         </div>
         <footer className="event-inspector-footer">
           <EditorControls
-            conflict={
-              expense === undefined
-                ? undefined
-                : { objectId: expense.id, slot: conflictSlot.slot }
-            }
             disabled={!recovery.isRetained}
-            draft={draft}
             mutation={mutation}
             onCancel={requestClose}
             onRefresh={

@@ -22,10 +22,13 @@ import {
   type EventDraftSnapshot,
   type EventFields,
   eventCreationDraftKeys,
-  isDraftConflictError,
   readEventFields,
 } from "../../lib/editor-draft-store";
-import { eventSchedulePayload } from "../../lib/event-schedule";
+import {
+  eventChanges,
+  eventFieldGroups,
+  eventSchedulePayload,
+} from "../../lib/event-schedule";
 import {
   formatDateTime,
   formatTime,
@@ -39,7 +42,6 @@ import {
 } from "../../lib/queries";
 import { useComposerCare, useComposerChips } from "../../lib/use-composer-care";
 import { useEditorDraft } from "../../lib/use-editor-draft";
-import { ConflictNotice, type FieldFormatter } from "./conflict-notice";
 import { scheduleChange } from "./schedule-rows";
 
 type ScheduleChip = "dates" | "place";
@@ -68,11 +70,11 @@ export function describeSchedule(fields: EventFields): string {
 /**
  * The composer for a schedule item: the name and description, then Dates
  * (the date panel as a span, its times at the foot) and Place as chips.
- * With an item it edits that item in place and saves one versioned
- * update; without one it adds items to the event's schedule, Enter adding
- * and keeping the composer open for the next. Its fields are a draft in
- * the tab, so an unsaved composer left behind is found again. More hands
- * the fields to the full editor.
+ * With an item it edits that item in place and saves what changed over
+ * its newest version; without one it adds items to the event's schedule,
+ * Enter adding and keeping the composer open for the next. Its fields are
+ * a draft in the tab, so an unsaved composer left behind is found again.
+ * More hands the fields to the full editor.
  */
 export function ScheduleComposer({
   draftKey,
@@ -80,7 +82,6 @@ export function ScheduleComposer({
   item: latest,
   now = new Date(),
   onMore,
-  onRefresh,
   onSaved,
   slotKey,
   slots,
@@ -94,8 +95,6 @@ export function ScheduleComposer({
   readonly now?: Date;
   /** Opens the full editor with the composer's fields. */
   readonly onMore: (fields: EventFields) => void;
-  /** Reloads the list, so a stale save can be compared with the newest version. */
-  readonly onRefresh: () => Promise<unknown>;
   /** A saved edit, for the list to announce. */
   readonly onSaved?: ((item: EventResponse) => void) | undefined;
   readonly slotKey: string;
@@ -103,7 +102,6 @@ export function ScheduleComposer({
 }) {
   const t = useTranslations("composer");
   const rows = useTranslations("rows");
-  const modes = useTranslations("conflict.modes");
   const draftId =
     latest?.id ?? draftKey ?? eventCreationDraftKeys(eventId).schedule;
   const kept = useKeptEditorDraft(draftId);
@@ -112,7 +110,12 @@ export function ScheduleComposer({
       ? kept.snapshot
       : undefined,
   );
-  const draft = useEditorDraft(latest, readEventFields, initial);
+  const draft = useEditorDraft(
+    latest,
+    readEventFields,
+    initial,
+    eventFieldGroups,
+  );
   const item = draft.source;
   const adding = item === undefined;
   const [attempt] = useState<ContextCreateAttempt>(
@@ -144,31 +147,18 @@ export function ScheduleComposer({
   const nameInput = useRef<HTMLInputElement>(null);
   const placeInput = useRef<HTMLInputElement>(null);
   const chips = useComposerChips<ScheduleChip>();
-  const { submitOnceRebased } = useComposerCare({
-    hasNewerVersion: draft.hasNewerVersion,
-    isDirty: draft.isDirty,
-    nameInput,
-    onRefresh,
-    slotKey,
-    slots,
-    stale: update.isError && isDraftConflictError(update.error),
-    staleError: update.error,
-  });
+  useComposerCare({ isDirty: draft.isDirty, nameInput, slotKey, slots });
   // The place's field takes focus as its panel opens.
   useEffect(() => {
     if (chips.openChip === "place") placeInput.current?.focus();
   }, [chips.openChip]);
-  const formatEventField: FieldFormatter = (key, value) => {
-    const mode = value as Parameters<typeof modes>[0];
-    return key === "mode" && modes.has(mode) ? modes(mode) : undefined;
-  };
   const discard = () => {
     recovery.discard();
     close();
   };
 
   function submit() {
-    if (busy || draft.hasNewerVersion || !recovery.isRetained) return;
+    if (busy || !recovery.isRetained) return;
     let schedule: ReturnType<typeof eventSchedulePayload>;
     let location: string | null;
     let description: string | null;
@@ -200,20 +190,19 @@ export function ScheduleComposer({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = eventChanges(fields, draft.baseline, item);
+    if (Object.keys(changes).length === 0) {
+      recovery.discard();
+      close();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: item.id,
           workspaceId: item.workspaceId,
-          input: {
-            displayName: fields.displayName,
-            description,
-            ...schedule,
-            location,
-            expectedVersion: item.version,
-            isAllDay: fields.mode === "timed" && item.isAllDay,
-            timezone: item.timezone,
-          },
+          input: { ...changes, expectedVersion: item.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -229,28 +218,7 @@ export function ScheduleComposer({
     startTime: fields.mode === "timed" ? fields.startTime : "",
     endTime: fields.mode === "timed" ? fields.endTime : "",
   };
-  const comparing = !adding && draft.hasNewerVersion;
-  const notice = comparing ? (
-    <ConflictNotice
-      draft={draft}
-      format={formatEventField}
-      objectId={item.id}
-      onKeepMine={() => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(draft.fields);
-      }}
-      onMerge={(merged) => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(merged);
-      }}
-      onTakeTheirs={() => {
-        draft.loadLatest();
-        update.reset();
-      }}
-    />
-  ) : mutation.isError ? (
+  const notice = mutation.isError ? (
     <ErrorNotice error={mutation.error} />
   ) : null;
   const asked = slots.open === slotKey && slots.pending !== null;
@@ -370,11 +338,7 @@ export function ScheduleComposer({
           : undefined
       }
       status={status}
-      submitDisabled={
-        fields.displayName.trim() === "" ||
-        draft.hasNewerVersion ||
-        !recovery.isRetained
-      }
+      submitDisabled={fields.displayName.trim() === "" || !recovery.isRetained}
       submitLabel={adding ? t("addScheduleItem") : t("save")}
     />
   );

@@ -9,9 +9,10 @@ import {
   DiscardActions,
   EditorDialogHeader,
 } from "../../components/editor-dialog-controls";
-import { EditorControls, useConflictSlot } from "./editor-controls";
+import { EditorControls } from "./editor-controls";
 import {
   noteBodyRows,
+  noteChanges,
   noteFieldsPayload,
   readNoteFields,
 } from "../../lib/note-fields";
@@ -72,7 +73,6 @@ function NoteEditor({
   readonly draftId: string;
   readonly initialDraft: NoteDraftSnapshot | undefined;
 }) {
-  const conflictSlot = useConflictSlot();
   const draft = useEditorDraft(latestNote, readNoteFields, initialDraft);
   const note = draft.source;
   const [attempt] = useState<ContextCreateAttempt>(
@@ -123,13 +123,7 @@ function NoteEditor({
 
   function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
-    if (
-      isConfirming ||
-      draft.hasNewerVersion ||
-      mutation.isPending ||
-      !recovery.isRetained
-    )
-      return;
+    if (isConfirming || mutation.isPending || !recovery.isRetained) return;
     const input = noteFieldsPayload(draft.fields);
     rememberSubmit(formEvent.currentTarget);
     if (note === undefined) {
@@ -142,11 +136,17 @@ function NoteEditor({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = noteChanges(draft.fields, draft.baseline);
+    if (Object.keys(changes).length === 0) {
+      close();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: note.id,
-          input: { ...input, expectedVersion: note.version },
+          input: { ...changes, expectedVersion: note.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -213,7 +213,6 @@ function NoteEditor({
         onSubmit={handleSubmit}
       >
         <div className="event-create-body event-inspector-fields">
-          <div className="editor-conflict-slot" ref={conflictSlot.ref} />
           <CountedField
             className="field-wide"
             disabled={mutation.isPending}
@@ -238,13 +237,7 @@ function NoteEditor({
         </div>
         <footer className="event-inspector-footer">
           <EditorControls
-            conflict={
-              note === undefined
-                ? undefined
-                : { objectId: note.id, slot: conflictSlot.slot }
-            }
             disabled={!recovery.isRetained}
-            draft={draft}
             mutation={mutation}
             onCancel={requestClose}
             onRefresh={note === undefined ? undefined : (onRefresh ?? refresh)}

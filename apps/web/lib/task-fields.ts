@@ -6,8 +6,10 @@ import {
 import { tr } from "../i18n/active-locale";
 import { editedInstant } from "./edited-instant";
 import { toDateTimeInput } from "./format";
+import { changedFields } from "./changed-entries";
 import { descriptionPayload } from "./description-field";
 import { locationPayload } from "./location-field";
+import type { FieldGroups } from "./use-editor-draft";
 
 export { locationLimit } from "./location-field";
 
@@ -178,6 +180,28 @@ export function taskFieldsPayload(
     labelIds,
     ...sectionId,
   };
+}
+
+/** A task's due and repeat, which a draft keeps or follows together. */
+export const taskFieldGroups: FieldGroups<TaskFields> = [
+  ["dueDate", "dueTime", "duration", "repeat", "repeatUntil"],
+];
+
+/**
+ * What a task's draft changed from the version it stands on, as the API
+ * takes it: only those entries, the due and its repeat together.
+ */
+export function taskChanges(
+  fields: TaskFields,
+  baseline: TaskFields,
+  source?: Pick<TaskResponse, "dueAt">,
+) {
+  return changedFields(
+    (draft: TaskFields) => taskFieldsPayload(draft, source),
+    fields,
+    baseline,
+    [["dueOn", "dueAt", "durationMinutes", "repeatRule", "repeatUntil"]],
+  );
 }
 
 /**

@@ -427,7 +427,7 @@ describe.each(draftKinds)("%s draft recovery", (kind) => {
       expect(saveRequests()).toHaveLength(0);
     });
 
-    it("keeps the original version until newer canonical fields are explicitly loaded", async () => {
+    it("resumes a draft on the newest version and saves what it changed over it", async () => {
       const user = await begin("edit");
       navigateAway();
       expect(
@@ -446,11 +446,19 @@ describe.each(draftKinds)("%s draft recovery", (kind) => {
       expect(await screen.findByLabelText(field)).toHaveValue(
         "Pack the lanterns",
       );
-      expect(screen.getByRole("button", { name: saveLabel })).toBeDisabled();
-      await user.click(screen.getByRole("button", { name: "Take theirs" }));
-      expect(screen.getByLabelText(field)).toHaveValue("Collaborator plan");
+      vi.mocked(fetch).mockClear();
+      await user.click(screen.getByRole("button", { name: saveLabel }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      // One write, made on the collaborator's version rather than refused.
+      expect(saveRequests()).toHaveLength(1);
+      const saved = (await (
+        await store.fetch(`/api/${kind}s/${resource.id}`)
+      ).json()) as { displayName: string; version: number };
+      expect(saved).toMatchObject({
+        displayName: "Pack the lanterns",
+        version: resource.version + 2,
+      });
       expect(unloadIsPrevented()).toBe(false);
-      expect(saveRequests()).toHaveLength(0);
     });
 
     it.each(["create", "edit"] as const)(

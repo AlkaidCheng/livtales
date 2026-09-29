@@ -252,7 +252,7 @@ describe("schedule item inspector", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("blocks a recovered draft against a newer canonical item", async () => {
+  it("resumes a recovered draft on a newer canonical item", async () => {
     const latest = { ...event, version: 2, displayName: "Changed elsewhere" };
     vi.stubGlobal(
       "fetch",
@@ -269,10 +269,8 @@ describe("schedule item inspector", () => {
     await user.click(
       await screen.findByRole("button", { name: "Resume draft" }),
     );
+    // The draft moves onto the newer item, its own name kept.
     expect(await screen.findByLabelText("Name")).toHaveValue("Kept welcome");
-    expect(screen.getByRole("button", { name: "Save event" })).toBeDisabled();
-    await user.click(screen.getByRole("button", { name: "Take theirs" }));
-    expect(screen.getByLabelText("Name")).toHaveValue("Changed elsewhere");
     expect(screen.getByRole("button", { name: "Save event" })).toBeEnabled();
   });
 

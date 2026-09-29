@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readTaskFields, taskFieldsPayload } from "../lib/task-fields";
+import {
+  readTaskFields,
+  taskChanges,
+  taskFieldsPayload,
+} from "../lib/task-fields";
 
 const empty = {
   displayName: "Pack",
@@ -149,6 +153,29 @@ describe("Task field conversion", () => {
       location: null,
       description: null,
       labelIds: [],
+    });
+  });
+
+  it("sends only a changed entry, and the due with its repeat together", () => {
+    vi.stubEnv("TZ", "America/Los_Angeles");
+    const source = { dueAt: "2030-07-03T18:30:45.678Z" };
+    const baseline = {
+      ...empty,
+      dueDate: "2030-07-03",
+      dueTime: "11:30",
+      repeat: "weekly",
+    };
+    expect(
+      taskChanges({ ...baseline, location: "Hall" }, baseline, source),
+    ).toEqual({ location: "Hall" });
+    expect(
+      taskChanges({ ...baseline, dueTime: "12:30" }, baseline, source),
+    ).toEqual({
+      dueOn: null,
+      dueAt: new Date("2030-07-03T19:30:00.000Z").toISOString(),
+      durationMinutes: null,
+      repeatRule: "weekly",
+      repeatUntil: null,
     });
   });
 

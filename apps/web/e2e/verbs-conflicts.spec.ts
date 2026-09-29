@@ -145,7 +145,7 @@ test("names removals by what reverses them and never reports one that was refuse
   await expect(benRow).toBeVisible();
 });
 
-test("compares a stale write side by side and saves each way out @webkit-desktop", async ({
+test("saves a stale edit on the newest version, keeping what changed elsewhere @webkit-desktop", async ({
   context,
   page,
   request,
@@ -180,7 +180,7 @@ test("compares a stale write side by side and saves each way out @webkit-desktop
   const editor = (tab: Page) =>
     tab.getByRole("dialog", { name: "Edit task", exact: true });
   // The row menu's Edit opens the row in place; More at the composer's
-  // foot reaches the dialog, where the comparison is exercised.
+  // foot reaches the dialog.
   async function openEditor(tab: Page, name: string): Promise<Locator> {
     await chooseRowAction(tab, taskRow(tab, name), "Edit");
     await tab.getByRole("button", { name: /^More: / }).click();
@@ -198,69 +198,28 @@ test("compares a stale write side by side and saves each way out @webkit-desktop
       .click();
     await expect(dialog).toHaveCount(0);
   }
-  const comparison = (dialog: Locator) =>
-    dialog.getByRole("alert").filter({
-      hasText: "Saved elsewhere while you edited",
-    });
 
-  // Keep mine: the draft goes over the newest version as a new version.
+  // A field changed on each side: the save, refused as stale, goes again
+  // on the newest version, and both changes stand.
   let dialog = await openEditor(page, "Order the cider");
   await saveElsewhere("Order the cider", { Task: "Order the cider, two kegs" });
-  await dialog.getByLabel("Task", { exact: true }).fill("Order the dry cider");
-  await dialog.getByRole("button", { name: "Save task", exact: true }).click();
-  await expect(comparison(dialog)).toBeVisible();
-  await expect(comparison(dialog)).toContainText("Ana");
-  await expect(comparison(dialog)).toContainText("Order the dry cider");
-  await expect(comparison(dialog)).toContainText("Order the cider, two kegs");
-  await comparison(dialog)
-    .getByRole("button", { name: "Keep mine", exact: true })
-    .click();
-  await expect(dialog).toHaveCount(0);
-  await expect(taskRow(page, "Order the dry cider")).toBeVisible();
-
-  // Take theirs: the draft is dropped for the newest version.
-  dialog = await openEditor(page, "Order the dry cider");
-  await saveElsewhere("Order the dry cider", { Task: "Order the sweet cider" });
-  await dialog.getByLabel("Task", { exact: true }).fill("Order the pear cider");
-  await dialog.getByRole("button", { name: "Save task", exact: true }).click();
-  await comparison(dialog)
-    .getByRole("button", { name: "Take theirs", exact: true })
-    .click();
-  await expect(dialog.getByLabel("Task", { exact: true })).toHaveValue(
-    "Order the sweet cider",
-  );
-  await expect(
-    dialog.getByRole("button", { name: "Save task", exact: true }),
-  ).toBeEnabled();
-  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-
-  // Merge fields: a field only one side changed is kept from that side; a
-  // field both changed defaults to theirs.
-  dialog = await openEditor(page, "Order the sweet cider");
-  await saveElsewhere("Order the sweet cider", {
-    Task: "Order the cider from the farm",
-  });
-  await dialog.getByLabel("Task", { exact: true }).fill("Order the cider");
   await dialog.getByLabel("Location", { exact: true }).fill("Orchard gate");
   await dialog.getByRole("button", { name: "Save task", exact: true }).click();
-  await comparison(dialog)
-    .getByRole("button", { name: "Merge fields", exact: true })
-    .click();
-  const merge = comparison(dialog);
-  await expect(merge.getByRole("row", { name: /Location/ })).toContainText(
-    "kept",
-  );
-  await expect(
-    merge
-      .getByRole("row", { name: /Name/ })
-      .getByRole("radio", { name: "Order the cider from the farm" }),
-  ).toBeChecked();
-  await merge
-    .getByRole("button", { name: "Save merged version", exact: true })
-    .click();
   await expect(dialog).toHaveCount(0);
-  const merged = taskRow(page, "Order the cider from the farm");
+  const both = taskRow(page, "Order the cider, two kegs");
+  await expect(both).toBeVisible();
+  await expect(both).toContainText("Orchard gate");
+
+  // The same field changed on both sides: the later save stands, and
+  // History keeps the other.
+  dialog = await openEditor(page, "Order the cider, two kegs");
+  await saveElsewhere("Order the cider, two kegs", {
+    Task: "Order the sweet cider",
+  });
+  await dialog.getByLabel("Task", { exact: true }).fill("Order the dry cider");
+  await dialog.getByRole("button", { name: "Save task", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const merged = taskRow(page, "Order the dry cider");
   await expect(merged).toBeVisible();
   await expect(merged).toContainText("Orchard gate");
 
@@ -270,7 +229,8 @@ test("compares a stale write side by side and saves each way out @webkit-desktop
       headers: ana.headers,
     })
   ).json();
-  expect(versions.items.length).toBeGreaterThanOrEqual(6);
+  expect(versions.items.length).toBeGreaterThanOrEqual(5);
+  expect(JSON.stringify(versions.items)).toContain("Order the sweet cider");
   await chooseRowAction(page, merged, "History");
   const history = page.locator("dialog.history-drawer");
   await expect(history).toBeVisible();

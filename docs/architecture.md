@@ -490,24 +490,32 @@ disabled views refetch when selected, not on every mutation. An already-started
 request may finish into its session-owned cache after a tab switch; session
 changes still cancel outstanding work and discard that cache.
 
-An open editor keeps its pinned source object, version, and typed field draft
-in one state. Changing object identity, explicitly loading the latest source,
-or accepting a successful save initializes fields with that source. Background
-updates to the same object preserve the draft. Each form supplies its field
-initializer and partial creation reset; currency and timestamp semantics stay
-with the typed form.
+An open editor keeps its source object, version, typed field draft, and the
+baseline the draft was read from in one state (`useEditorDraft`). Changing
+object identity or accepting a successful save initializes fields with that
+source. A newer version of the same object moves the draft onto it: the
+fields that differ from the baseline keep the draft's values, together with
+the rest of their group (a task's due, duration, and repeat; an Event's
+schedule; an expense's amount and currency), and the others take the newer
+version's. Each form supplies its field initializer, groups, and partial
+creation reset; currency and timestamp semantics stay with the typed form.
 
-Event, scheduled Event, Task, Expense, and Reminder forms compose the same
-save/cancel and conflict controls. Refresh invalidates server reads before
-resetting the mutation error; only explicit discard accepts the latest
-source. Each form owns its typed fields, create/reset defaults, and submit
-payload. These client controls do not replace backend authorization or version
-checks.
+A save sends only the entries its draft changed from the baseline, computed
+over the form's typed payload (`changedFields`), with the version the draft
+stands on. The update hooks send a save refused with `version_conflict` again
+on the newest version, read from the canonical object, up to three times
+(`saveOnNewest`); a content command is retried as a new command, and the
+saved record is read back when the version moved. Changes made meanwhile to
+other fields therefore stand, and a field both sides changed takes the later
+save, with History keeping both versions.
 
-Background updates preserve the draft and require explicit discard-and-reload
-before saving against a newer version. HTTP 409 conflicts preserve the draft as
-well. Inputs are disabled during save, and a successful save advances the
-editor's source version.
+Event, scheduled Event, Task, Expense, Reminder, Note, and Person forms
+compose the same save/cancel controls. A refused save keeps the draft and
+offers Refresh, which invalidates server reads before resetting the mutation
+error. Each form owns its typed fields, create/reset defaults, and submit
+payload. These client controls do not replace backend authorization or
+version checks. Inputs are disabled during save, and a successful save
+advances the editor's source version.
 
 Date badges in Events, Calendar, and Reminders share day/month formatting and
 unscheduled placeholders. Display and datetime-local input conversion use the

@@ -9,36 +9,39 @@ interface Resource {
   readonly id: string;
   readonly version: number;
   readonly displayName: string;
+  readonly currency?: string;
 }
 
 const initial: Resource = { id: "first", version: 1, displayName: "Initial" };
 const initialize = (source: Resource | undefined) => ({
   displayName: source?.displayName ?? "",
   amount: "",
-  currency: "USD",
+  currency: source?.currency ?? "USD",
 });
 
 afterEach(cleanup);
 
 describe("useEditorDraft", () => {
-  it("recovers fields with the original baseline and version, not a newer revision", () => {
+  it("moves a recovered draft onto the newest version, keeping what it changed", () => {
     const baseline = initialize(initial);
     const recovered = {
       source: initial,
       baseline,
       fields: { ...baseline, displayName: "Kept draft" },
     };
-    const latest = { ...initial, version: 2, displayName: "Collaborator" };
+    const latest = { ...initial, version: 2, currency: "EUR" };
     const { result, rerender } = renderHook(
       (resource: Resource) => useEditorDraft(resource, initialize, recovered),
       { initialProps: latest },
     );
-    expect(result.current.snapshot).toBe(recovered);
+    expect(result.current.source).toBe(latest);
+    expect(result.current.baseline).toEqual(initialize(latest));
+    expect(result.current.fields).toEqual({
+      displayName: "Kept draft",
+      amount: "",
+      currency: "EUR",
+    });
     expect(result.current.isDirty).toBe(true);
-    expect(result.current.hasNewerVersion).toBe(true);
-    act(() => result.current.loadLatest());
-    expect(result.current.fields.displayName).toBe("Collaborator");
-    expect(result.current.isDirty).toBe(false);
     rerender({ ...latest, id: "different", displayName: "Another event" });
     expect(result.current.fields.displayName).toBe("Another event");
     expect(result.current.isDirty).toBe(false);
@@ -57,28 +60,43 @@ describe("useEditorDraft", () => {
     expect(result.current.isDirty).toBe(false);
     act(() => result.current.change({ currency: "EUR" }));
     expect(result.current.isDirty).toBe(true);
-    act(() => result.current.loadLatest());
-    expect(result.current.isDirty).toBe(false);
   });
-  it("preserves fields through background updates and explicitly accepts the latest", () => {
+
+  it("follows a newer version, keeping the fields changed and taking the others", () => {
     const { result, rerender } = renderHook(
       (latest: Resource) => useEditorDraft(latest, initialize),
       { initialProps: initial },
     );
-    act(() => result.current.change({ displayName: "Draft", currency: "EUR" }));
-    const latest = { ...initial, version: 2, displayName: "Collaborator" };
+    act(() => result.current.change({ amount: "12" }));
+    const latest = {
+      ...initial,
+      version: 2,
+      displayName: "Collaborator",
+      currency: "EUR",
+    };
     rerender(latest);
-    expect(result.current.source).toBe(initial);
+    expect(result.current.source).toBe(latest);
     expect(result.current.fields).toEqual({
-      displayName: "Draft",
-      amount: "",
+      displayName: "Collaborator",
+      amount: "12",
       currency: "EUR",
     });
-    expect(result.current.hasNewerVersion).toBe(true);
-    act(() => result.current.loadLatest());
-    expect(result.current.source).toBe(latest);
-    expect(result.current.fields).toEqual(initialize(latest));
-    expect(result.current.hasNewerVersion).toBe(false);
+    expect(result.current.isDirty).toBe(true);
+  });
+
+  it("keeps a changed field's group together when following a newer version", () => {
+    const { result, rerender } = renderHook(
+      (latest: Resource) =>
+        useEditorDraft(latest, initialize, undefined, [["amount", "currency"]]),
+      { initialProps: initial },
+    );
+    act(() => result.current.change({ amount: "12" }));
+    rerender({ ...initial, version: 2, currency: "EUR" });
+    expect(result.current.fields).toEqual({
+      displayName: "Initial",
+      amount: "12",
+      currency: "USD",
+    });
   });
 
   it("accepts saved fields and version while parent data is behind", () => {
@@ -94,7 +112,6 @@ describe("useEditorDraft", () => {
     expect(result.current.fields.displayName).toBe("Next draft");
     rerender({ ...saved });
     expect(result.current.fields.displayName).toBe("Next draft");
-    expect(result.current.hasNewerVersion).toBe(false);
   });
 
   it("resets fields and source together when switching objects or entering creation", () => {
