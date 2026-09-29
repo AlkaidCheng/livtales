@@ -387,6 +387,50 @@ function rankAmong(
   return rankAfter(last);
 }
 
+/**
+ * A patch's place in manual order as the API resolves it: afterId or
+ * beforeId become the rank between that record and its neighbour in the
+ * sample workspace's order as it stands, the moved record left out.
+ */
+function placedPatch(
+  objects: readonly Resource[],
+  moved: Resource,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const field =
+    "afterId" in patch ? "afterId" : "beforeId" in patch ? "beforeId" : null;
+  if (field === null) return patch;
+  const { afterId: _, beforeId: __, ...rest } = patch;
+  const type = moved.objectType;
+  const others = objects
+    .filter(
+      (object): object is Resource & { rank: string } =>
+        object.objectType === type &&
+        object.id !== moved.id &&
+        (type === "task" || type === "reminder"),
+    )
+    .sort(byRank);
+  const at = others.findIndex((object) => object.id === patch[field]);
+  const anchor = others[at];
+  if (anchor === undefined)
+    throw new SandboxError(
+      400,
+      "invalid_request",
+      `${field} must name another ${type} you can see.`,
+    );
+  const rank =
+    field === "afterId"
+      ? rankBetweenRows(
+          anchor,
+          others.slice(at + 1).find((object) => object.rank > anchor.rank),
+        )
+      : rankBetweenRows(
+          others.slice(0, at).findLast((object) => object.rank < anchor.rank),
+          anchor,
+        );
+  return { ...rest, rank };
+}
+
 /** The first email contact of a card, the address an invitation from it goes to. */
 function personEmail(
   person: Extract<Resource, { objectType: "person" }>,
@@ -3077,7 +3121,14 @@ export class SandboxStore {
         );
         if (saved === undefined)
           throw new SandboxError(404, "not_found", "Unknown object.");
-        const keys = Object.keys(fields);
+        // A move is kept as the rank it took, for Undo and Redo to set.
+        const keys = [
+          ...new Set(
+            Object.keys(fields).map((key) =>
+              key === "afterId" || key === "beforeId" ? "rank" : key,
+            ),
+          ),
+        ];
         return {
           objectType: edit.objectType,
           objectId: edit.objectId,
@@ -3183,10 +3234,11 @@ export class SandboxStore {
             "version_conflict",
             "The sample object changed. Refresh before saving.",
           );
-        const patch = JSON.parse(JSON.stringify(requested)) as Record<
-          string,
-          unknown
-        >;
+        const patch = placedPatch(
+          this.#state.objects,
+          object,
+          JSON.parse(JSON.stringify(requested)) as Record<string, unknown>,
+        );
         // Clearing a repeat rule clears its end.
         if ("repeatRule" in patch && patch.repeatRule === null)
           patch.repeatUntil = null;

@@ -37,9 +37,27 @@ export function rankBetweenRows(
   }
 }
 
-/** The rows a record would sit between when dropped at an index among `rows`. */
-export function rankAtIndex(rows: readonly Ranked[], index: number): string {
-  return rankBetweenRows(rows[index - 1], rows[index]);
+/**
+ * A move in manual order as the API takes it: the record the moved one now
+ * follows, or, at the top, the one it now precedes. The server places it
+ * there in the order as it stands.
+ */
+export type Placement =
+  { readonly afterId: string } | { readonly beforeId: string };
+
+/**
+ * The move that drops a record at `index` among `rows` (which exclude it):
+ * after the row before the gap, or before the first. Null among no rows,
+ * where any place is the same.
+ */
+export function placeAtIndex(
+  rows: readonly Ranked[],
+  index: number,
+): Placement | null {
+  const before = rows[index - 1];
+  if (before !== undefined) return { afterId: before.id };
+  const after = rows[index];
+  return after === undefined ? null : { beforeId: after.id };
 }
 
 /**
@@ -62,20 +80,17 @@ export function staysInPlace(
 }
 
 /**
- * The rank that moves a record one place up or down among its rows: it
- * takes the midpoint beyond its neighbour, so only the moved record is
- * written. Null when it is already first or last.
+ * The move one place up or down among its rows: before the row above or
+ * after the row below. Null when the record is already first or last.
  */
-export function rankForStep(
+export function placeForStep(
   rows: readonly Ranked[],
   id: string,
   direction: -1 | 1,
-): string | null {
+): Placement | null {
   const at = rows.findIndex((row) => row.id === id);
   if (at < 0) return null;
-  const target = at + direction;
-  if (target < 0 || target >= rows.length) return null;
-  return direction < 0
-    ? rankBetweenRows(rows[target - 1], rows[target])
-    : rankBetweenRows(rows[target], rows[target + 1]);
+  const neighbour = rows[at + direction];
+  if (neighbour === undefined) return null;
+  return direction < 0 ? { beforeId: neighbour.id } : { afterId: neighbour.id };
 }

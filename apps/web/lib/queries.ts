@@ -1467,9 +1467,10 @@ export function useUpdateTask() {
         newest,
       );
       // A save sent again on a newer version reads the record back, since
-      // the copy on hand lacks what changed meanwhile.
+      // the copy on hand lacks what changed meanwhile, and so does a move,
+      // whose rank the server chose.
       const saved =
-        (rebased
+        (rebased || "afterId" in patch || "beforeId" in patch
           ? null
           : settledRecord(
               queryClient.getQueryData<TaskResponse>(

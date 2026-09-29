@@ -25,8 +25,9 @@ import { RowMenu, type RowMenuEntry } from "../../components/row-menu";
 import { RowPress } from "../../components/row-press";
 import {
   byRank,
-  rankAtIndex,
-  rankForStep,
+  type Placement,
+  placeAtIndex,
+  placeForStep,
   staysInPlace,
 } from "../../lib/collection-order";
 import { addComposerKey, useComposerSlots } from "../../lib/composer-slots";
@@ -1693,13 +1694,10 @@ export function RemindersPanel({
     [update],
   );
   const snooze = useCallback(
-    (reminder: ReminderResponse, day: DayKey, rank?: string) =>
+    (reminder: ReminderResponse, day: DayKey, place?: Placement | null) =>
       change(
         reminder,
-        {
-          remindAt: instantOnDay(reminder.remindAt, day),
-          ...(rank === undefined ? {} : { rank }),
-        },
+        { remindAt: instantOnDay(reminder.remindAt, day), ...place },
         t("said.due", {
           name: reminder.displayName,
           day: dayInWords(day, new Date()),
@@ -1738,17 +1736,17 @@ export function RemindersPanel({
         staysInPlace(rowsOf(from), id, rows, drop.index)
       )
         return;
-      const rank = rankAtIndex(rows, drop.index);
+      const place = placeAtIndex(rows, drop.index);
       if (
         drop.groupKey !== "all" &&
         drop.groupKey !== overdueGroup &&
         drop.groupKey !== reminderDay(reminder)
       )
-        snooze(reminder, drop.groupKey, rank);
-      else
+        snooze(reminder, drop.groupKey, place);
+      else if (place !== null)
         change(
           reminder,
-          { rank },
+          place,
           t("said.moved", { name: reminder.displayName }),
         );
     },
@@ -1782,11 +1780,11 @@ export function RemindersPanel({
     const day = reminderDay(reminder);
     const at = rows.findIndex((row) => row.id === reminder.id);
     const step = (direction: -1 | 1) => {
-      const rank = rankForStep(rows, reminder.id, direction);
-      if (rank === null) return;
+      const place = placeForStep(rows, reminder.id, direction);
+      if (place === null) return;
       change(
         reminder,
-        { rank },
+        place,
         t("said.position", {
           name: reminder.displayName,
           at: at + direction + 1,

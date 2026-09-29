@@ -65,6 +65,9 @@ export function rememberCommand(
 }
 
 /** The words for one edit, from the fields it touched and the name it left. */
+/** The ways a patch gives a place in manual order. */
+const placeFields = new Set(["rank", "afterId", "beforeId"]);
+
 export function commandDescription(
   patch: Record<string, unknown>,
   name: string,
@@ -73,7 +76,7 @@ export function commandDescription(
   if (fields.includes("displayName")) return { kind: "rename", name };
   if (fields.includes("status"))
     return { kind: patch.status === "done" ? "complete" : "reopen", name };
-  if (fields.length > 0 && fields.every((key) => key === "rank"))
+  if (fields.length > 0 && fields.every((key) => placeFields.has(key)))
     return { kind: "move", name };
   return { kind: "edit", name };
 }
