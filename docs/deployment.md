@@ -518,6 +518,18 @@ path, which an older function refuses with `userId must name a member of
 this workspace or a friend of one.`. On CloudBase, apply it through the
 console SQL editor, then redeploy the API and the web.
 
+Migration `0082_place_moves_in_manual_order.sql` adds
+`chronelle_placed_changes`, which turns a task or reminder update's
+`afterId` or `beforeId` into a rank between that record and its neighbour
+under the workspace's fence, and redefines `chronelle_object_update` in
+place (its privileges carry over) to call it before the object lock. It
+changes no tables. Apply 0082 after 0081 and before deploying the API: an
+older `chronelle_object_update` ignores the two fields, so a move from the
+new web would be saved as a new version without changing the order. The
+new function needs the same execute grant as the other rpc functions. On
+CloudBase, apply it through the console SQL editor, then redeploy the API
+and the web.
+
 Enable the WeChat routes only after CloudBase authentication is configured:
 
 ```dotenv
