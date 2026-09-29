@@ -55,6 +55,33 @@ function hasUpdateFields(value: Record<string, unknown>): boolean {
   return Object.keys(value).some((key) => key !== "expectedVersion");
 }
 
+/**
+ * A move in manual order: the record the moved one now follows (afterId)
+ * or precedes (beforeId), which the server places it next to in the order
+ * as it stands, so moves made meanwhile keep their places around it.
+ */
+const placementShape = {
+  afterId: objectIdSchema.optional(),
+  beforeId: objectIdSchema.optional(),
+};
+
+/** A place in manual order is given one way: a rank, afterId, or beforeId. */
+function hasOnePlace(value: {
+  readonly rank?: unknown;
+  readonly afterId?: unknown;
+  readonly beforeId?: unknown;
+}): boolean {
+  return (
+    [value.rank, value.afterId, value.beforeId].filter(
+      (place) => place !== undefined,
+    ).length <= 1
+  );
+}
+
+const onePlaceMessage = {
+  message: "Give a place in manual order as one of rank, afterId, or beforeId.",
+};
+
 export const objectIdParamsSchema = z.object({ id: objectIdSchema });
 
 export const objectDeletionQuerySchema = z.object({
@@ -146,12 +173,14 @@ export const taskUpdateRequestSchema = z
     location: locationSchema.optional(),
     description: descriptionSchema.optional(),
     rank: rankSchema.optional(),
+    ...placementShape,
     sectionId: objectIdSchema.nullable().optional(),
     labelIds: z.array(objectIdSchema).max(20).optional(),
   })
   .refine(hasUpdateFields, {
     message: "At least one update field is required.",
-  });
+  })
+  .refine(hasOnePlace, onePlaceMessage);
 
 const amountSchema = z
   .string()
@@ -198,10 +227,12 @@ export const reminderUpdateRequestSchema = z
     remindAt: dateTimeInputSchema.optional(),
     status: reminderStatusSchema.optional(),
     rank: rankSchema.optional(),
+    ...placementShape,
   })
   .refine(hasUpdateFields, {
     message: "At least one update field is required.",
-  });
+  })
+  .refine(hasOnePlace, onePlaceMessage);
 
 /** Optional person text: trimmed, empty read as null. */
 const personTextSchema = (limit: number) =>
