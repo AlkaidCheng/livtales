@@ -1035,7 +1035,6 @@ export function TaskListView({
       draftId={taskComposerDraftId(task.id)}
       eventId={eventId}
       onMore={(fields) => onEdit(task.id, fields)}
-      onRefresh={onRefresh}
       onSaved={() => setAnnouncement(composerT("saved"))}
       slotKey={rowComposerKey(task.id)}
       slots={composer}
@@ -1053,7 +1052,6 @@ export function TaskListView({
       dueOn={dueOn}
       eventId={eventId}
       onMore={onAddDetails}
-      onRefresh={onRefresh}
       section={section}
       sections={sections}
       slots={composer}

@@ -418,7 +418,6 @@ export function TasksPanel({
             dueOn={null}
             eventId={eventId}
             onMore={setAdding}
-            onRefresh={refresh}
             slots={composer}
           />
         </div>
@@ -492,7 +491,6 @@ export function CalendarPanel({
   const returnFocus = useReturnFocus(panel);
   const period = usePeriod(view);
   const endsWithAddRow = useEndsWithAddRow(canEdit, view);
-  const refresh = useRefreshEvent(eventId);
   const composer = useComposerSlots();
   const openHistory = useOpenHistory();
   const openLifecycle = useOpenLifecycle();
@@ -559,7 +557,6 @@ export function CalendarPanel({
       eventId={eventId}
       item={item}
       onMore={(fields) => setEditing({ id: item.id, start: fields })}
-      onRefresh={refresh}
       onSaved={() => {
         setAnnouncement(composerT("saved"));
         returnFocus(recordRowSelector(`schedule-${item.id}`));
@@ -761,7 +758,6 @@ export function CalendarPanel({
                 draftKey={addDraftId}
                 eventId={eventId}
                 onMore={(fields) => setEditing({ id: null, start: fields })}
-                onRefresh={refresh}
                 slotKey={addSlot}
                 slots={composer}
               />
@@ -811,7 +807,6 @@ export function TimelinePanel({
   const exports = useTranslations("export");
   const openHistory = useOpenHistory();
   const panel = useRef<HTMLElement>(null);
-  const refresh = useRefreshEvent(eventId);
   const composer = useComposerSlots();
   const [more, setMore] = useState<TimelineMore | null>(null);
   // An entry whose record left the Timeline closes its composer.
@@ -850,7 +845,6 @@ export function TimelinePanel({
                   entry={item}
                   eventId={eventId}
                   onMore={setMore}
-                  onRefresh={refresh}
                   slots={composer}
                 />
               </li>
@@ -1126,7 +1120,6 @@ export function ExpensesPanel({
       eventId={eventId}
       expense={expense}
       onMore={(fields) => setEditing({ id: expense.id, start: fields })}
-      onRefresh={refresh}
       onSaved={() => {
         setAnnouncement(composerT("saved"));
         returnFocus(recordRowSelector(`expense-${expense.id}`));
@@ -1314,7 +1307,6 @@ export function ExpensesPanel({
               draftKey={draftId}
               eventId={eventId}
               onMore={(fields) => setEditing({ id: null, start: fields })}
-              onRefresh={refresh}
               slotKey={slotKey}
               slots={composer}
               {...(sectioned ? { sectionId } : {})}
@@ -1892,7 +1884,6 @@ export function RemindersPanel({
     <ReminderComposer
       eventId={eventId}
       onMore={(fields) => setEditing({ id: reminder.id, start: fields })}
-      onRefresh={refresh}
       onSaved={() => {
         setAnnouncement(composerT("saved"));
         returnFocus(recordRowSelector(`reminder-${reminder.id}`));
@@ -2014,7 +2005,6 @@ export function RemindersPanel({
             draftKey={draftId}
             eventId={eventId}
             onMore={(fields) => setEditing({ id: null, start: fields })}
-            onRefresh={refresh}
             slotKey={slotKey}
             slots={composer}
           />

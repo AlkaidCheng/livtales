@@ -209,15 +209,12 @@ describe("Event draft recovery across navigation", () => {
     },
   );
 
-  it("pins a recovered editor to its original version until latest is explicitly loaded", async () => {
+  it("resumes a draft on the newest version, keeping what others changed meanwhile", async () => {
     const user = await edit("edit");
     navigateAway();
     const changed = await store.fetch(`/api/events/${initial.id}`, {
       method: "PATCH",
-      body: JSON.stringify({
-        expectedVersion: 1,
-        displayName: "Collaborator name",
-      }),
+      body: JSON.stringify({ expectedVersion: 1, location: "North lawn" }),
     });
     expect(changed.status).toBe(200);
     await user.click(screen.getByRole("button", { name: "Edit event" }));
@@ -225,9 +222,18 @@ describe("Event draft recovery across navigation", () => {
     expect(
       await screen.findByDisplayValue("Private garden draft"),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Save event" })).toBeDisabled();
-    await user.click(screen.getByRole("button", { name: "Take theirs" }));
-    expect(screen.getByLabelText("Name")).toHaveValue("Collaborator name");
+    await user.click(screen.getByRole("button", { name: "Save event" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    const saved = (await (
+      await store.fetch(`/api/events/${initial.id}`)
+    ).json()) as { displayName: string; location: string; version: number };
+    expect(saved).toMatchObject({
+      displayName: "Private garden draft",
+      location: "North lawn",
+      version: 3,
+    });
     expect(unloadIsPrevented()).toBe(false);
   });
 

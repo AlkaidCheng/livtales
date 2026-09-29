@@ -1,8 +1,10 @@
 import type { ExpenseResponse } from "@livtales/schemas";
 import { tr } from "../i18n/active-locale";
+import { changedFields } from "./changed-entries";
 import { editedInstant } from "./edited-instant";
 import { toDateTimeInput } from "./format";
 import { sectionPayload } from "./task-fields";
+import type { FieldGroups } from "./use-editor-draft";
 
 export function readExpenseFields(
   expense?: Pick<
@@ -48,4 +50,26 @@ export function expenseFieldsPayload(
     throw new Error(tr("validation")("transactionInstant"));
   const { section, ...rest } = fields;
   return { ...rest, occurredAt, ...sectionPayload(section) };
+}
+
+/** An expense's amount and currency, which a draft keeps or follows together. */
+export const expenseFieldGroups: FieldGroups<ExpenseFields> = [
+  ["amount", "currency"],
+];
+
+/**
+ * What an expense's draft changed from the version it stands on, as the
+ * API takes it: only those entries, the amount and currency together.
+ */
+export function expenseChanges(
+  fields: ExpenseFields,
+  baseline: ExpenseFields,
+  source?: Pick<ExpenseResponse, "occurredAt">,
+) {
+  return changedFields(
+    (draft: ExpenseFields) => expenseFieldsPayload(draft, source),
+    fields,
+    baseline,
+    [["amount", "currency"]],
+  );
 }

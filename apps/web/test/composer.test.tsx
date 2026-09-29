@@ -361,7 +361,7 @@ describe("the composer on a row", () => {
     );
   });
 
-  it("refuses a stale save with the comparison, and Keep mine writes over the newest version", async () => {
+  it("saves the name typed over a version saved meanwhile, keeping its location", async () => {
     const user = userEvent.setup();
     render(
       <Providers>
@@ -390,11 +390,6 @@ describe("the composer on a row", () => {
     await user.click(
       within(sampleComposer()).getByRole("button", { name: "Save" }),
     );
-    const comparison = await screen.findByText(
-      "Saved elsewhere while you edited",
-    );
-    expect(comparison).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Keep mine" }));
     await waitFor(() =>
       expect(
         screen.queryByRole("form", { name: "Edit Confirm the garden venue" }),
@@ -403,10 +398,10 @@ describe("the composer on a row", () => {
     const after = (await client.listTasks({ filter: "open" })).items.find(
       (task) => task.id === before.id,
     );
-    // Keep mine writes the whole draft, the location it never had included.
+    // The name goes over the newest version, which keeps the location.
     expect(after).toMatchObject({
       displayName: "Confirm the garden venue by Friday",
-      location: null,
+      location: "The hall",
       version: before.version + 2,
     });
   });

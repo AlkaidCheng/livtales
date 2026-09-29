@@ -93,6 +93,33 @@ export function readCommandState(
   });
 }
 
+/** Whether an error is the refusal of a save made on an older version. */
+function isVersionConflict(error: unknown): boolean {
+  return error instanceof ApiClientError && error.code === "version_conflict";
+}
+
+/**
+ * Sends a save on the newest version of its record: a save refused because
+ * the record changed meanwhile is sent again, the same entries, on the
+ * newest version read from `newest`, up to three sends in all. `rebased`
+ * says whether the version moved on meanwhile.
+ */
+export async function saveOnNewest<Result>(
+  send: (version: number) => Promise<Result>,
+  version: number,
+  newest: () => Promise<number>,
+): Promise<{ readonly result: Result; readonly rebased: boolean }> {
+  let current = version;
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return { result: await send(current), rebased: current !== version };
+    } catch (error) {
+      if (!isVersionConflict(error) || attempt >= 3) throw error;
+      current = await newest();
+    }
+  }
+}
+
 /**
  * Runs one content edit as a reversible command on the stack the edited
  * record's changes are kept on. The stack version comes from the cached

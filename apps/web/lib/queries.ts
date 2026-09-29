@@ -71,6 +71,7 @@ import {
   readCommandState,
   recordCommandHistory,
   rememberCommand,
+  saveOnNewest,
   settledRecord,
 } from "./commands";
 import { personDisplayName } from "./person-fields";
@@ -573,8 +574,21 @@ export function useUpdatePerson() {
   const client = useApiClient();
   const invalidate = useResourceInvalidation();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: PersonUpdatePayload }) =>
-      client.updatePerson(id, input),
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: PersonUpdatePayload;
+    }) =>
+      (
+        await saveOnNewest(
+          (expectedVersion) =>
+            client.updatePerson(id, { ...input, expectedVersion }),
+          input.expectedVersion,
+          async () => (await client.getPerson(id)).version,
+        )
+      ).result,
     onSuccess: (saved, { input }) => {
       void invalidate(saved, input);
     },
@@ -1008,20 +1022,48 @@ export function useUpdateEvent() {
       workspaceId: string;
       input: EventUpdatePayload;
     }) => {
-      if (input.metadata !== undefined) return client.updateEvent(id, input);
+      const newest = async () => (await client.getEvent(id)).version;
+      if (input.metadata !== undefined)
+        return (
+          await saveOnNewest(
+            (expectedVersion) =>
+              client.updateEvent(id, { ...input, expectedVersion }),
+            input.expectedVersion,
+            newest,
+          )
+        ).result;
       const { metadata: _, ...patch } = input;
-      const receipt = await executeCommand(
-        client,
-        queryClient,
-        { objectType: "event", objectId: id, patch },
-        recordCommandHistory({ id, workspaceId }, credential?.workspaceId),
+      const history = recordCommandHistory(
+        { id, workspaceId },
+        credential?.workspaceId,
       );
+      const { result: receipt, rebased } = await saveOnNewest(
+        (expectedVersion) =>
+          executeCommand(
+            client,
+            queryClient,
+            {
+              objectType: "event",
+              objectId: id,
+              patch: { ...patch, expectedVersion },
+            },
+            history,
+          ),
+        input.expectedVersion,
+        newest,
+      );
+      // A save sent again on a newer version reads the record back, since
+      // the copy on hand lacks what changed meanwhile.
       const saved =
-        settledRecord(
-          queryClient.getQueryData<EventResponse>(queryKeys.eventResource(id)),
-          patch,
-          receipt,
-        ) ?? (await client.getEvent(id));
+        (rebased
+          ? null
+          : settledRecord(
+              queryClient.getQueryData<EventResponse>(
+                queryKeys.eventResource(id),
+              ),
+              patch,
+              receipt,
+            )) ?? (await client.getEvent(id));
       rememberCommand(
         receipt.commandId,
         commandDescription(input, saved.displayName),
@@ -1394,20 +1436,48 @@ export function useUpdateTask() {
       workspaceId: string;
       input: TaskUpdatePayload;
     }) => {
-      if (input.metadata !== undefined) return client.updateTask(id, input);
+      const newest = async () => (await client.getTask(id)).version;
+      if (input.metadata !== undefined)
+        return (
+          await saveOnNewest(
+            (expectedVersion) =>
+              client.updateTask(id, { ...input, expectedVersion }),
+            input.expectedVersion,
+            newest,
+          )
+        ).result;
       const { metadata: _, ...patch } = input;
-      const receipt = await executeCommand(
-        client,
-        queryClient,
-        { objectType: "task", objectId: id, patch },
-        recordCommandHistory({ id, workspaceId }, credential?.workspaceId),
+      const history = recordCommandHistory(
+        { id, workspaceId },
+        credential?.workspaceId,
       );
+      const { result: receipt, rebased } = await saveOnNewest(
+        (expectedVersion) =>
+          executeCommand(
+            client,
+            queryClient,
+            {
+              objectType: "task",
+              objectId: id,
+              patch: { ...patch, expectedVersion },
+            },
+            history,
+          ),
+        input.expectedVersion,
+        newest,
+      );
+      // A save sent again on a newer version reads the record back, since
+      // the copy on hand lacks what changed meanwhile.
       const saved =
-        settledRecord(
-          queryClient.getQueryData<TaskResponse>(queryKeys.objectResource(id)),
-          patch,
-          receipt,
-        ) ?? (await client.getTask(id));
+        (rebased
+          ? null
+          : settledRecord(
+              queryClient.getQueryData<TaskResponse>(
+                queryKeys.objectResource(id),
+              ),
+              patch,
+              receipt,
+            )) ?? (await client.getTask(id));
       rememberCommand(
         receipt.commandId,
         commandDescription(input, saved.displayName),
@@ -1529,8 +1599,21 @@ export function useUpdateExpense() {
   const client = useApiClient();
   const invalidate = useResourceInvalidation();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: ExpenseUpdatePayload }) =>
-      client.updateExpense(id, input),
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: ExpenseUpdatePayload;
+    }) =>
+      (
+        await saveOnNewest(
+          (expectedVersion) =>
+            client.updateExpense(id, { ...input, expectedVersion }),
+          input.expectedVersion,
+          async () => (await client.getExpense(id)).version,
+        )
+      ).result,
     onSuccess: (saved, { input }) => {
       void invalidate(saved, input);
     },
@@ -1553,8 +1636,21 @@ export function useUpdateNote() {
   const client = useApiClient();
   const invalidate = useResourceInvalidation();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: NoteUpdatePayload }) =>
-      client.updateNote(id, input),
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: NoteUpdatePayload;
+    }) =>
+      (
+        await saveOnNewest(
+          (expectedVersion) =>
+            client.updateNote(id, { ...input, expectedVersion }),
+          input.expectedVersion,
+          async () => (await client.getNote(id)).version,
+        )
+      ).result,
     onSuccess: (saved, { input }) => {
       void invalidate(saved, input);
     },
@@ -1565,8 +1661,21 @@ export function useUpdateReminder() {
   const client = useApiClient();
   const invalidate = useResourceInvalidation();
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: ReminderUpdatePayload }) =>
-      client.updateReminder(id, input),
+    mutationFn: async ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: ReminderUpdatePayload;
+    }) =>
+      (
+        await saveOnNewest(
+          (expectedVersion) =>
+            client.updateReminder(id, { ...input, expectedVersion }),
+          input.expectedVersion,
+          async () => (await client.getReminder(id)).version,
+        )
+      ).result,
     onSuccess: (saved, { input }) => {
       void invalidate(saved, input);
     },

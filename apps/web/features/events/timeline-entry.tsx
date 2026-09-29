@@ -51,7 +51,6 @@ interface EntryProps {
   readonly entry: TimelineEntry;
   readonly eventId: string;
   readonly onMore: (more: TimelineMore) => void;
-  readonly onRefresh: () => Promise<unknown>;
   readonly slots: ComposerSlots;
 }
 
@@ -65,14 +64,13 @@ function loaded<Resource>(
   return <LoadingState />;
 }
 
-function TaskEntry({ entry, eventId, onMore, onRefresh, slots }: EntryProps) {
+function TaskEntry({ entry, eventId, onMore, slots }: EntryProps) {
   const { task } = useTaskEditorQueries(entry.canonicalObjectId);
   return loaded(task, (resource) => (
     <TaskComposer
       draftId={resource.id}
       eventId={eventId}
       onMore={(fields) => onMore({ kind: "task", id: resource.id, fields })}
-      onRefresh={onRefresh}
       slotKey={recordComposerKey("task", resource.id)}
       slots={slots}
       task={resource}
@@ -80,13 +78,7 @@ function TaskEntry({ entry, eventId, onMore, onRefresh, slots }: EntryProps) {
   ));
 }
 
-function ScheduleEntry({
-  entry,
-  eventId,
-  onMore,
-  onRefresh,
-  slots,
-}: EntryProps) {
+function ScheduleEntry({ entry, eventId, onMore, slots }: EntryProps) {
   const { event } = useEventWorkspaceQueries(
     entry.canonicalObjectId,
     null,
@@ -97,26 +89,18 @@ function ScheduleEntry({
       eventId={eventId}
       item={resource}
       onMore={(fields) => onMore({ kind: "event", id: resource.id, fields })}
-      onRefresh={onRefresh}
       slotKey={recordComposerKey("event", resource.id)}
       slots={slots}
     />
   ));
 }
 
-function ReminderEntry({
-  entry,
-  eventId,
-  onMore,
-  onRefresh,
-  slots,
-}: EntryProps) {
+function ReminderEntry({ entry, eventId, onMore, slots }: EntryProps) {
   const { reminder } = useReminderEditorQueries(entry.canonicalObjectId);
   return loaded(reminder, (resource) => (
     <ReminderComposer
       eventId={eventId}
       onMore={(fields) => onMore({ kind: "reminder", id: resource.id, fields })}
-      onRefresh={onRefresh}
       reminder={resource}
       slotKey={recordComposerKey("reminder", resource.id)}
       slots={slots}
@@ -124,20 +108,13 @@ function ReminderEntry({
   ));
 }
 
-function ExpenseEntry({
-  entry,
-  eventId,
-  onMore,
-  onRefresh,
-  slots,
-}: EntryProps) {
+function ExpenseEntry({ entry, eventId, onMore, slots }: EntryProps) {
   const { expense } = useExpenseEditorQueries(entry.canonicalObjectId);
   return loaded(expense, (resource) => (
     <ExpenseComposer
       eventId={eventId}
       expense={resource}
       onMore={(fields) => onMore({ kind: "expense", id: resource.id, fields })}
-      onRefresh={onRefresh}
       slotKey={recordComposerKey("expense", resource.id)}
       slots={slots}
     />

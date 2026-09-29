@@ -1,5 +1,7 @@
 import type { NoteResponse } from "@livtales/schemas";
 
+import { changedFields } from "./changed-entries";
+
 /** The note editor's fields: the title and the text as typed. */
 export function readNoteFields(
   note?: Pick<NoteResponse, "displayName" | "body">,
@@ -12,6 +14,14 @@ export function readNoteFields(
 
 export function noteFieldsPayload(fields: ReturnType<typeof readNoteFields>) {
   return { displayName: fields.displayName.trim(), body: fields.body };
+}
+
+/** What a note's draft changed from the version it stands on, as the API takes it. */
+export function noteChanges(
+  fields: ReturnType<typeof readNoteFields>,
+  baseline: ReturnType<typeof readNoteFields>,
+) {
+  return changedFields(noteFieldsPayload, fields, baseline);
 }
 
 /** The lines a growing text field shows: one more than the text has, within six and twenty-four. */

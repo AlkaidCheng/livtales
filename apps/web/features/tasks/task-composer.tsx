@@ -22,10 +22,7 @@ import {
   useKeepEditorDraft,
   useKeptEditorDraft,
 } from "../../lib/editor-draft-context";
-import {
-  isDraftConflictError,
-  type TaskDraftSnapshot,
-} from "../../lib/editor-draft-store";
+import type { TaskDraftSnapshot } from "../../lib/editor-draft-store";
 import {
   type ContextCreateAttempt,
   useCreateTask,
@@ -41,10 +38,11 @@ import {
   setTaskFields,
   splitLabelIds,
   type TaskFields,
+  taskChanges,
+  taskFieldGroups,
   taskFieldsPayload,
 } from "../../lib/task-fields";
 import { useEditorDraft } from "../../lib/use-editor-draft";
-import { ConflictNotice, type FieldFormatter } from "../events/conflict-notice";
 import { AssigneeChoices } from "./assignee-picker";
 import { LabelChoices } from "./label-picker";
 
@@ -79,7 +77,6 @@ export function TaskComposer({
   eventId,
   now = new Date(),
   onMore,
-  onRefresh,
   onSaved,
   sectionId,
   slotKey,
@@ -94,8 +91,6 @@ export function TaskComposer({
   readonly now?: Date;
   /** Opens the full editor with the composer's fields. */
   readonly onMore: (fields: Partial<TaskFields>) => void;
-  /** Reloads the list, so a stale save can be compared with the newest version. */
-  readonly onRefresh: () => Promise<unknown>;
   /** A saved edit, for the list to announce. */
   readonly onSaved?: ((task: TaskResponse) => void) | undefined;
   /**
@@ -134,7 +129,7 @@ export function TaskComposer({
       source === undefined ? fresh : readTaskFields(source),
     [fresh],
   );
-  const draft = useEditorDraft(latest, initialize, initial);
+  const draft = useEditorDraft(latest, initialize, initial, taskFieldGroups);
   const task = draft.source;
   const adding = task === undefined;
   const [attempt] = useState<ContextCreateAttempt>(
@@ -185,41 +180,13 @@ export function TaskComposer({
     if (openChip === "location") locationInput.current?.focus();
   }, [openChip]);
 
-  // A save refused as stale reads the newest version at once, so the
-  // comparison appears in place of the refusal.
-  const stale = update.isError && isDraftConflictError(update.error);
-  const refreshedFor = useRef<unknown>(null);
-  useEffect(() => {
-    if (!stale || refreshedFor.current === update.error) return;
-    refreshedFor.current = update.error;
-    void onRefresh();
-  }, [onRefresh, stale, update.error]);
-  // Keep mine and Save merged version pin the draft to the newest version,
-  // then submit the composer as the person would.
-  const submitOnceRebased = useRef(false);
-  useEffect(() => {
-    if (!submitOnceRebased.current || draft.hasNewerVersion) return;
-    submitOnceRebased.current = false;
-    nameInput.current?.form?.requestSubmit();
-  }, [draft.hasNewerVersion]);
-
-  // The comparison names labels and the assignee rather than showing ids.
+  // The chips name labels and the assignee rather than showing ids.
   const labelNames = useLabelsQuery(
-    openChip === "labels" || fields.labels !== "" || draft.hasNewerVersion,
+    openChip === "labels" || fields.labels !== "",
   ).data?.names;
-  const readPeople =
-    openChip === "assignee" || fields.assignee !== "" || draft.hasNewerVersion;
+  const readPeople = openChip === "assignee" || fields.assignee !== "";
   const persons = usePersonsQuery(readPeople);
   const personNames = usePersonNames(readPeople);
-  const formatTaskField: FieldFormatter = (key, value) => {
-    if (value === "") return undefined;
-    if (key === "labels")
-      return splitLabelIds(value)
-        .map((labelId) => labelNames?.get(labelId) ?? labelId)
-        .join(", ");
-    if (key === "assignee") return personNames?.get(value);
-    return undefined;
-  };
 
   const discard = () => {
     recovery.discard();
@@ -237,7 +204,7 @@ export function TaskComposer({
   };
 
   function submit() {
-    if (busy || draft.hasNewerVersion || !recovery.isRetained) return;
+    if (busy || !recovery.isRetained) return;
     let input: ReturnType<typeof taskFieldsPayload>;
     try {
       input = taskFieldsPayload(fields, task);
@@ -257,12 +224,18 @@ export function TaskComposer({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = taskChanges(fields, draft.baseline, task);
+    if (Object.keys(changes).length === 0) {
+      discard();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: task.id,
           workspaceId: task.workspaceId,
-          input: { ...input, expectedVersion: task.version },
+          input: { ...changes, expectedVersion: task.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -298,28 +271,7 @@ export function TaskComposer({
       : named.length === labelIds.length
         ? named.join(", ")
         : String(labelIds.length);
-  const comparing = !adding && draft.hasNewerVersion;
-  const notice = comparing ? (
-    <ConflictNotice
-      draft={draft}
-      format={formatTaskField}
-      objectId={task.id}
-      onKeepMine={() => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(draft.fields);
-      }}
-      onMerge={(merged) => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(merged);
-      }}
-      onTakeTheirs={() => {
-        draft.loadLatest();
-        update.reset();
-      }}
-    />
-  ) : mutation.isError ? (
+  const notice = mutation.isError ? (
     <ErrorNotice error={mutation.error} />
   ) : null;
   const asked = slots.open === slotKey && slots.pending !== null;
@@ -499,11 +451,7 @@ export function TaskComposer({
           : undefined
       }
       status={status}
-      submitDisabled={
-        fields.displayName.trim() === "" ||
-        draft.hasNewerVersion ||
-        !recovery.isRetained
-      }
+      submitDisabled={fields.displayName.trim() === "" || !recovery.isRetained}
       submitLabel={adding ? t("addTask") : t("save")}
     />
   );

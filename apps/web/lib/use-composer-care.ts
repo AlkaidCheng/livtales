@@ -24,31 +24,19 @@ export function useComposerChips<Chip extends string>() {
 
 /**
  * What every composer does around its fields: it tells the list whether it
- * holds unsaved changes (so opening another row asks first), takes focus
- * in its name as it opens with the caret after the text, reads the newest
- * version at once when a save is refused as stale (so the comparison
- * appears in place of the refusal), and resubmits once Keep mine or Save
- * merged version has pinned the draft to that version.
+ * holds unsaved changes (so opening another row asks first) and takes focus
+ * in its name as it opens, with the caret after the text.
  */
 export function useComposerCare({
-  hasNewerVersion,
   isDirty,
   nameInput,
-  onRefresh,
   slotKey,
   slots,
-  stale,
-  staleError,
 }: {
-  readonly hasNewerVersion: boolean;
   readonly isDirty: boolean;
   readonly nameInput: RefObject<HTMLInputElement | null>;
-  readonly onRefresh: () => Promise<unknown>;
   readonly slotKey: string;
   readonly slots: ComposerSlots;
-  /** A save just refused as stale. */
-  readonly stale: boolean;
-  readonly staleError: unknown;
 }) {
   useEffect(() => {
     slots.setDirty(slotKey, isDirty);
@@ -59,17 +47,4 @@ export function useComposerCare({
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
   }, [nameInput]);
-  const refreshedFor = useRef<unknown>(null);
-  useEffect(() => {
-    if (!stale || refreshedFor.current === staleError) return;
-    refreshedFor.current = staleError;
-    void onRefresh();
-  }, [onRefresh, stale, staleError]);
-  const submitOnceRebased = useRef(false);
-  useEffect(() => {
-    if (!submitOnceRebased.current || hasNewerVersion) return;
-    submitOnceRebased.current = false;
-    nameInput.current?.form?.requestSubmit();
-  }, [hasNewerVersion, nameInput]);
-  return { submitOnceRebased };
 }

@@ -15,13 +15,13 @@ import {
   DiscardActions,
   EditorDialogHeader,
 } from "../../components/editor-dialog-controls";
-import type { FieldFormatter } from "./conflict-notice";
-import { EditorControls, useConflictSlot } from "./editor-controls";
+import { EditorControls } from "./editor-controls";
 import {
   locationLimit,
   readTaskFields,
-  splitLabelIds,
   type TaskFields,
+  taskChanges,
+  taskFieldGroups,
   taskFieldsPayload,
 } from "../../lib/task-fields";
 import {
@@ -46,8 +46,6 @@ import { useEditorDraft } from "../../lib/use-editor-draft";
 import {
   type ContextCreateAttempt,
   useCreateTask,
-  useLabelsQuery,
-  usePersonNames,
   useRefreshEvent,
   useUpdateTask,
 } from "../../lib/queries";
@@ -116,8 +114,12 @@ function TaskEditor({
   readonly draftId: string;
   readonly initialDraft: TaskDraftSnapshot | undefined;
 }) {
-  const conflictSlot = useConflictSlot();
-  const draft = useEditorDraft(latestTask, readTaskFields, initialDraft);
+  const draft = useEditorDraft(
+    latestTask,
+    readTaskFields,
+    initialDraft,
+    taskFieldGroups,
+  );
   const task = draft.source;
   // A composer's fields seed a fresh draft once; a recovered draft keeps
   // what it had.
@@ -163,19 +165,6 @@ function TaskEditor({
     section,
   } = draft.fields;
   const mutation = task === undefined ? create : update;
-  // The comparison names labels and the assignee rather than showing ids;
-  // the lists load only once there is a newer version to compare.
-  const labelNames = useLabelsQuery(draft.hasNewerVersion).data?.names;
-  const personNames = usePersonNames(draft.hasNewerVersion);
-  const formatTaskField: FieldFormatter = (key, value) => {
-    if (value === "") return undefined;
-    if (key === "labels")
-      return splitLabelIds(value)
-        .map((labelId) => labelNames?.get(labelId) ?? labelId)
-        .join(", ");
-    if (key === "assignee") return personNames?.get(value);
-    return undefined;
-  };
   const t = useTranslations("taskForm");
   const dueField = useTranslations("dueField");
   const editor = useTranslations("editor");
@@ -203,13 +192,7 @@ function TaskEditor({
 
   function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
-    if (
-      isConfirming ||
-      draft.hasNewerVersion ||
-      mutation.isPending ||
-      !recovery.isRetained
-    )
-      return;
+    if (isConfirming || mutation.isPending || !recovery.isRetained) return;
     let input: ReturnType<typeof taskFieldsPayload>;
     try {
       input = taskFieldsPayload(draft.fields, task);
@@ -255,12 +238,18 @@ function TaskEditor({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = taskChanges(draft.fields, draft.baseline, task);
+    if (Object.keys(changes).length === 0) {
+      close();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: task.id,
           workspaceId: task.workspaceId,
-          input: { ...input, expectedVersion: task.version },
+          input: { ...changes, expectedVersion: task.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -334,7 +323,6 @@ function TaskEditor({
         onSubmit={handleSubmit}
       >
         <div className="event-create-body event-inspector-fields">
-          <div className="editor-conflict-slot" ref={conflictSlot.ref} />
           {task === undefined ? null : <AccessLine source={accessSource} />}
           {parent && task === undefined ? (
             <p className="field-hint field-wide">
@@ -420,17 +408,7 @@ function TaskEditor({
         </div>
         <footer className="event-inspector-footer">
           <EditorControls
-            conflict={
-              task === undefined
-                ? undefined
-                : {
-                    objectId: task.id,
-                    format: formatTaskField,
-                    slot: conflictSlot.slot,
-                  }
-            }
             disabled={!recovery.isRetained}
-            draft={draft}
             mutation={mutation}
             onCancel={requestClose}
             onRefresh={task === undefined ? undefined : (onRefresh ?? refresh)}

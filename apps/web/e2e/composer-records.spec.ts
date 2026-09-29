@@ -208,7 +208,7 @@ test("adds a schedule item, a reminder, and an expense from their add rows' comp
   expect(errors).toEqual([]);
 });
 
-test("edits a schedule row, an expense row, and a Timeline entry in place, and refuses a stale save @webkit-desktop", async ({
+test("edits a schedule row, an expense row, and a Timeline entry in place, and saves a stale edit on the newest version @webkit-desktop", async ({
   page,
   request,
 }) => {
@@ -281,7 +281,8 @@ test("edits a schedule row, an expense row, and a Timeline entry in place, and r
   ).toMatchObject({ version: 2, location: "Main gate" });
 
   // Cancel leaves the row alone; the row menu's Edit opens it too; a save
-  // refused as stale shows the comparison, and Take theirs loads it.
+  // refused as stale goes again on the newest version, the place saved
+  // elsewhere kept.
   await pressRow(calendar, "Fushimi Inari, the lower loop");
   await name.fill("Nothing");
   await schedule.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -296,16 +297,18 @@ test("edits a schedule row, an expense row, and a Timeline entry in place, and r
   });
   expect(elsewhere.status()).toBe(200);
   await schedule.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(
-    schedule.getByText("Saved elsewhere while you edited"),
-  ).toBeVisible();
-  await schedule
-    .getByRole("button", { name: "Take theirs", exact: true })
-    .click();
-  await expect(name).toHaveValue("Fushimi Inari, the lower loop");
-  await expect(chip(schedule, /^Place: Inari station$/)).toBeVisible();
-  await name.press("Escape");
   await expect(schedule).toHaveCount(0);
+  const dawn = calendar
+    .getByRole("article")
+    .filter({ hasText: "Fushimi Inari at dawn" });
+  await expect(dawn).toContainText("Inari station");
+  expect(
+    await (await request.get(`/api/events/${item.id}`, { headers })).json(),
+  ).toMatchObject({
+    version: 4,
+    displayName: "Fushimi Inari at dawn",
+    location: "Inari station",
+  });
 
   // An Expenses row edits its amount through the chip's panel.
   await openEventView(page, "Expenses");

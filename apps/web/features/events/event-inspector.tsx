@@ -16,10 +16,8 @@ import {
   DiscardActions,
   EditorDialogHeader,
 } from "../../components/editor-dialog-controls";
-import { eventSchedulePayload } from "../../lib/event-schedule";
+import { eventChanges, eventFieldGroups } from "../../lib/event-schedule";
 import { DescriptionField } from "../../components/description-field";
-import { descriptionPayload } from "../../lib/description-field";
-import { locationPayload } from "../../lib/location-field";
 import { useKeepEditorDraft } from "../../lib/editor-draft-context";
 import {
   readEventFields,
@@ -36,8 +34,7 @@ import { useSessionDialog } from "../../lib/use-session-dialog";
 import { useDialogHelp } from "../../lib/use-dialog-help";
 import { useDiscardConfirmation } from "../../lib/use-discard-confirmation";
 import { useOpenHistory } from "../history/history-provider";
-import type { FieldFormatter } from "./conflict-notice";
-import { EditorControls, useConflictSlot } from "./editor-controls";
+import { EditorControls } from "./editor-controls";
 import { ScheduleRows } from "./schedule-rows";
 
 interface EventInspectorProps {
@@ -74,8 +71,12 @@ function EventInspectorForm({
 }: EventInspectorProps & {
   readonly initialDraft: EventDraftSnapshot | undefined;
 }) {
-  const conflictSlot = useConflictSlot();
-  const draft = useEditorDraft(latestEvent, readEventFields, initialDraft);
+  const draft = useEditorDraft(
+    latestEvent,
+    readEventFields,
+    initialDraft,
+    eventFieldGroups,
+  );
   // A composer's fields seed a fresh draft once; a recovered draft keeps
   // what it had.
   const seeded = useRef(false);
@@ -96,11 +97,6 @@ function EventInspectorForm({
     onClose,
   );
   const event = draft.source ?? latestEvent;
-  const modes = useTranslations("conflict.modes");
-  const formatEventField: FieldFormatter = (key, value) => {
-    const mode = value as Parameters<typeof modes>[0];
-    return key === "mode" && modes.has(mode) ? modes(mode) : undefined;
-  };
   const nameId = useId();
   const headingId = useId();
   const openHistory = useOpenHistory();
@@ -139,20 +135,11 @@ function EventInspectorForm({
   }, [initialFocus]);
   function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
-    if (
-      confirmingDiscard ||
-      draft.hasNewerVersion ||
-      update.isPending ||
-      !recovery.isRetained
-    )
-      return;
-    let schedule: ReturnType<typeof eventSchedulePayload>;
-    let place: { location: string | null };
-    let description: string | null;
+    if (confirmingDiscard || update.isPending || !recovery.isRetained) return;
+    // Only what the draft changed is sent, over the version it stands on.
+    let changes: ReturnType<typeof eventChanges>;
     try {
-      schedule = eventSchedulePayload(draft.fields);
-      place = { location: locationPayload(draft.fields.location) };
-      description = descriptionPayload(draft.fields.description);
+      changes = eventChanges(draft.fields, draft.baseline, event);
       setScheduleError("");
     } catch (error) {
       setScheduleError(
@@ -160,20 +147,17 @@ function EventInspectorForm({
       );
       return;
     }
+    if (Object.keys(changes).length === 0) {
+      recovery.discard();
+      onClose();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: event.id,
           workspaceId: event.workspaceId,
-          input: {
-            displayName,
-            description,
-            ...schedule,
-            ...place,
-            expectedVersion: event.version,
-            isAllDay: draft.fields.mode === "timed" && event.isAllDay,
-            timezone: event.timezone,
-          },
+          input: { ...changes, expectedVersion: event.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -242,7 +226,6 @@ function EventInspectorForm({
         onSubmit={handleSubmit}
       >
         <div className="event-create-body event-inspector-fields">
-          <div className="editor-conflict-slot" ref={conflictSlot.ref} />
           <CountedField
             className="field-wide"
             disabled={update.isPending}
@@ -283,12 +266,6 @@ function EventInspectorForm({
         </div>
         <footer className="event-inspector-footer">
           <EditorControls
-            conflict={{
-              objectId: event.id,
-              format: formatEventField,
-              slot: conflictSlot.slot,
-            }}
-            draft={draft}
             mutation={update}
             onCancel={requestClose}
             onRefresh={refresh}

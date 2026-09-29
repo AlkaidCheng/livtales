@@ -8,6 +8,10 @@ import {
   fromDateTimeInput,
   toDateTimeInput,
 } from "./format";
+import { changedFields } from "./changed-entries";
+import { descriptionPayload } from "./description-field";
+import { locationPayload } from "./location-field";
+import type { FieldGroups } from "./use-editor-draft";
 import { instantDayKey } from "./zone";
 
 export interface EventScheduleDraft {
@@ -28,6 +32,53 @@ export function readEventSchedule(event?: EventResponse): EventScheduleDraft {
     startTime: start.slice(11),
     endTime: end.slice(11),
   };
+}
+
+/** The fields an Event's editors hold. */
+export type EventEditorFields = EventScheduleDraft & {
+  displayName: string;
+  location: string;
+  description: string;
+};
+
+/** An Event's schedule, which a draft keeps or follows together. */
+export const eventFieldGroups: FieldGroups<EventEditorFields> = [
+  ["mode", "startDate", "endDate", "startTime", "endTime"],
+];
+
+/**
+ * An Event's save from its editor's fields, whole; the all-day flag and the
+ * time zone stay as the Event has them.
+ */
+function eventFieldsPayload(
+  fields: EventEditorFields,
+  source: Pick<EventResponse, "isAllDay" | "timezone">,
+) {
+  return {
+    displayName: fields.displayName,
+    description: descriptionPayload(fields.description),
+    ...eventSchedulePayload(fields),
+    location: locationPayload(fields.location),
+    isAllDay: fields.mode === "timed" && source.isAllDay,
+    timezone: source.timezone,
+  };
+}
+
+/**
+ * What an Event's draft changed from the version it stands on, as the API
+ * takes it: only those entries, the schedule together.
+ */
+export function eventChanges(
+  fields: EventEditorFields,
+  baseline: EventEditorFields,
+  source: Pick<EventResponse, "isAllDay" | "timezone">,
+) {
+  return changedFields(
+    (draft: EventEditorFields) => eventFieldsPayload(draft, source),
+    fields,
+    baseline,
+    [["startsOn", "endsOn", "startsAt", "endsAt", "isAllDay", "timezone"]],
+  );
 }
 
 function localInstant(date: string, time: string): string {

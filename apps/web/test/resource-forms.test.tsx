@@ -241,45 +241,45 @@ describe("versioned editor drafts", () => {
   });
 
   it.each(forms)(
-    "preserves the $name draft until an explicit reload",
+    "moves the $name draft onto a newer version, keeping what was typed",
     async (form) => {
-      const fetch = vi.fn<typeof globalThis.fetch>();
+      const bodies: Record<string, unknown>[] = [];
+      const fetch = vi.fn<typeof globalThis.fetch>(async (_input, init) => {
+        const body = JSON.parse(String(init?.body)) as {
+          displayName: string;
+          expectedVersion: number;
+        };
+        bodies.push(body);
+        return Response.json(
+          form.resource(body.expectedVersion + 1, body.displayName),
+        );
+      });
       vi.stubGlobal("fetch", withCommands(fetch));
       const user = userEvent.setup();
       const view = render(form.render(1, "Initial title"), {
         wrapper: Providers,
       });
-      fireEvent.change(screen.getByLabelText(form.field), {
-        target: { value: "My unsaved draft" },
-      });
-
+      // An untouched field follows the newer version.
       view.rerender(form.render(2, "Collaborator update"));
-      expect(screen.getByLabelText(form.field)).toHaveValue("My unsaved draft");
-      // The newer version is compared with the draft, never announced alone.
-      expect(
-        screen.getByText("Saved elsewhere while you edited"),
-      ).toBeVisible();
-      expect(screen.getByText("Collaborator update")).toBeVisible();
-      const submit = view.container.querySelector("button[type=submit]");
-      expect(submit).toBeDisabled();
-      const writes = () =>
-        fetch.mock.calls.filter(
-          ([, init]) => (init?.method ?? "GET") !== "GET",
-        );
-      screen.getByLabelText(form.field).focus();
-      await user.keyboard("{Control>}{Enter}{/Control}");
-      expect(writes()).toHaveLength(0);
-      const element = view.container.querySelector("form");
-      if (element === null) throw new Error("Editor form not found.");
-      fireEvent.submit(element);
-      expect(writes()).toHaveLength(0);
-
-      await user.click(screen.getByRole("button", { name: "Take theirs" }));
       expect(screen.getByLabelText(form.field)).toHaveValue(
         "Collaborator update",
       );
-      expect(submit).toBeEnabled();
-      expect(screen.queryByText(/Your draft is preserved/)).toBeNull();
+      fireEvent.change(screen.getByLabelText(form.field), {
+        target: { value: "My unsaved draft" },
+      });
+      // A field the person changed keeps their value.
+      view.rerender(form.render(3, "Another update"));
+      expect(screen.getByLabelText(form.field)).toHaveValue("My unsaved draft");
+      expect(screen.queryByRole("alert")).toBeNull();
+      const submit = view.container.querySelector("button[type=submit]");
+      if (submit === null) throw new Error("Submit button not found.");
+      await user.click(submit);
+      await waitFor(() => expect(bodies).toHaveLength(1));
+      // Only the changed field is sent, over the newest version.
+      expect(bodies[0]).toEqual({
+        displayName: "My unsaved draft",
+        expectedVersion: 3,
+      });
     },
   );
 
@@ -300,6 +300,9 @@ describe("versioned editor drafts", () => {
         "button[type=submit]",
       );
       if (submit === null) throw new Error("Submit button not found.");
+      fireEvent.change(screen.getByLabelText(editor.field), {
+        target: { value: "Renamed" },
+      });
       screen.getByLabelText(editor.field).focus();
       await user.keyboard("{Control>}{Enter}{/Control}");
       for (const input of view.container.querySelectorAll("input"))
@@ -324,10 +327,8 @@ describe("versioned editor drafts", () => {
       await act(() =>
         finishSave?.(
           Response.json(
-            {
-              error: { code: "version_conflict", message: "Changed elsewhere" },
-            },
-            { status: 409 },
+            { error: { code: "invalid_request", message: "Refused" } },
+            { status: 422 },
           ),
         ),
       );
@@ -339,12 +340,29 @@ describe("versioned editor drafts", () => {
   );
 
   it.each(forms)(
-    "retains the $name draft after a server-side version conflict",
+    "sends a $name save refused as stale again on the newest version",
     async (form) => {
-      vi.stubGlobal(
-        "fetch",
-        vi.fn<typeof globalThis.fetch>(async () =>
-          Response.json(
+      // The record moves on to version 2 before the save arrives.
+      const server = { version: 2, displayName: "Initial" };
+      const writes: { expectedVersion: number }[] = [];
+      const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
+        if ((init?.method ?? "GET") === "GET") {
+          if (!String(input).endsWith(`/${objectId}`))
+            return Response.json(
+              { error: { code: "not_found", message: "Not found" } },
+              { status: 404 },
+            );
+          return Response.json(
+            form.resource(server.version, server.displayName),
+          );
+        }
+        const body = JSON.parse(String(init?.body)) as {
+          displayName: string;
+          expectedVersion: number;
+        };
+        writes.push(body);
+        if (body.expectedVersion !== server.version)
+          return Response.json(
             {
               error: {
                 code: "version_conflict",
@@ -352,13 +370,14 @@ describe("versioned editor drafts", () => {
               },
             },
             { status: 409 },
-          ),
-        ),
-      );
-      const user = userEvent.setup();
-      const view = render(form.render(1, "Initial"), {
-        wrapper: Providers,
+          );
+        server.version += 1;
+        server.displayName = body.displayName;
+        return Response.json(form.resource(server.version, body.displayName));
       });
+      vi.stubGlobal("fetch", withCommands(fetch));
+      const user = userEvent.setup();
+      const view = render(form.render(1, "Initial"), { wrapper: Providers });
       fireEvent.change(screen.getByLabelText(form.field), {
         target: { value: "My draft" },
       });
@@ -367,17 +386,61 @@ describe("versioned editor drafts", () => {
       );
       if (submit === null) throw new Error("Submit button not found.");
       await user.click(submit);
-      // The refusal fetches the newest version by itself; here that read is
-      // refused too, so the refusal stands and the draft is kept.
+      await waitFor(() =>
+        expect(
+          screen.getByRole("status", { name: "Save status" }),
+        ).toHaveTextContent("Saved successfully."),
+      );
+      expect(writes.map((write) => write.expectedVersion)).toEqual([1, 2]);
+      expect(server).toEqual({ version: 3, displayName: "My draft" });
+      expect(screen.queryByRole("alert")).toBeNull();
+    },
+  );
+
+  it.each(forms)(
+    "keeps the $name draft when the newest version keeps moving",
+    async (form) => {
+      let version = 1;
+      const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
+        // Every write arrives one version late.
+        version += 1;
+        if ((init?.method ?? "GET") === "GET")
+          return String(input).endsWith(`/${objectId}`)
+            ? Response.json(form.resource(version, "Initial"))
+            : Response.json(
+                { error: { code: "not_found", message: "Not found" } },
+                { status: 404 },
+              );
+        return Response.json(
+          {
+            error: {
+              code: "version_conflict",
+              message: "This object was updated by another request.",
+            },
+          },
+          { status: 409 },
+        );
+      });
+      vi.stubGlobal("fetch", withCommands(fetch));
+      const user = userEvent.setup();
+      const view = render(form.render(1, "Initial"), { wrapper: Providers });
+      fireEvent.change(screen.getByLabelText(form.field), {
+        target: { value: "My draft" },
+      });
+      const submit = view.container.querySelector<HTMLButtonElement>(
+        "button[type=submit]",
+      );
+      if (submit === null) throw new Error("Submit button not found.");
+      await user.click(submit);
       expect((await screen.findAllByRole("alert"))[0]).toHaveTextContent(
         "A newer version is available",
       );
+      expect(
+        fetch.mock.calls.filter(
+          ([, init]) => init?.method !== undefined && init.method !== "GET",
+        ),
+      ).toHaveLength(3);
       expect(screen.getByLabelText(form.field)).toHaveValue("My draft");
-      view.rerender(form.render(2, "Saved elsewhere"));
-      await user.click(
-        await screen.findByRole("button", { name: "Take theirs" }),
-      );
-      expect(screen.getByLabelText(form.field)).toHaveValue("Saved elsewhere");
       expect(submit).toBeEnabled();
     },
   );

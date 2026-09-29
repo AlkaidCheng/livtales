@@ -187,7 +187,7 @@ describe("Event inspector", () => {
     },
   );
 
-  it("treats reverted fields as clean and resets the baseline on explicit latest load", async () => {
+  it("treats reverted fields as clean, against the newest version once it arrives", async () => {
     const user = await openInspector();
     const name = screen.getByLabelText("Name");
     await user.type(name, " changed");
@@ -200,9 +200,11 @@ describe("Event inspector", () => {
       screen.getByRole("button", { name: "Receive newer version" }),
     );
     expect(name).toHaveValue("Garden evening private draft");
-    expect(screen.getByRole("button", { name: "Save event" })).toBeDisabled();
-    await user.click(screen.getByRole("button", { name: "Take theirs" }));
-    expect(name).toHaveValue("Collaborator name");
+    expect(screen.getByRole("button", { name: "Save event" })).toBeEnabled();
+    expect(unloadIsPrevented()).toBe(true);
+    // The newer version is the baseline now: its name reads as clean.
+    await user.clear(name);
+    await user.type(name, "Collaborator name");
     expect(unloadIsPrevented()).toBe(false);
     cancelInspector();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

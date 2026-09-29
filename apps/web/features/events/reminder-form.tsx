@@ -9,10 +9,11 @@ import {
   DiscardActions,
   EditorDialogHeader,
 } from "../../components/editor-dialog-controls";
-import { EditorControls, useConflictSlot } from "./editor-controls";
+import { EditorControls } from "./editor-controls";
 import {
   readReminderFields,
   type ReminderFields,
+  reminderChanges,
   reminderFieldsPayload,
 } from "../../lib/reminder-fields";
 import { MomentRow } from "../../components/moment-row";
@@ -78,7 +79,6 @@ function ReminderEditor({
   readonly draftId: string;
   readonly initialDraft: ReminderDraftSnapshot | undefined;
 }) {
-  const conflictSlot = useConflictSlot();
   const draft = useEditorDraft(
     latestReminder,
     readReminderFields,
@@ -143,13 +143,7 @@ function ReminderEditor({
 
   function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
-    if (
-      isConfirming ||
-      draft.hasNewerVersion ||
-      mutation.isPending ||
-      !recovery.isRetained
-    )
-      return;
+    if (isConfirming || mutation.isPending || !recovery.isRetained) return;
     let input: ReturnType<typeof reminderFieldsPayload>;
     try {
       input = reminderFieldsPayload(draft.fields, reminder);
@@ -169,11 +163,17 @@ function ReminderEditor({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = reminderChanges(draft.fields, draft.baseline, reminder);
+    if (Object.keys(changes).length === 0) {
+      close();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: reminder.id,
-          input: { ...input, expectedVersion: reminder.version },
+          input: { ...changes, expectedVersion: reminder.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -248,7 +248,6 @@ function ReminderEditor({
         onSubmit={handleSubmit}
       >
         <div className="event-create-body event-inspector-fields">
-          <div className="editor-conflict-slot" ref={conflictSlot.ref} />
           <CountedField
             className="field-wide"
             disabled={mutation.isPending}
@@ -274,13 +273,7 @@ function ReminderEditor({
         </div>
         <footer className="event-inspector-footer">
           <EditorControls
-            conflict={
-              reminder === undefined
-                ? undefined
-                : { objectId: reminder.id, slot: conflictSlot.slot }
-            }
             disabled={!recovery.isRetained}
-            draft={draft}
             mutation={mutation}
             onCancel={requestClose}
             onRefresh={

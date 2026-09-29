@@ -15,6 +15,7 @@ import { useFriendsQuery } from "../../lib/friend-queries";
 import {
   joinPersonContacts,
   joinPersonFields,
+  personChanges,
   personFieldsPayload,
   readPersonFields,
   splitPersonContacts,
@@ -30,7 +31,7 @@ import {
 import { useEditorDraft } from "../../lib/use-editor-draft";
 import { useDialogHelp } from "../../lib/use-dialog-help";
 import { usePlanningEditorDialog } from "../../lib/use-planning-editor-dialog";
-import { EditorControls, useConflictSlot } from "../events/editor-controls";
+import { EditorControls } from "../events/editor-controls";
 import {
   EditorDraftRecovery,
   EditorDraftStatus,
@@ -93,7 +94,6 @@ function PersonEditor({
 }) {
   const t = useTranslations("person");
   const te = useTranslations("personEditor");
-  const conflictSlot = useConflictSlot();
   const draft = useEditorDraft(latestPerson, readPersonFields, initialDraft);
   const person = draft.source;
   // A retained draft keeps its creation attempt, so a retry after a lost
@@ -210,13 +210,7 @@ function PersonEditor({
 
   function handleSubmit(formEvent: FormEvent<HTMLFormElement>) {
     formEvent.preventDefault();
-    if (
-      isConfirming ||
-      draft.hasNewerVersion ||
-      mutation.isPending ||
-      !recovery.isRetained
-    )
-      return;
+    if (isConfirming || mutation.isPending || !recovery.isRetained) return;
     let input: ReturnType<typeof personFieldsPayload>;
     try {
       input = personFieldsPayload(draft.fields, person, te);
@@ -236,11 +230,17 @@ function PersonEditor({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = personChanges(draft.fields, draft.baseline, person, te);
+    if (Object.keys(changes).length === 0) {
+      close();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: person.id,
-          input: { ...input, expectedVersion: person.version },
+          input: { ...changes, expectedVersion: person.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -315,7 +315,6 @@ function PersonEditor({
         onSubmit={handleSubmit}
       >
         <div className="event-create-body event-inspector-fields person-editor-body">
-          <div className="editor-conflict-slot" ref={conflictSlot.ref} />
           <div className="person-name-row">
             <PersonNameField
               accounts={accounts}
@@ -368,13 +367,7 @@ function PersonEditor({
         </div>
         <footer className="event-inspector-footer">
           <EditorControls
-            conflict={
-              person === undefined
-                ? undefined
-                : { objectId: person.id, slot: conflictSlot.slot }
-            }
             disabled={!recovery.isRetained}
-            draft={draft}
             mutation={mutation}
             onCancel={requestClose}
             onRefresh={person === undefined ? undefined : onRefresh}

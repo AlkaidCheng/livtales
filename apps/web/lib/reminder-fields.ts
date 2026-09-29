@@ -1,5 +1,6 @@
 import type { ReminderResponse } from "@livtales/schemas";
 import { tr } from "../i18n/active-locale";
+import { changedFields } from "./changed-entries";
 import { type DayKey, parseDayKey, today } from "./day-placement";
 import { editedInstant } from "./edited-instant";
 import { toDateTimeInput } from "./format";
@@ -24,6 +25,19 @@ export function reminderFieldsPayload(
   const remindAt = editedInstant(fields.remindAt, source?.remindAt, "reminder");
   if (remindAt === null) throw new Error(tr("validation")("reminderInstant"));
   return { displayName: fields.displayName, remindAt };
+}
+
+/** What a reminder's draft changed from the version it stands on, as the API takes it. */
+export function reminderChanges(
+  fields: ReminderFields,
+  baseline: ReminderFields,
+  source?: Pick<ReminderResponse, "remindAt">,
+) {
+  return changedFields(
+    (draft: ReminderFields) => reminderFieldsPayload(draft, source),
+    fields,
+    baseline,
+  );
 }
 
 /**

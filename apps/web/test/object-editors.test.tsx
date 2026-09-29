@@ -374,7 +374,7 @@ describe.each(["task", "expense"] as const)("focused %s editors", (kind) => {
       });
     });
 
-    it("preserves the exact source instant in a name-only versioned update", async () => {
+    it("sends only the name in a name-only versioned update", async () => {
       const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
         if (init?.method === "PATCH")
           return Response.json({
@@ -398,27 +398,9 @@ describe.each(["task", "expense"] as const)("focused %s editors", (kind) => {
       const patch = fetch.mock.calls.find(
         ([, init]) => init?.method === "PATCH",
       );
+      // The instant the draft left alone is not sent, so it stays exact.
       expect(JSON.parse(String(patch?.[1]?.body))).toEqual({
         displayName: "Confirm headcount",
-        ...(kind === "task"
-          ? {
-              dueOn: null,
-              dueAt: resource.dueAt,
-              durationMinutes: null,
-              repeatRule: null,
-              repeatUntil: null,
-              assigneeId: null,
-              location: null,
-              description: null,
-              labelIds: [],
-              sectionId: null,
-            }
-          : {
-              amount: resource.amount,
-              currency: resource.currency,
-              occurredAt: resource.occurredAt,
-              sectionId: null,
-            }),
         expectedVersion: 1,
       });
     });

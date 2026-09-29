@@ -193,7 +193,7 @@ describe("the schedule item composer", () => {
     ).toMatchObject({ version: 2 });
   });
 
-  it("refuses a stale save with the comparison, and the row menu keeps Edit", async () => {
+  it("saves over a version saved meanwhile, and the row menu keeps Edit", async () => {
     const user = renderView("calendar");
     await user.click(
       await screen.findByRole("button", { name: "Edit Welcome and coffee" }),
@@ -210,10 +210,7 @@ describe("the schedule item composer", () => {
     });
     await user.type(within(form).getByLabelText("Schedule item"), "!");
     await user.click(within(form).getByRole("button", { name: "Save" }));
-    expect(
-      await within(form).findByRole("button", { name: /Keep mine/ }),
-    ).toBeVisible();
-    await user.click(within(form).getByRole("button", { name: /Keep mine/ }));
+    // The name typed goes over the version saved meanwhile.
     expect(
       await screen.findByRole("heading", { name: "Welcome and coffee!" }),
     ).toBeVisible();

@@ -61,7 +61,6 @@ export function AddTaskRow({
   eventId,
   now,
   onMore,
-  onRefresh,
   section = null,
   sections,
   slots,
@@ -74,7 +73,6 @@ export function AddTaskRow({
   readonly now?: Date | undefined;
   /** Opens the full editor for a new task with the composer's fields. */
   readonly onMore: (fields: Partial<TaskFields>) => void;
-  readonly onRefresh: () => Promise<unknown>;
   /** The section of the Event's To-dos the row adds to; null for none. */
   readonly section?: SectionResponse | null | undefined;
   /** The sections of the Event's To-dos, when the list has them. */
@@ -101,7 +99,6 @@ export function AddTaskRow({
         dueOn={dueOn}
         eventId={eventId}
         onMore={onMore}
-        onRefresh={onRefresh}
         sectionId={sections === undefined ? undefined : sectionId}
         slotKey={slotKey}
         slots={slots}

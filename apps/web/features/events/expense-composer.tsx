@@ -17,10 +17,11 @@ import {
 import {
   type ExpenseDraftSnapshot,
   eventCreationDraftKeys,
-  isDraftConflictError,
 } from "../../lib/editor-draft-store";
 import {
   type ExpenseFields,
+  expenseChanges,
+  expenseFieldGroups,
   expenseFieldsPayload,
   readExpenseFields,
 } from "../../lib/expense-fields";
@@ -33,7 +34,6 @@ import {
 } from "../../lib/queries";
 import { useComposerCare, useComposerChips } from "../../lib/use-composer-care";
 import { useEditorDraft } from "../../lib/use-editor-draft";
-import { ConflictNotice } from "./conflict-notice";
 
 type ExpenseChip = "amount" | "paidOn";
 
@@ -56,7 +56,6 @@ export function ExpenseComposer({
   expense: latest,
   now = new Date(),
   onMore,
-  onRefresh,
   onSaved,
   sectionId,
   slotKey,
@@ -71,8 +70,6 @@ export function ExpenseComposer({
   readonly now?: Date;
   /** Opens the full editor with the composer's fields. */
   readonly onMore: (fields: ExpenseFields) => void;
-  /** Reloads the list, so a stale save can be compared with the newest version. */
-  readonly onRefresh: () => Promise<unknown>;
   /** A saved edit, for the list to announce. */
   readonly onSaved?: ((expense: ExpenseResponse) => void) | undefined;
   /**
@@ -108,7 +105,7 @@ export function ExpenseComposer({
       source === undefined ? fresh() : readExpenseFields(source),
     [fresh],
   );
-  const draft = useEditorDraft(latest, initialize, initial);
+  const draft = useEditorDraft(latest, initialize, initial, expenseFieldGroups);
   const expense = draft.source;
   const adding = expense === undefined;
   const [attempt] = useState<ContextCreateAttempt>(
@@ -144,23 +141,14 @@ export function ExpenseComposer({
   useEffect(() => {
     if (chips.openChip === "amount") amountInput.current?.focus();
   }, [chips.openChip]);
-  const { submitOnceRebased } = useComposerCare({
-    hasNewerVersion: draft.hasNewerVersion,
-    isDirty: draft.isDirty,
-    nameInput,
-    onRefresh,
-    slotKey,
-    slots,
-    stale: update.isError && isDraftConflictError(update.error),
-    staleError: update.error,
-  });
+  useComposerCare({ isDirty: draft.isDirty, nameInput, slotKey, slots });
   const discard = () => {
     recovery.discard();
     close();
   };
 
   function submit() {
-    if (busy || draft.hasNewerVersion || !recovery.isRetained) return;
+    if (busy || !recovery.isRetained) return;
     // The amount lives in a chip's panel, which may be closed at submit,
     // so the form cannot check it; the panel opens on a refused one.
     if (
@@ -190,11 +178,17 @@ export function ExpenseComposer({
       );
       return;
     }
+    // Only what the draft changed is sent, over the version it stands on.
+    const changes = expenseChanges(fields, draft.baseline, expense);
+    if (Object.keys(changes).length === 0) {
+      discard();
+      return;
+    }
     void recovery.save(
       () =>
         update.mutateAsync({
           id: expense.id,
-          input: { ...input, expectedVersion: expense.version },
+          input: { ...changes, expectedVersion: expense.version },
         }),
       (saved) => {
         draft.accept(saved);
@@ -205,27 +199,7 @@ export function ExpenseComposer({
   }
 
   const paid = fromDateTimeInput(fields.occurredAt);
-  const comparing = !adding && draft.hasNewerVersion;
-  const notice = comparing ? (
-    <ConflictNotice
-      draft={draft}
-      objectId={expense.id}
-      onKeepMine={() => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(draft.fields);
-      }}
-      onMerge={(merged) => {
-        submitOnceRebased.current = true;
-        update.reset();
-        draft.rebase(merged);
-      }}
-      onTakeTheirs={() => {
-        draft.loadLatest();
-        update.reset();
-      }}
-    />
-  ) : mutation.isError ? (
+  const notice = mutation.isError ? (
     <ErrorNotice error={mutation.error} />
   ) : null;
   const asked = slots.open === slotKey && slots.pending !== null;
@@ -373,11 +347,7 @@ export function ExpenseComposer({
           : undefined
       }
       status={status}
-      submitDisabled={
-        fields.displayName.trim() === "" ||
-        draft.hasNewerVersion ||
-        !recovery.isRetained
-      }
+      submitDisabled={fields.displayName.trim() === "" || !recovery.isRetained}
       submitLabel={adding ? t("addExpense") : t("save")}
     />
   );
