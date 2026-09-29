@@ -472,8 +472,8 @@ sees History alone). Add note opens the editor every record has: Title,
 Text (a growing field; the editor's help explains that the text is plain,
 line breaks kept and links opening when the note is read), Cancel, Save. A
 note is an object of
-the event like a task: it is versioned (a stale save is a conflict, never
-an overwrite), kept as a draft in the tab until saved, listed in History
+the event like a task: it is versioned (a save made on an older version
+goes on the newest, carrying only what it changed), kept as a draft in the tab until saved, listed in History
 with the text as the changed field, moved to Trash and recovered from it,
 and found by Search by its title only.
 
@@ -1236,8 +1236,7 @@ containment as well as document width.
 A boxed notice carries one tone, told by its icon as much as its color: neutral
 (an information mark) for something to know, success (a check) for an action
 that completed, such as a link recovered or a version restored; warning (an
-exclamation mark) for a stale write compared with the newest version or a
-blocked recovery; and danger (the same mark in the danger color) for a failed
+exclamation mark) for a blocked recovery; and danger (the same mark in the danger color) for a failed
 request. Errors are announced as alerts; the other tones are announced politely
 as status. An inline error under a field reads in the danger color. Loading and
 empty states are not notices and keep their own quiet styling.
@@ -1377,8 +1376,8 @@ after an uncertain save. This is not durable storage or an exactly-once guarante
 across those boundaries. The offline design sandbox supports draft recovery but
 does not implement backend command replay.
 
-Event, schedule-item, task, expense, reminder, and person forms keep their
-draft after a failed save. Submit again explicitly to retry; Refresh latest
+Event, schedule-item, task, expense, reminder, note, and person forms keep
+their draft after a failed save. Submit again explicitly to retry; Refresh latest
 only fetches data and does not save changes. A failed refresh leaves the save
 error visible. A save refused because the record is no longer within reach
 (its share was withdrawn, or it went to Trash) closes the editor and says so
@@ -1391,7 +1390,8 @@ An event's page and the Tasks page follow what others change while they are
 open, without reloading. A name, a due date, or a tick someone else saves
 shows in place; a record someone adds, moves in, sends to Trash, or restores
 joins or leaves the list; a new section, label, or page arrangement shows
-once it is saved. Only what the person may see arrives: a share narrowed to
+once it is saved. A record open in an editor follows too, keeping what the
+person changed (see Saving on the newest version). Only what the person may see arrives: a share narrowed to
 a view or section brings that view's or section's records alone, and a
 record that leaves it disappears. Changes to the account's own view of an
 event or page (its tabs, pages, and choices) made on another device follow
@@ -1432,24 +1432,23 @@ arrive when the connection returns; when they can no longer be replayed (a
 long break, or a server restart), the page reads its data again. The design
 sandbox has no server to follow.
 
-## A stale write, compared
+## Saving on the newest version
 
-A save refused because the record changed since the draft was opened reads
-the newest version at once, and a newer version arriving while a draft is
-open is shown the same way: a comparison at the top of the form's fields
-headed Saved elsewhere while you edited, with the author of the newest
-version and how long ago it was saved ("Mei, 4 minutes ago. Your draft is
-kept until you choose."). Its table lists only the fields that differ, one
-column for the draft and one for the newest version, named by the editor's
-own labels (a task's labels and assignee by name, an event's schedule mode in
-words); a field only the draft changed is marked kept, and one only the
-newest version changed reads unchanged on the draft's side. Three ways out:
-Keep mine saves the draft over the newest version as a new version, so
-History keeps theirs; Take theirs loads the newest version and drops the
-draft; Merge fields turns the table into a choice per field, where a field
-only one side changed is kept from that side, a field both sides changed
-starts on theirs, and Save merged version saves the result as one version. A
-newer version is never announced alone.
+An open editor, a dialog or a row's composer, stays on the newest version of
+its record. When a newer version arrives while the editor is open (a live
+change, a list read again, or a draft resumed after the record changed), the
+fields the person changed keep their values and the others show the newer
+version's, without a notice. Fields that belong together move together: a
+task's due, duration, and repeat; an event's dates and times; an expense's
+amount and currency.
+
+Save sends only the fields the person changed, on the version the editor
+stands on; with nothing changed it closes without a write. A save refused
+because the record changed after the editor last heard of it reads the
+newest version and goes again on it, with nothing shown, so the person's
+changes land over what others changed meanwhile. When both changed the same
+field, the later save stands and History keeps the other. A save still
+refused after three tries shows the error with the draft kept.
 
 ## Removing things
 
@@ -1509,10 +1508,9 @@ the composer next, handing focus back to the chip or the row. Under 600px
 the chips wrap and a chip's control opens as a sheet from the bottom of
 the screen.
 
-Enter or Save writes one update carrying the row's version, "Saved." read
-to assistive technology; a stale save (the task saved elsewhere while the
-row was open) shows the comparison above the chips with Keep mine, Merge
-fields, and Take theirs, as the dialog does. Esc or Cancel closes the row
+Enter or Save writes one update carrying the fields changed and the row's
+version, "Saved." read to assistive technology; a save made while the task
+was saved elsewhere goes on the newest version, as the dialog's does. Esc or Cancel closes the row
 unchanged. One row is open at a time: pressing another closes the first,
 and when the first holds unsaved changes it asks "This row has unsaved
 changes. Discard them?" with Discard (the other opens) and Keep editing.
@@ -1626,8 +1624,8 @@ storage. Reload, sign-out and space changes clear them. Calendar navigation
 itself is not retained across routes. Schedule creation shares this limit with
 Event creation, Event/schedule-item editing, Task, Expense and Reminder creation/editing.
 
-Resume draft checks current access before displaying private values and preserves
-the original version for conflict detection. Temporary access failures allow an
+Resume draft checks current access before displaying private values and moves
+the draft onto the newest version, keeping the fields it changed. Temporary access failures allow an
 explicit retry; definitive access loss removes the draft. Pending saves remain
 tracked after navigation: reopening cannot submit them twice, and completion
 clears recovery without moving the user to another page. Failed saves retain the

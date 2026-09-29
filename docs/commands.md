@@ -99,6 +99,11 @@ Unrelated resource edits do not invalidate a command. A stale stack/head fails
 with `409 command_stack_conflict`. Refresh state and ask for a new decision;
 there is no automatic rebase or overwrite mode.
 
+A forward content edit carries only the fields it changes. The web client
+sends an edit refused with `409 version_conflict` again, as a new command on
+the object's newest version, so the edit lands over what others changed
+meanwhile; an inverse is never resent.
+
 Moving an Event to another space prunes the old space's stacks. Every stack
 there loses the undo and redo entries whose commands changed a record the move
 carries, together with the object versions only those entries expected, and

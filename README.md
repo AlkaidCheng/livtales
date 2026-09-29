@@ -257,8 +257,9 @@ The web client provides development sign-in, an event list, event editing,
 tasks, calendar (as a list, an agenda, a week, or a month), timeline,
 expenses, and reminders. Creating a schedule item creates one canonical Event.
 Its ID is preserved in the calendar and timeline projections, and an edit
-invalidates every affected view. Optimistic-concurrency conflicts show a refresh action instead of
-silently overwriting newer data. The Sharing view manages Owner and Viewer
+invalidates every affected view. An edit sends only the fields it changed,
+and one made on an older version is sent again on the newest, so what others
+changed meanwhile stands. The Sharing view manages Owner and Viewer
 access, lists inheriting resources, and can stop inheritance. A workspace
 selector exposes workspaces reached through active grants; Viewer panels remain
 read-only and inaccessible references render without protected details.
