@@ -366,6 +366,12 @@ others make on the page being viewed, and redefines
 `chronelle_user_preferences_update` to merge it. Run `pnpm db:migrate` and
 restart the API; the runtime role script needs no rerun.
 
+Migration `0081_link_persons_to_share_holders.sql` redefines
+`chronelle_assert_person_state` so a Person may also be linked to an account
+that holds a live share in the workspace, as a guest's "Assign to me" does.
+Run `pnpm db:migrate` and restart the API; it changes no tables and the
+runtime role script needs no rerun.
+
 Migration `0021_add_object_search_function.sql` adds `chronelle_object_search`,
 the read-only function the CloudBase search adapter calls. It changes no
 tables and needs no baseline.

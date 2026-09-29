@@ -99,7 +99,10 @@ import {
   type PersonListQueryInput,
   type PersonListResponse,
   type PersonResourceProjectionResponse,
+  type AssigneeName,
   type AssigneeProjectionResponse,
+  type AssigneeSelfRequest,
+  assigneeNameSchema,
   assigneeProjectionResponseSchema,
   type PersonResponse,
   type PersonShareListResponse,
@@ -1575,6 +1578,21 @@ export class LivTalesApiClient {
     return this.#request(
       `/api/events/${id}/people`,
       personResourceProjectionResponseSchema,
+    );
+  }
+
+  /**
+   * The caller's own Person in the Event's workspace, or a new one inside
+   * the Event linked to the caller's account when there is none.
+   */
+  assignEventSelf(
+    id: string,
+    input: AssigneeSelfRequest,
+  ): Promise<AssigneeName> {
+    return this.#request(
+      `/api/events/${id}/assignees/me`,
+      assigneeNameSchema,
+      jsonRequest(input, "POST"),
     );
   }
 

@@ -242,7 +242,7 @@ describe("friends", () => {
     });
     expect(refused.statusCode).toBe(400);
     expect(refused.json().error.message).toBe(
-      "userId must name a member of this workspace or a friend of one.",
+      "userId must name a member of this workspace, a friend of one, or an account it shares with.",
     );
     expect(await friendsOf(cara.headers)).toEqual({
       friends: [],

@@ -20,7 +20,9 @@ import type {
   UpdateTaskInput,
 } from "@livtales/object-model";
 import {
+  assigneeNameSchema,
   assigneeProjectionResponseSchema,
+  assigneeSelfRequestSchema,
   eventCreateRequestSchema,
   eventDetailResponseSchema,
   eventAttachmentTargetsResponseSchema,
@@ -494,6 +496,43 @@ export function registerEventPlanningRoutes(
           requirePrincipal(request),
           id,
         ),
+      );
+    },
+  );
+  // The caller's own Person in the Event's workspace, which a guest there
+  // may not see; when there is none, a new one inside the Event linked to
+  // the caller's account, as "Assign to me" needs.
+  app.post(
+    "/api/events/:id/assignees/me",
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const { id } = parseRequest(objectIdParamsSchema, request.params);
+      const input = parseRequest(assigneeSelfRequestSchema, request.body);
+      const context = mutationContext(request);
+      const linked = await dependencies.projections.getLinkedPerson(
+        context.principal,
+        id,
+      );
+      if (linked !== null) return assigneeNameSchema.parse(linked);
+      const result = await dependencies.eventContexts.create(context, id, {
+        commandId: input.commandId,
+        resource: {
+          objectType: "person",
+          displayName: input.displayName,
+          userId: context.principal.userId,
+        },
+      });
+      request.live.objects(
+        context.principal.workspaceId,
+        [result.resource.id],
+        "created",
+      );
+      return reply.code(201).send(
+        assigneeNameSchema.parse({
+          id: result.resource.id,
+          displayName: result.resource.displayName,
+          nickname: null,
+        }),
       );
     },
   );

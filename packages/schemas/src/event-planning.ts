@@ -536,17 +536,25 @@ export const personResourceProjectionResponseSchema = z.object({
   items: z.array(personResponseSchema),
 });
 
+// A person as a task names its assignee: the name alone.
+export const assigneeNameSchema = z.object({
+  id: objectIdSchema,
+  displayName: z.string(),
+  nickname: z.string().nullable(),
+});
+
 // The people an Event's visible tasks are assigned to, by name alone: a
 // task names its assignee even to a viewer who may not open the person.
 export const assigneeProjectionResponseSchema = z.object({
   sourceEventId: objectIdSchema,
-  items: z.array(
-    z.object({
-      id: objectIdSchema,
-      displayName: z.string(),
-      nickname: z.string().nullable(),
-    }),
-  ),
+  items: z.array(assigneeNameSchema),
+});
+
+// Finds the caller's own Person in an Event's workspace, or adds one inside
+// the Event under the given name; the command id makes a retry reuse it.
+export const assigneeSelfRequestSchema = z.object({
+  commandId: objectIdSchema,
+  displayName: createObjectShape.displayName,
 });
 
 export const reminderResourceProjectionResponseSchema = z.object({
@@ -631,5 +639,7 @@ export type PersonResourceProjectionResponse = z.infer<
 export type AssigneeProjectionResponse = z.infer<
   typeof assigneeProjectionResponseSchema
 >;
+export type AssigneeName = z.infer<typeof assigneeNameSchema>;
+export type AssigneeSelfRequest = z.infer<typeof assigneeSelfRequestSchema>;
 export type EventDetailResponse = z.infer<typeof eventDetailResponseSchema>;
 export type TimelineResponse = z.infer<typeof timelineResponseSchema>;

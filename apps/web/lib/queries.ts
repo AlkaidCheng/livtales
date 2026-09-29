@@ -7,6 +7,7 @@ import {
 } from "@livtales/api-client";
 import type {
   AccessibleWorkspace,
+  AssigneeProjectionResponse,
   DevelopmentSignInRequest,
   EventCreatePayload,
   EventContextCreatePayload,
@@ -472,6 +473,63 @@ export function useCreatePerson(retainedAttempt?: ContextCreateAttempt) {
         ...input,
         commandId: commandFor(attempt, { person: input }),
       }),
+    onSuccess: (saved) => {
+      attempt.current = null;
+      void invalidate(saved);
+    },
+  });
+}
+
+/**
+ * Creates the person a task is assigned to, or for the signed-in user
+ * (`userId`) finds theirs. On an Event shared from another space, a new
+ * person is added inside that Event, the one place there a guest may add
+ * people, and the user's own is found there even where the guest may not
+ * open it; elsewhere, a person is created in the workspace on its own. An
+ * unchanged retry after a lost response reuses the same command id.
+ */
+export function useCreateAssignee() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  const foreign = useForeignEvent();
+  const invalidate = useResourceInvalidation();
+  const attempt = useRef<ContextCreateAttempt["current"]>(null);
+  return useMutation({
+    mutationFn: async (input: {
+      readonly displayName: string;
+      readonly userId?: string;
+    }): Promise<{ readonly id: string; readonly objectType: "person" }> => {
+      if (foreign === null) {
+        const person = await client.createPerson({
+          ...input,
+          commandId: commandFor(attempt, { person: input }),
+        });
+        return { id: person.id, objectType: "person" };
+      }
+      if (input.userId !== undefined) {
+        const self = await client.assignEventSelf(foreign.eventId, {
+          commandId: commandFor(attempt, { self: foreign.eventId, input }),
+          displayName: input.displayName,
+        });
+        // The chip names them at once, before the task that names them is
+        // saved, even when their card stays closed to the guest.
+        queryClient.setQueryData<AssigneeProjectionResponse>(
+          queryKeys.assignees(foreign.eventId),
+          (current) =>
+            current === undefined ||
+            current.items.some(({ id }) => id === self.id)
+              ? current
+              : { ...current, items: [...current.items, self] },
+        );
+        return { id: self.id, objectType: "person" };
+      }
+      const resource = { ...input, objectType: "person" as const };
+      const result = await client.createEventResource(foreign.eventId, {
+        commandId: commandFor(attempt, { eventId: foreign.eventId, resource }),
+        resource,
+      });
+      return { id: result.resource.id, objectType: "person" };
+    },
     onSuccess: (saved) => {
       attempt.current = null;
       void invalidate(saved);

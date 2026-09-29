@@ -508,6 +508,16 @@ the new API reads the column on every sign-in and session, and older API
 versions ignore it. The runtime-role script needs no rerun. On CloudBase,
 apply it through the console SQL editor, then redeploy the API and the web.
 
+Migration `0081_link_persons_to_share_holders.sql` redefines
+`chronelle_assert_person_state` in place (its privileges carry over) so a
+Person's linked account may also be one holding a live share in the
+workspace: an unexpired grant on a live object, or the owner's. It changes
+no tables. Apply 0081 after 0080 and before deploying the API: the new API's
+"Assign to me" from a guest's Event links the guest's account on the rpc
+path, which an older function refuses with `userId must name a member of
+this workspace or a friend of one.`. On CloudBase, apply it through the
+console SQL editor, then redeploy the API and the web.
+
 Enable the WeChat routes only after CloudBase authentication is configured:
 
 ```dotenv

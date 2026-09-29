@@ -17,6 +17,7 @@ import {
   personLabels,
   persons,
   reminders,
+  resourceGrants,
   type SectionView,
   sections,
   type TaskRepeatRule,
@@ -36,7 +37,7 @@ import {
   type TaskListQueryInput,
   taskDueDate,
 } from "@livtales/schemas";
-import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { createRequestHash } from "./create-command.js";
 import {
   CommandConflictError,
@@ -157,9 +158,10 @@ function assertEventState(
 }
 
 /**
- * A Person's linked account is a member of the workspace or a friend of one
- * and belongs to one Person. Checked inside the write transaction, with the
- * messages the database functions use.
+ * A Person's linked account is a member of the workspace, a friend of one,
+ * or an account the workspace shares with (a live grant, as entering the
+ * workspace counts it), and belongs to one Person. Checked inside the write
+ * transaction, with the messages the database functions use.
  */
 async function assertPersonState(
   transaction: DatabaseTransaction,
@@ -202,9 +204,38 @@ async function assertPersonState(
           ),
         )
         .limit(1);
-      if (friendOfMember === undefined)
+      const [shareHolder] =
+        friendOfMember === undefined
+          ? await transaction
+              .select({ id: resourceGrants.id })
+              .from(resourceGrants)
+              .innerJoin(
+                objects,
+                and(
+                  eq(objects.workspaceId, resourceGrants.workspaceId),
+                  eq(objects.id, resourceGrants.resourceId),
+                ),
+              )
+              .where(
+                and(
+                  eq(resourceGrants.workspaceId, workspaceId),
+                  eq(resourceGrants.principalType, "user"),
+                  eq(resourceGrants.principalId, userId),
+                  or(
+                    isNull(resourceGrants.expiresAt),
+                    gt(resourceGrants.expiresAt, sql`now()`),
+                  ),
+                  or(
+                    isNull(objects.deletedAt),
+                    eq(resourceGrants.role, "owner"),
+                  ),
+                ),
+              )
+              .limit(1)
+          : [];
+      if (friendOfMember === undefined && shareHolder === undefined)
         throw new InvalidObjectStateError(
-          "userId must name a member of this workspace or a friend of one.",
+          "userId must name a member of this workspace, a friend of one, or an account it shares with.",
         );
     }
     const [linked] = await transaction
