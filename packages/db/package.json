@@ -29,11 +29,11 @@
     "typecheck:unit": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@cloudbase/js-sdk": "3.10.0",
-    "drizzle-orm": "0.45.2",
+    "@cloudbase/js-sdk": "3.10.1",
+    "drizzle-orm": "0.45.3",
     "postgres": "3.4.9",
     "uuid": "14.0.2",
-    "ws": "8.21.3",
+    "ws": "8.22.0",
     "zod": "4.6.5"
   }
 }
