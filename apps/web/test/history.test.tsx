@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   afterAll,
@@ -206,7 +212,7 @@ describe("object history", () => {
     ).toHaveFocus();
   });
 
-  it("requires a reviewed preview and fresh confirmation after a version conflict", async () => {
+  it("says a conflict changed the record, and a new preview asks for fresh confirmation", async () => {
     const user = await openHistory();
     await user.click(screen.getByRole("button", { name: "Preview v1" }));
     const confirm = await screen.findByRole("button", {
@@ -216,7 +222,12 @@ describe("object history", () => {
     await user.click(screen.getByRole("checkbox", { name: /I reviewed/ }));
     conflict = true;
     await user.click(confirm);
-    await screen.findByText("A newer version is available");
+    const reason = await screen.findByText(
+      "Plan changed after you opened this",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Confirm restore" }),
+    ).not.toBeInTheDocument();
     expect(
       JSON.parse(
         String(
@@ -228,7 +239,15 @@ describe("object history", () => {
     ).toEqual({ expectedVersion: 2 });
     currentVersion = 3;
     conflict = false;
-    await user.click(screen.getByRole("button", { name: "Refresh latest" }));
+    await user.click(
+      within(reason.parentElement as HTMLElement).getByRole("button", {
+        name: "Close",
+      }),
+    );
+    expect(
+      screen.queryByRole("region", { name: "Restore preview" }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Preview v1" }));
     await screen.findByText("Preview based on current version 3.");
     expect(
       screen.getByRole("checkbox", { name: /I reviewed/ }),

@@ -189,7 +189,9 @@ export function applyLiveChange(cache: QueryClient, change: LiveChange): void {
             case "event":
               if (typeof id === "string" && gone.has(id)) return true;
               if (!onPage(id)) return false;
-              if (view === "timeline") return true;
+              // What moves with the Event, and what its move removes,
+              // counts the objects on its page.
+              if (view === "timeline" || view === "move") return true;
               // A task may name a new assignee, and a person a new name.
               if (view === "assignees")
                 return types.has("task") || types.has("person");
