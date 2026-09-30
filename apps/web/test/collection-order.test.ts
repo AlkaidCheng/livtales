@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   byRank,
-  rankAtIndex,
+  placeAtIndex,
+  placeForStep,
   rankBetweenRows,
-  rankForStep,
   staysInPlace,
 } from "../lib/collection-order";
 
@@ -22,11 +22,11 @@ describe("collection order", () => {
     ]);
   });
 
-  it("ranks a drop at an index between its neighbours, and at the ends", () => {
-    expect(rankAtIndex(rows, 0)).toBe("00000000500");
-    expect(rankAtIndex(rows, 1)).toBe("00000001500");
-    expect(rankAtIndex(rows, 3)).toBe("00000004000");
-    expect(rankAtIndex([], 0)).toBe("00000001000");
+  it("places a drop after the row before the gap, or before the first", () => {
+    expect(placeAtIndex(rows, 0)).toEqual({ beforeId: "a" });
+    expect(placeAtIndex(rows, 1)).toEqual({ afterId: "a" });
+    expect(placeAtIndex(rows, 3)).toEqual({ afterId: "c" });
+    expect(placeAtIndex([], 0)).toBeNull();
   });
 
   it("goes after the row before when the neighbours are out of order", () => {
@@ -34,13 +34,12 @@ describe("collection order", () => {
     expect(rankBetweenRows(undefined, a)).toBe("00000000500");
   });
 
-  it("steps one place with the midpoint beyond the neighbour", () => {
-    expect(rankForStep(rows, "c", -1)).toBe("00000001500");
-    expect(rankForStep(rows, "a", 1)).toBe("00000002500");
-    expect(rankForStep(rows, "b", 1)).toBe("00000004000");
-    expect(rankForStep(rows, "a", -1)).toBeNull();
-    expect(rankForStep(rows, "c", 1)).toBeNull();
-    expect(rankForStep(rows, "zz", 1)).toBeNull();
+  it("steps one place before the row above or after the row below", () => {
+    expect(placeForStep(rows, "c", -1)).toEqual({ beforeId: "b" });
+    expect(placeForStep(rows, "a", 1)).toEqual({ afterId: "b" });
+    expect(placeForStep(rows, "a", -1)).toBeNull();
+    expect(placeForStep(rows, "c", 1)).toBeNull();
+    expect(placeForStep(rows, "zz", 1)).toBeNull();
   });
 
   it("knows when a drop leaves a row where it was", () => {

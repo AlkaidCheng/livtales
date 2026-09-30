@@ -781,7 +781,8 @@ describe("TasksPage", () => {
     expect(screen.getByRole("status", { name: "" })).toHaveTextContent(
       "Call the band is now 2 of 3.",
     );
-    // Only the moved task was written: it took the midpoint rank.
+    // Only the moved task was written: placed before the cake, it took a
+    // rank between the cake and the finished task hidden before it.
     const listed = (await (
       await store.fetch("/api/tasks?filter=all&sort=manual")
     ).json()) as {
@@ -797,7 +798,7 @@ describe("TasksPage", () => {
     ).toEqual({
       "Confirm the garden venue": ["00000001000", 1],
       "Send invitations": ["00000002000", 1],
-      "Call the band": ["00000002000", 2],
+      "Call the band": ["00000002500", 2],
       "Order the cake": ["00000003000", 1],
     });
     // The menu button keeps focus after the move.

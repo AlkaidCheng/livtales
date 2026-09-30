@@ -1,6 +1,7 @@
 import {
   type AuthorizationDatabase,
   AuthorizationDeniedError,
+  type AuthorizationService,
   type UserPrincipal,
   withStableAuthorization,
 } from "@livtales/authorization";
@@ -33,6 +34,7 @@ import {
   nextTaskDueDate,
   type PersonListQueryInput,
   rankAfter,
+  rankBetween,
   rankSchema,
   type TaskListQueryInput,
   taskDueDate,
@@ -89,6 +91,7 @@ import type {
   NoteResource,
   ObjectDeletionResource,
   PersonResource,
+  PlacementFields,
   ReminderResource,
   TaskResource,
   UpdateEventInput,
@@ -105,7 +108,10 @@ type TypedInsert = (
   transaction: DatabaseTransaction,
   objectId: string,
 ) => Promise<void>;
-type TypedUpdate = (transaction: DatabaseTransaction) => Promise<void>;
+type TypedUpdate = (
+  transaction: DatabaseTransaction,
+  authorization: AuthorizationService,
+) => Promise<void>;
 
 const currencyPattern = /^[A-Z]{3}$/;
 /** The section rule's refusal, shared with the database functions. */
@@ -419,6 +425,85 @@ function repeatTaskUpdate(
 function assertRank(rank: string): void {
   if (!rankSchema.safeParse(rank).success)
     throw new InvalidObjectStateError("rank is a position in manual order.");
+}
+
+/** The refusal of a place in manual order given more than one way, as the database functions word it. */
+const onePlaceMessage =
+  "Give a place in manual order as one of rank, afterId, or beforeId.";
+
+/** The refusal of a place next to a record the mover cannot use, as the database functions word it. */
+function placementAnchorMessage(
+  field: "afterId" | "beforeId",
+  objectType: "task" | "reminder",
+): string {
+  return `${field} must name another ${objectType} you can see.`;
+}
+
+/**
+ * The rank a task or reminder takes when moved next to the record it now
+ * follows (afterId) or precedes (beforeId): between that record and its
+ * neighbour in the workspace's manual order as it stands, so moves made
+ * meanwhile keep their places around it. The moved record never counts as
+ * a neighbour. Undefined when the input gives no such place.
+ */
+async function placedRank(
+  transaction: DatabaseTransaction,
+  authorization: AuthorizationService,
+  principal: UserPrincipal,
+  table: typeof tasks | typeof reminders,
+  objectType: "task" | "reminder",
+  objectId: string,
+  input: PlacementFields & { readonly rank?: string | undefined },
+): Promise<string | undefined> {
+  const field =
+    input.afterId !== undefined
+      ? "afterId"
+      : input.beforeId !== undefined
+        ? "beforeId"
+        : null;
+  if (field === null) return undefined;
+  if (input.rank !== undefined || (input.afterId && input.beforeId))
+    throw new InvalidObjectStateError(onePlaceMessage);
+  const anchorId = (input[field] as string).toLowerCase();
+  const [anchor] =
+    anchorId === objectId.toLowerCase()
+      ? []
+      : await transaction
+          .select({ rank: table.rank })
+          .from(table)
+          .where(
+            and(
+              eq(table.workspaceId, principal.workspaceId),
+              eq(table.objectId, anchorId),
+            ),
+          );
+  if (
+    anchor === undefined ||
+    !(await authorization.can(principal, "view", {
+      id: anchorId,
+      workspaceId: principal.workspaceId,
+    }))
+  )
+    throw new InvalidObjectStateError(
+      placementAnchorMessage(field, objectType),
+    );
+  // Ranks compare as text in byte order, the order they are written in.
+  const others = and(
+    eq(table.workspaceId, principal.workspaceId),
+    ne(table.objectId, objectId),
+  );
+  if (field === "afterId") {
+    const [next] = await transaction
+      .select({ rank: sql<string | null>`min(${table.rank} COLLATE "C")` })
+      .from(table)
+      .where(and(others, sql`${table.rank} COLLATE "C" > ${anchor.rank}`));
+    return rankBetween(anchor.rank, next?.rank ?? null);
+  }
+  const [previous] = await transaction
+    .select({ rank: sql<string | null>`max(${table.rank} COLLATE "C")` })
+    .from(table)
+    .where(and(others, sql`${table.rank} COLLATE "C" < ${anchor.rank}`));
+  return rankBetween(previous?.rank ?? null, anchor.rank);
 }
 
 /** The rank after the workspace's last task or reminder, as the SQL default. */
@@ -1123,7 +1208,17 @@ export class EventPlanningObjectService {
       context,
       current,
       input,
-      async (transaction) => {
+      async (transaction, authorization) => {
+        const rank =
+          (await placedRank(
+            transaction,
+            authorization,
+            context.principal,
+            tasks,
+            "task",
+            current.id,
+            input,
+          )) ?? input.rank;
         if (
           input.parentTaskId !== undefined &&
           input.parentTaskId !== current.parentTaskId
@@ -1178,7 +1273,7 @@ export class EventPlanningObjectService {
           ...(input.completedAt !== undefined && {
             completedAt: input.completedAt,
           }),
-          ...(input.rank !== undefined && { rank: input.rank }),
+          ...(rank !== undefined && { rank }),
           ...(input.sectionId !== undefined && { sectionId: input.sectionId }),
         };
         if (input.labelIds !== undefined)
@@ -1378,11 +1473,21 @@ export class EventPlanningObjectService {
       context,
       current,
       input,
-      async (transaction) => {
+      async (transaction, authorization) => {
+        const rank =
+          (await placedRank(
+            transaction,
+            authorization,
+            context.principal,
+            reminders,
+            "reminder",
+            current.id,
+            input,
+          )) ?? input.rank;
         const changes = {
           ...(input.remindAt !== undefined && { remindAt: input.remindAt }),
           ...(input.status !== undefined && { status: input.status }),
-          ...(input.rank !== undefined && { rank: input.rank }),
+          ...(rank !== undefined && { rank }),
         };
         if (Object.keys(changes).length > 0) {
           await transaction
@@ -1739,7 +1844,7 @@ export class EventPlanningObjectService {
         if (updated === undefined) {
           throw new ObjectConflictError();
         }
-        await updateTyped(transaction);
+        await updateTyped(transaction, authorization);
 
         const resource = await readObjectState(
           transaction,

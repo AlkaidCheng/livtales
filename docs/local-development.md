@@ -372,6 +372,13 @@ that holds a live share in the workspace, as a guest's "Assign to me" does.
 Run `pnpm db:migrate` and restart the API; it changes no tables and the
 runtime role script needs no rerun.
 
+Migration `0082_place_moves_in_manual_order.sql` adds
+`chronelle_placed_changes` and redefines `chronelle_object_update` to call
+it, so a task or reminder moved with `afterId` or `beforeId` takes its rank
+from the order as it stands on the rpc path, as the TypeScript service does.
+Run `pnpm db:migrate` and restart the API; it changes no tables and the
+runtime role script needs no rerun.
+
 Migration `0021_add_object_search_function.sql` adds `chronelle_object_search`,
 the read-only function the CloudBase search adapter calls. It changes no
 tables and needs no baseline.

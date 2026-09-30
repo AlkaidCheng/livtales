@@ -1789,9 +1789,11 @@ that follows the pointer; a gap of its height marks where it will land and
 the other rows make room, so nothing overlaps. The gap follows the pointer's
 height alone: the nearest row, before or after its middle, or an empty group
 under the pointer, so dragging along the grips' column or past the list's
-edge still moves it. Letting go fills the gap. Dropping between two rows
-takes the midpoint of their positions, so only the moved record is written,
-as one versioned update the history and undo cover. In the by-day view a
+edge still moves it. Letting go fills the gap. A drop is saved as the row the
+record now follows (or, at the top, the one it now precedes), and the record
+takes its place next to that row in the order as it stands, so a move
+someone else made meanwhile keeps its place. Only the moved record is
+written, as one versioned update the history and undo cover. In the by-day view a
 drop under another day's rows moves the due (or the reminder's time) to that
 day, keeping the time of day; a drop under No due date clears the due;
 Overdue takes only its own rows back. The grip is a button (Reorder, then the

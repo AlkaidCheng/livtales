@@ -610,13 +610,28 @@ Tasks and Reminders take a place in manual order through `rank`: eleven
 digits with an optional fraction and no trailing zero (`00000001000`,
 `00000001500.5`), so text order is numeric order. A created record goes last
 (a thousand past the workspace's highest integer part) unless the request
-sends a rank; to drop a record between two others, send the midpoint of
-their ranks (the `rankBetween` helper in `@livtales/schemas` computes it) as
-a `PATCH` with the expected version, which moves no other record. A rank of
-another shape is refused with `rank is a position in manual order.`.
-Responses carry `rank`; `GET /tasks?sort=manual` lists by it. The rank is
-content the revision history records but never restores. Deploy migration
-0046 before this API.
+sends a rank. A rank of another shape is refused with `rank is a position
+in manual order.`. Responses carry `rank`; `GET /tasks?sort=manual` lists by
+it. The rank is content the revision history records but never restores.
+Deploy migration 0046 before this API.
+
+To move a record, send the record of the same type it now follows as
+`afterId`, or the one it now precedes as `beforeId`, in a `PATCH` (or a
+command's task edit) with the expected version. The server gives it a rank
+between that record and its neighbour in the workspace's manual order as it
+stands, so moves others made meanwhile keep their places around it, and no
+other record is written. The moved record never counts as a neighbour.
+
+```json
+{ "expectedVersion": 4, "afterId": "0199a3c2-…" }
+```
+
+A place is given one way: `rank`, `afterId`, and `beforeId` together are
+refused as a bad request. An anchor that is the record itself, of another
+type, of another workspace, or one the caller cannot view is refused with
+`afterId must name another task you can see.` (or `beforeId`, or
+`reminder`), HTTP 400. Deploy migration 0082 before an API that sends these
+fields to the rpc functions.
 
 ## Notes
 

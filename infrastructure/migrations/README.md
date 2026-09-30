@@ -86,3 +86,10 @@ writes the same rows. It copies each account's `users.event_tabs` entry for a
 live Event into its view of that Event with the Event's current page order
 and component layouts. Apply it after 0078 with API writers stopped, rerun
 the runtime role script for the three tables, then deploy the API.
+
+Migration 0082 lets a task or reminder update name its place in manual order
+as the record it now follows (`afterId`) or precedes (`beforeId`):
+`chronelle_placed_changes` turns either into a rank in the workspace's order
+as it stands, under the workspace's fence, and `chronelle_object_update`
+calls it before locking the object, so commands take it too. It changes no
+tables.

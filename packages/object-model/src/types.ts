@@ -296,7 +296,17 @@ export interface UpdateEventInput extends UpdateObjectFields {
   readonly timezone?: string | null | undefined;
 }
 
-export interface UpdateTaskInput extends UpdateObjectFields {
+/**
+ * A move in manual order, given as the record of the same type the moved
+ * one now follows or precedes; the service places it there in the order as
+ * it stands.
+ */
+export interface PlacementFields {
+  readonly afterId?: string | undefined;
+  readonly beforeId?: string | undefined;
+}
+
+export interface UpdateTaskInput extends UpdateObjectFields, PlacementFields {
   readonly completedAt?: Date | null | undefined;
   readonly dueOn?: string | null | undefined;
   readonly dueAt?: Date | null | undefined;
@@ -321,7 +331,8 @@ export interface UpdateExpenseInput extends UpdateObjectFields {
   readonly sectionId?: string | null | undefined;
 }
 
-export interface UpdateReminderInput extends UpdateObjectFields {
+export interface UpdateReminderInput
+  extends UpdateObjectFields, PlacementFields {
   readonly remindAt?: Date | undefined;
   readonly status?: ReminderStatus | undefined;
   readonly rank?: string | undefined;

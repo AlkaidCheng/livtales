@@ -32,9 +32,10 @@ import { RowMenu, type RowMenuEntry } from "../../components/row-menu";
 import { tr } from "../../i18n/active-locale";
 import { type ComposerSlots, rowComposerKey } from "../../lib/composer-slots";
 import {
-  rankAtIndex,
+  type Placement,
+  placeAtIndex,
+  placeForStep,
   rankBetweenRows,
-  rankForStep,
   staysInPlace,
 } from "../../lib/collection-order";
 import {
@@ -576,11 +577,11 @@ export function TaskListView({
     [updateTask],
   );
   const moveToDay = useCallback(
-    (task: TaskResponse, day: DayKey | null, rank?: string) => {
+    (task: TaskResponse, day: DayKey | null, place?: Placement | null) => {
       const now = new Date();
       change(
         task,
-        { ...dueOnDay(task, day), ...(rank === undefined ? {} : { rank }) },
+        { ...dueOnDay(task, day), ...place },
         day === null
           ? t("said.noDueDate", { name: task.displayName })
           : t("said.due", {
@@ -637,8 +638,8 @@ export function TaskListView({
       if (task === undefined) return;
       const rows = drop.rowIds.flatMap((rowId) => byId.get(rowId) ?? []);
       if (sectioned) {
-        // A drop names the section by its group; the rank places the task
-        // among that section's rows, and both travel in one write.
+        // A drop names the section by its group and the row the task now
+        // follows or precedes there; both travel in one write.
         const sectionId = drop.groupKey === "" ? null : drop.groupKey;
         const from = task.sectionId ?? "";
         const fromRows =
@@ -651,10 +652,12 @@ export function TaskListView({
           staysInPlace(fromRows, id, rows, drop.index)
         )
           return;
+        const place = placeAtIndex(rows, drop.index);
+        if (place === null && sectionId === task.sectionId) return;
         change(
           task,
           {
-            rank: rankAtIndex(rows, drop.index),
+            ...place,
             ...(sectionId !== task.sectionId && { sectionId }),
           },
           t("said.moved", { name: task.displayName }),
@@ -667,21 +670,20 @@ export function TaskListView({
         staysInPlace(rowsOf(from), id, rows, drop.index)
       )
         return;
-      const rank = rankAtIndex(rows, drop.index);
-      if (drop.groupKey === "undated") {
-        if (taskDay(task) !== null) moveToDay(task, null, rank);
-        else
-          change(task, { rank }, t("said.moved", { name: task.displayName }));
+      const place = placeAtIndex(rows, drop.index);
+      if (drop.groupKey === "undated" && taskDay(task) !== null) {
+        moveToDay(task, null, place);
         return;
       }
       if (
         /^\d{4}-\d{2}-\d{2}$/.test(drop.groupKey) &&
         taskDay(task) !== drop.groupKey
       ) {
-        moveToDay(task, drop.groupKey, rank);
+        moveToDay(task, drop.groupKey, place);
         return;
       }
-      change(task, { rank }, t("said.moved", { name: task.displayName }));
+      if (place !== null)
+        change(task, place, t("said.moved", { name: task.displayName }));
     },
     [
       byId,
@@ -813,12 +815,12 @@ export function TaskListView({
         );
         if (reorder && !finishedIds.has(task.id)) {
           const step = (direction: -1 | 1) => {
-            const rank = rankForStep(rows, task.id, direction);
-            if (rank === null) return;
+            const place = placeForStep(rows, task.id, direction);
+            if (place === null) return;
             const at = rows.findIndex((row) => row.id === task.id) + direction;
             change(
               task,
-              { rank },
+              place,
               t("said.position", {
                 name: task.displayName,
                 at: at + 1,

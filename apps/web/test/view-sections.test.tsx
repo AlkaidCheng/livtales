@@ -405,7 +405,7 @@ describe("sections in Tasks", () => {
     );
     expect(moved?.sectionId).toBe(music.id);
     expect(moved?.version).toBe(2);
-    // One write carried the section and the rank.
+    // One write carried the section and the task it now follows.
     interface Command {
       readonly edits: readonly { readonly patch: Record<string, unknown> }[];
     }
@@ -416,8 +416,10 @@ describe("sections in Tasks", () => {
       .filter((body): body is Command => Array.isArray(body.edits));
     expect(commands).toHaveLength(1);
     const edit = commands[0]?.edits[0]?.patch;
-    expect(edit).toMatchObject({ sectionId: music.id });
-    expect(edit?.rank).toBeDefined();
+    expect(edit).toMatchObject({
+      sectionId: music.id,
+      afterId: expect.any(String),
+    });
 
     // Dragging the Venue head past Music's middle puts it after Music:
     // Venue spans the hall (40..80), Music the band and the cake (80..160).
