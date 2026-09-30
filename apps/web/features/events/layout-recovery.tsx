@@ -9,6 +9,7 @@ import {
   LoadingState,
 } from "../../components/feedback";
 import { componentKindLabel } from "../../lib/event-components";
+import { removeEventComponent, removeEventPage } from "../../lib/event-layout";
 import { formatDateTime } from "../../lib/format";
 import { undoDirection } from "../../lib/keyboard";
 import { describeLayoutChanges } from "../../lib/layout-changes";
@@ -22,7 +23,11 @@ import { useSessionDialog } from "../../lib/use-session-dialog";
 import type { LayoutUndoState } from "../../lib/layout-undo";
 
 type Confirmation = { expectedVersion: number } & (
-  | { kind: "remove"; title: string; pages: EventPage[] }
+  | {
+      kind: "remove";
+      title: string;
+      change: (pages: EventPage[]) => EventPage[];
+    }
   | { kind: "restore"; snapshot: EventLayoutResponse }
 );
 
@@ -92,14 +97,14 @@ export function LayoutRecoveryDialog({
     });
   }
 
-  function remove(title: string, pages: EventPage[]) {
+  function remove(title: string, change: (pages: EventPage[]) => EventPage[]) {
     restore.reset();
     update.reset();
     setNotice("");
     setConfirmation({
       kind: "remove",
       title,
-      pages,
+      change,
       expectedVersion: source.version,
     });
   }
@@ -108,11 +113,8 @@ export function LayoutRecoveryDialog({
     if (!confirmation || busy || !canEdit) return;
     if (confirmation.kind === "remove")
       update.mutate(
-        {
-          expectedVersion: confirmation.expectedVersion,
-          pages: confirmation.pages,
-        },
-        { onSuccess: saved },
+        { source, change: confirmation.change },
+        { onSuccess: ({ layout }) => saved(layout) },
       );
     else
       restore.mutate(
@@ -266,11 +268,8 @@ export function LayoutRecoveryDialog({
                         className="button button-quiet"
                         disabled={busy}
                         onClick={() =>
-                          remove(
-                            t("pageTitle", { name: page.name }),
-                            source.pages.filter(
-                              (candidate) => candidate.id !== page.id,
-                            ),
+                          remove(t("pageTitle", { name: page.name }), (pages) =>
+                            removeEventPage(pages, page.id),
                           )
                         }
                       >
@@ -294,16 +293,8 @@ export function LayoutRecoveryDialog({
                           onClick={() =>
                             remove(
                               componentKindLabel(component.kind),
-                              source.pages.map((candidate) =>
-                                candidate.id === page.id
-                                  ? {
-                                      ...candidate,
-                                      components: candidate.components.filter(
-                                        (item) => item.id !== component.id,
-                                      ),
-                                    }
-                                  : candidate,
-                              ),
+                              (pages) =>
+                                removeEventComponent(pages, component.id),
                             )
                           }
                         >

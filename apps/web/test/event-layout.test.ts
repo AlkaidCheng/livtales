@@ -3,6 +3,8 @@ import type { EventPage } from "@livtales/schemas";
 import {
   moveEventComponent,
   pagesInOrder,
+  removeEventComponent,
+  removeEventPage,
   setEventComponentView,
 } from "../lib/event-layout";
 
@@ -113,5 +115,21 @@ describe("event layout moves", () => {
       { id: "i", kind: "itinerary", view: "list" },
     ]);
     expect(legacy[0]?.components[0]).toEqual({ id: "i", kind: "itinerary" });
+  });
+
+  it("removes a page or a component, and returns the same pages when it is gone", () => {
+    const pages = fixture();
+    expect(removeEventPage(pages, "day").map((page) => page.id)).toEqual([
+      "work",
+      "later",
+    ]);
+    expect(removeEventPage(pages, "missing")).toBe(pages);
+    const without = removeEventComponent(pages, "b");
+    expect(without[0]?.components.map((component) => component.id)).toEqual([
+      "a",
+      "c",
+    ]);
+    expect(without[2]).toBe(pages[2]);
+    expect(removeEventComponent(pages, "missing")).toBe(pages);
   });
 });

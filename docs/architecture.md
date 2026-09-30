@@ -467,10 +467,11 @@ Timeline, Itinerary, Expenses, and Reminders call their existing authorized
 projection endpoints; the layout never owns copies of their business fields.
 Removing or moving a component changes only the versioned layout.
 
-Layout writes are pessimistic and carry the current layout version. Network
-failure retains the proposed pages for an explicit retry. A
-`version_conflict` refreshes the current layout and requires the user to accept
-it or apply the retained change against its latest version. Owner and Editor
+Layout writes carry the layout version they were made on, and the client
+keeps each as a change to the pages (`LayoutChange`) rather than as the pages
+it produced. A `version_conflict` reads the newest layout and makes the change
+again on it, through the same `saveOnNewest` retry the object editors use;
+network failure keeps the change for an explicit retry. Owner and Editor
 controls are derived from the server-provided access actions, while the API
 reauthorizes and audits every write. Unsupported component kinds remain in the
 layout and render a compatibility notice until their native slice is available.
