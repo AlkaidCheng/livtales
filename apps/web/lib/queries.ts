@@ -927,22 +927,26 @@ export function useLeaveEventMutation() {
   });
 }
 
+/** Reads every copy of the workspace's records again. */
+export function invalidateCanonical(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({
+    predicate: (query) =>
+      [
+        "event",
+        "events",
+        "object",
+        "search",
+        "tasks",
+        "labels",
+        "persons",
+        "trash",
+      ].includes(String(query.queryKey[0])),
+  });
+}
+
 export function useCanonicalInvalidation() {
   const queryClient = useQueryClient();
-  return () =>
-    queryClient.invalidateQueries({
-      predicate: (query) =>
-        [
-          "event",
-          "events",
-          "object",
-          "search",
-          "tasks",
-          "labels",
-          "persons",
-          "trash",
-        ].includes(String(query.queryKey[0])),
-    });
+  return () => invalidateCanonical(queryClient);
 }
 
 function useResourceInvalidation() {

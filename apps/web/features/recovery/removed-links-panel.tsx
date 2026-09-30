@@ -12,6 +12,8 @@ import {
   LoadingState,
   Notice,
 } from "../../components/feedback";
+import { GoneLine } from "../../components/gone-line";
+import { refusalOf } from "../../lib/live/object-news";
 import {
   useRecoverRelation,
   useRemovedRelations,
@@ -30,6 +32,9 @@ export function RemovedLinksPanel({ objectId }: { readonly objectId: string }) {
   const [confirmed, setConfirmed] = useState(false);
   const t = useTranslations("removedLinks");
   const recover = useRecoverRelation();
+  // A recovery refused because the link changed or went away says so in
+  // place of the confirmation.
+  const refused = refusalOf(recover.error);
   const items = [
     ...new Map(
       removed.data?.pages
@@ -131,6 +136,15 @@ export function RemovedLinksPanel({ objectId }: { readonly objectId: string }) {
         <RecoveryDialog title={t("recoverTitle")} onClose={close}>
           {recover.isSuccess ? (
             <Notice tone="success">{t("recovered")}</Notice>
+          ) : refused !== null ? (
+            <GoneLine
+              gone={refused}
+              object={`${selected.sourceDisplayName} → ${selected.targetDisplayName}`}
+              onClose={() => {
+                close();
+                void removed.refetch();
+              }}
+            />
           ) : (
             <>
               <p>
