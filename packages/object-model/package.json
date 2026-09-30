@@ -26,6 +26,6 @@
     "@livtales/authorization": "workspace:*",
     "@livtales/db": "workspace:*",
     "@livtales/storage": "workspace:*",
-    "drizzle-orm": "0.45.2"
+    "drizzle-orm": "0.45.3"
   }
 }
