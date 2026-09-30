@@ -391,7 +391,7 @@ describe("insertable event components", () => {
     },
   );
 
-  it("preserves preset and name on stale writes without overwriting the current layout", async () => {
+  it("adds a page over a layout saved meanwhile, keeping the page added there", async () => {
     const user = userEvent.setup();
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
     await user.click(await screen.findByRole("button", { name: "Add a page" }));
@@ -403,16 +403,13 @@ describe("insertable event components", () => {
       pages: concurrent,
     });
     await user.click(dialog.getByRole("button", { name: "Add page" }));
-    expect(await dialog.findByRole("alert")).toHaveTextContent(
-      "A newer version is available",
-    );
-    expect(dialog.getByRole("textbox", { name: "Page name" })).toHaveValue(
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const saved = await client.getEventLayout(eventId);
+    expect(saved.version).toBe(2);
+    expect(saved.pages.map((entry) => entry.name)).toEqual([
+      "Another planner",
       "Gathering",
-    );
-    expect(dialog.getByRole("radio", { name: "Gathering" })).toBeChecked();
-    expect((await client.getEventLayout(eventId)).pages).toEqual(concurrent);
-    await user.click(dialog.getByRole("button", { name: "Cancel" }));
-    await screen.findByRole("heading", { name: "Another planner" });
+    ]);
   });
 
   it("guards page creation during composition and an in-flight save", async () => {
@@ -822,7 +819,7 @@ describe("insertable event components", () => {
     expect(pageOptions()).toHaveFocus();
   });
 
-  it("requires an explicit refresh after a stale removal confirmation", async () => {
+  it("removes a page over a layout saved meanwhile, keeping the page added there", async () => {
     const pages = [page("Plan", ["todos"])];
     await client.updateEventLayout(eventId, { expectedVersion: 0, pages });
     const user = userEvent.setup();
@@ -831,26 +828,19 @@ describe("insertable event components", () => {
     await choosePageOption(user, "Page options");
     const dialog = within(screen.getByRole("dialog"));
     await user.click(dialog.getByRole("button", { name: "Remove page" }));
-    const external = [page("External", ["expenses"])];
+    const external = page("External", ["expenses"]);
     await client.updateEventLayout(eventId, {
       expectedVersion: 1,
-      pages: external,
+      pages: [...pages, external],
     });
     await user.click(
       dialog.getByRole("button", { name: "Remove from layout" }),
     );
-    expect(await dialog.findByRole("alert")).toHaveTextContent(/changed/i);
-    expect(
-      dialog.getByRole("heading", { name: "Remove page Plan?" }),
-    ).toBeVisible();
-    expect((await client.getEventLayout(eventId)).pages).toEqual(external);
-    await user.click(dialog.getByRole("button", { name: /Refresh/ }));
     expect(
       await dialog.findByRole("heading", { name: "External" }),
     ).toBeVisible();
-    expect(
-      dialog.getByRole("button", { name: "Undo layout change" }),
-    ).toBeDisabled();
+    expect(dialog.queryByRole("heading", { name: "Plan" })).toBeNull();
+    expect((await client.getEventLayout(eventId)).pages).toEqual([external]);
   });
 
   it("saves an editor's chosen view with the layout and the account's own, a viewer's with its own alone", async () => {
@@ -1530,7 +1520,7 @@ describe("insertable event components", () => {
     expect(screen.getByRole("heading", { name: "Tasks" })).toBeVisible();
   });
 
-  it("offers every component kind as a card and keeps the dialog open on a stale save", async () => {
+  it("offers every component kind as a card and adds one over a layout saved meanwhile", async () => {
     const pages = [page("Plan", [])];
     await client.updateEventLayout(eventId, { expectedVersion: 0, pages });
     const user = userEvent.setup();
@@ -1547,21 +1537,25 @@ describe("insertable event components", () => {
     expect(
       dialog.getByRole("button", { name: "Add Calendar" }),
     ).toHaveAccessibleDescription(/schedule/i);
-    await client.updateEventLayout(eventId, { expectedVersion: 1, pages });
+    // A page added elsewhere meanwhile stays; the component joins Plan.
+    const other = page("On the day", ["itinerary"]);
+    await client.updateEventLayout(eventId, {
+      expectedVersion: 1,
+      pages: [...pages, other],
+    });
     await user.click(dialog.getByRole("button", { name: "Add Calendar" }));
-    expect(await dialog.findByRole("alert")).toHaveTextContent(
-      "A newer version is available",
-    );
-    expect(dialog.getByRole("button", { name: "Add Calendar" })).toBeEnabled();
-    expect((await client.getEventLayout(eventId)).pages).toEqual(pages);
-    await user.click(dialog.getByRole("button", { name: "Cancel" }));
-    expect(trigger).toHaveFocus();
-    await waitFor(() =>
-      expect(
-        vi.mocked(fetch).mock.calls.filter(([input]) => isLayoutRequest(input))
-          .length,
-      ).toBeGreaterThan(2),
-    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    const saved = await client.getEventLayout(eventId);
+    expect(saved.version).toBe(3);
+    expect(
+      saved.pages.map((entry) => [
+        entry.name,
+        entry.components.map((item) => item.kind),
+      ]),
+    ).toEqual([
+      ["Plan", ["calendar"]],
+      ["On the day", ["itinerary"]],
+    ]);
   });
 
   it("quick-inserts a filtered component without intercepting typing in fields", async () => {
@@ -1805,7 +1799,7 @@ describe("insertable event components", () => {
     ).toBeNull();
   });
 
-  it("keeps the displayed layout on conflict and requires a refresh before retrying", async () => {
+  it("moves a component over a layout saved meanwhile, keeping its changes", async () => {
     const pages = [page("Work", ["todos", "calendar"]), page("Day", [])];
     await client.updateEventLayout(eventId, { expectedVersion: 0, pages });
     const user = userEvent.setup();
@@ -1820,23 +1814,26 @@ describe("insertable event components", () => {
       expectedVersion: 1,
       pages: concurrent,
     });
+    // The move is made again on the renamed pages, which keep their names.
     await user.click(screen.getByRole("button", { name: "Move Tasks down" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "A newer version is available",
-    );
-    expect(
-      screen.getAllByRole("region", { name: /component \d/ })[0],
-    ).toHaveAttribute("aria-label", "Tasks component 1");
-    expect((await client.getEventLayout(eventId)).pages).toEqual(concurrent);
-    await user.click(screen.getByRole("button", { name: "Refresh latest" }));
     await screen.findByRole("button", { name: "Updated Work" });
-    await user.click(screen.getByRole("button", { name: "Move Tasks down" }));
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "Move Tasks down" }),
       ).toBeDisabled(),
     );
-    expect((await client.getEventLayout(eventId)).version).toBe(3);
+    const saved = await client.getEventLayout(eventId);
+    expect(saved.version).toBe(3);
+    expect(
+      saved.pages.map((entry) => [
+        entry.name,
+        entry.components.map((item) => item.kind),
+      ]),
+    ).toEqual([
+      ["Updated Work", ["calendar", "todos"]],
+      ["Updated Day", []],
+    ]);
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   it("keeps the default selected page open when moving it later", async () => {
@@ -1866,7 +1863,7 @@ describe("insertable event components", () => {
     );
   });
 
-  it("ignores external drops and rejects a drag based on an outdated layout snapshot", async () => {
+  it("ignores external drops and lands a drag begun on an older layout on the newest", async () => {
     const pages = [page("Work", ["todos", "calendar"]), page("Day", [])];
     await client.updateEventLayout(eventId, { expectedVersion: 0, pages });
     render(<PagesHarness eventId={eventId} canEdit />, { wrapper: Providers });
@@ -1893,13 +1890,18 @@ describe("insertable event components", () => {
     fireEvent.dragStart(screen.getByRole("button", { name: "Drag Tasks" }), {
       dataTransfer,
     });
+    // A drag begun on an older layout lands on the newest one.
     await client.updateEventLayout(eventId, { expectedVersion: 1, pages });
     fireEvent.dragOver(target, { dataTransfer });
     fireEvent.drop(target, { dataTransfer });
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "A newer version is available",
+    await waitFor(async () =>
+      expect((await client.getEventLayout(eventId)).version).toBe(3),
     );
-    expect((await client.getEventLayout(eventId)).pages).toEqual(pages);
+    expect(
+      (await client.getEventLayout(eventId)).pages.map((entry) =>
+        entry.components.map((item) => item.kind),
+      ),
+    ).toEqual([["calendar"], ["todos"]]);
     expect(screen.queryByText("Drop at end of Work")).toBeNull();
   });
 
