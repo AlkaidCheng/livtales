@@ -1,6 +1,6 @@
 "use client";
 
-import type { LivePresence } from "@livtales/schemas";
+import type { LivePresence, SessionResponse } from "@livtales/schemas";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -13,6 +13,7 @@ import {
 
 import { useLeavingApiClient } from "../api-context";
 import { useAuthSession } from "../auth-session";
+import { queryKeys } from "../queries";
 import {
   applyLiveChange,
   applyLiveView,
@@ -20,6 +21,7 @@ import {
 } from "./apply-live-change";
 import { LiveCoordinator } from "./live-coordinator";
 import { PresenceStore } from "./live-people";
+import { ObjectFollows, type ObjectNews } from "./object-news";
 import { type LiveSignal, liveTabId, type TabPage } from "./live-signals";
 import { openLiveTransport } from "./live-transport";
 import { flashRows, useChangeNotices } from "./use-change-notices";
@@ -76,6 +78,7 @@ class TabPages {
 interface LiveContextValue {
   readonly pages: TabPages;
   readonly presence: PresenceStore;
+  readonly follows: ObjectFollows;
 }
 
 const LiveContext = createContext<LiveContextValue | null>(null);
@@ -112,11 +115,12 @@ export function LiveProvider({ children }: { readonly children: ReactNode }) {
   const [value] = useState<LiveContextValue>(() => ({
     pages: new TabPages(),
     presence: new PresenceStore(),
+    follows: new ObjectFollows(),
   }));
 
   useEffect(() => {
     if (!signedIn) return;
-    const { pages, presence } = value;
+    const { pages, presence, follows } = value;
     const tab = liveTabId();
     const receive = (signal: LiveSignal) => {
       switch (signal.kind) {
@@ -135,6 +139,10 @@ export function LiveProvider({ children }: { readonly children: ReactNode }) {
                 .map((state) => state.id),
             );
           notify?.();
+          follows.tell(
+            change,
+            cache.getQueryData<SessionResponse>(queryKeys.session)?.user.id,
+          );
           return;
         }
         case "presence":
@@ -210,4 +218,21 @@ export function usePresence(page: string | null): People {
     () => (live === null || page === null ? nobody : live.presence.get(page)),
     () => nobody,
   );
+}
+
+/**
+ * The latest change to an object this tab received from others since the
+ * component mounted, or null; a confirmation follows its object with it.
+ */
+export function useObjectNews(id: string): ObjectNews | null {
+  const live = useContext(LiveContext);
+  const [news, setNews] = useState<{
+    readonly id: string;
+    readonly news: ObjectNews;
+  } | null>(null);
+  useEffect(
+    () => live?.follows.follow(id, (next) => setNews({ id, news: next })),
+    [id, live],
+  );
+  return news?.id === id ? news.news : null;
 }

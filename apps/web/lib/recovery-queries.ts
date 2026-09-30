@@ -138,7 +138,7 @@ export function useLifecycleActions(target: LifecycleTarget) {
     onSuccess: invalidate,
   });
   const trash = useMutation({
-    mutationFn: () => client.deleteObject(target.id, target.version),
+    mutationFn: (version: number) => client.deleteObject(target.id, version),
     onSuccess: invalidate,
   });
   const inclusion =
