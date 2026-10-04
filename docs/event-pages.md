@@ -87,10 +87,15 @@ distinguished by their IDs, not their kinds. External drag payloads are ignored.
 
 Each completed action sends one existing layout PATCH, preserving component
 identities and canonical records. Dragging alone, cancelling, and unchanged
-moves do not write. The drag source pins its layout version until drop; a stale
-save fails without overwriting a newer layout. Refresh latest loads the saved
-layout before an explicit retry. In-flight saves block overlapping layout
-mutations; success announces completion and restores keyboard focus when needed.
+moves do not write. Each action is kept as a change to the pages (move this
+component before that one, move this page later, add this component) rather
+than as the pages it produced: a save refused because the layout changed
+elsewhere reads the newest layout and makes the change again on it, up to
+three sends, so what others changed meanwhile stays around it. A change with
+nothing left to do on the newest layout (its component was removed
+meanwhile) writes nothing. In-flight saves block overlapping layout
+mutations; success announces completion and restores keyboard focus when
+needed.
 Cross-page moves select the destination. Components keep local state while
 mounted. Components absent from the selected page unmount; their local controls
 are reset. Event/schedule and Task editor drafts remain eligible for explicit
@@ -103,10 +108,9 @@ behavior is browser-dependent; move controls do not depend on drag support.
 ## Removal and recovery
 
 Page options opens a focused dialog for removing components or entire pages.
-Each removal requires confirmation and checks the layout version captured when
-the dialog opened. No canonical object or relationship is deleted. A conflict
-keeps the proposed change visible; Refresh latest loads the saved layout and
-requires a new confirmation.
+Each removal requires confirmation and removes that page or component from
+the newest layout, keeping what others changed since the dialog opened. No
+canonical object or relationship is deleted.
 
 Layout history lists saved arrangements with dates and page/component counts.
 Preview shows page names and component kinds before restoration. Restoring an
@@ -119,7 +123,7 @@ sharing view when the user has Share access.
 Undo and redo cover up to 50 layout changes made during the current browser
 session. They reference saved revisions and use the same restore endpoint.
 Editing or manually restoring clears redo. A newer layout from another client
-invalidates the local chain; stale writes fail with HTTP 409. Reloading or
+invalidates the local chain; a stale restore fails with HTTP 409. Reloading or
 switching sessions clears the undo/redo chain, but saved history survives.
 Layout undo is separate from planning-record command undo. Removing a component
 unmounts its local controls. Eligible Event/schedule and Task drafts can be

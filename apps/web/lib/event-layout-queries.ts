@@ -4,8 +4,8 @@ import type { LivTalesApiClient } from "@livtales/api-client";
 import type {
   EventLayoutResponse,
   EventLayoutRestore,
-  EventLayoutUpdate,
   EventLayoutWithViewResponse,
+  EventPage,
   EventViewState,
   EventViewStateUpdate,
 } from "@livtales/schemas";
@@ -23,6 +23,7 @@ import { useErrorMessage } from "../components/feedback";
 import { useNotices } from "../components/notices";
 import { useApiClient, useLeavingApiClient } from "./api-context";
 import { useAuthSession } from "./auth-session";
+import { saveOnNewest } from "./commands";
 import { mayHoldKeptViews, moveKeptEventView } from "./kept-views";
 import {
   advanceLayoutUndo,
@@ -74,21 +75,23 @@ function keepView(
 async function acceptLayout(
   cache: QueryClient,
   layout: EventLayoutResponse,
-  previousVersion: number,
+  previousVersion: number | null,
   intent: LayoutIntent,
 ) {
   const key = eventLayoutKey(layout.eventId);
   await cache.cancelQueries({ queryKey: key, exact: true });
   const current = cache.getQueryData<EventLayoutWithViewResponse>(key);
   if (current && current.version > layout.version) return;
-  cache.setQueryData<LayoutUndoState>(undoKey(layout.eventId), (state) =>
-    advanceLayoutUndo(
-      state ?? emptyLayoutUndo,
-      previousVersion,
-      layout.version,
-      intent,
-    ),
-  );
+  // A layout read rather than written leaves the undo stacks as they are.
+  if (previousVersion !== null)
+    cache.setQueryData<LayoutUndoState>(undoKey(layout.eventId), (state) =>
+      advanceLayoutUndo(
+        state ?? emptyLayoutUndo,
+        previousVersion,
+        layout.version,
+        intent,
+      ),
+    );
   // The layout routes answer with the event's layout alone; the account's
   // view of it is kept, as the new layout reads it.
   if (current === undefined)
@@ -215,15 +218,54 @@ export function useEventLayout(eventId: string) {
   });
 }
 
+/**
+ * A change to an event's layout: the layout it was made on, and the change
+ * itself as a function of the pages. A save refused because the layout
+ * moved on makes the change again on the newest pages, so what others
+ * changed meanwhile stays around it; a change that leaves the newest pages
+ * as they are writes nothing.
+ */
+export interface LayoutChange {
+  readonly source: EventLayoutResponse;
+  readonly change: (pages: EventPage[]) => readonly EventPage[];
+}
+
+/**
+ * The layout after a change, and the version it replaced; null when the
+ * change had nothing left to do on the newest layout.
+ */
+export interface LayoutChangeResult {
+  readonly layout: EventLayoutResponse;
+  readonly previousVersion: number | null;
+}
+
 export function useUpdateEventLayout(eventId: string) {
   const client = useApiClient();
   const cache = useQueryClient();
   return useMutation({
     mutationKey: layoutUpdateKey(eventId),
-    mutationFn: (input: EventLayoutUpdate) =>
-      client.updateEventLayout(eventId, input),
-    onSuccess: (layout, input) =>
-      acceptLayout(cache, layout, input.expectedVersion, "edit"),
+    mutationFn: async ({
+      source,
+      change,
+    }: LayoutChange): Promise<LayoutChangeResult> =>
+      (
+        await saveOnNewest(
+          async (base: EventLayoutResponse) => {
+            const pages = change(base.pages);
+            if (pages === base.pages)
+              return { layout: base, previousVersion: null };
+            const layout = await client.updateEventLayout(eventId, {
+              expectedVersion: base.version,
+              pages: [...pages],
+            });
+            return { layout, previousVersion: base.version };
+          },
+          source,
+          () => client.getEventLayout(eventId),
+        )
+      ).result,
+    onSuccess: ({ layout, previousVersion }) =>
+      acceptLayout(cache, layout, previousVersion, "edit"),
   });
 }
 

@@ -1,10 +1,15 @@
 "use client";
 
-import type { RecoveryPreview, TrashQueryInput } from "@livtales/schemas";
+import type {
+  RecoveryPreview,
+  TrashItem,
+  TrashQueryInput,
+} from "@livtales/schemas";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ConfirmAction } from "../../components/confirm-action";
+import { GoneLine } from "../../components/gone-line";
 import {
   EmptyState,
   ErrorNotice,
@@ -13,6 +18,7 @@ import {
 } from "../../components/feedback";
 import { useNotices } from "../../components/notices";
 import { formatDateTime, shortId } from "../../lib/format";
+import { useFollowedObject } from "../../lib/live/use-followed-object";
 import { useRevokeShare, useSharesQuery } from "../../lib/queries";
 import {
   useRecoverObject,
@@ -25,7 +31,7 @@ export function TrashWorkspace() {
   const t = useTranslations("trash");
   const types = useTranslations("objectTypes");
   const [filter, setFilter] = useState<TrashQueryInput["objectType"]>();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<TrashItem | null>(null);
   const trash = useTrash({
     limit: 20,
     ...(filter === undefined ? {} : { objectType: filter }),
@@ -50,7 +56,7 @@ export function TrashWorkspace() {
           <select
             value={filter ?? ""}
             onChange={(event) => {
-              setSelectedId(null);
+              setSelected(null);
               setFilter(
                 event.target.value === ""
                   ? undefined
@@ -73,7 +79,7 @@ export function TrashWorkspace() {
           type="button"
           disabled={trash.isFetching}
           onClick={() => {
-            setSelectedId(null);
+            setSelected(null);
             void trash.refetch();
           }}
         >
@@ -102,7 +108,7 @@ export function TrashWorkspace() {
               className="button button-secondary"
               type="button"
               onClick={() => {
-                setSelectedId(null);
+                setSelected(null);
                 setFilter(undefined);
               }}
             >
@@ -132,7 +138,7 @@ export function TrashWorkspace() {
             <button
               className="button button-secondary"
               type="button"
-              onClick={() => setSelectedId(item.id)}
+              onClick={() => setSelected(item)}
               aria-label={t("previewFor", { name: item.displayName })}
             >
               {t("previewRecovery")}
@@ -150,11 +156,11 @@ export function TrashWorkspace() {
           {trash.isFetchingNextPage ? t("loadingMore") : t("loadMore")}
         </button>
       ) : null}
-      {selectedId === null ? null : (
+      {selected === null ? null : (
         <ObjectRecoveryPreview
-          key={selectedId}
-          objectId={selectedId}
-          onClose={() => setSelectedId(null)}
+          key={selected.id}
+          item={selected}
+          onClose={() => setSelected(null)}
         />
       )}
     </main>
@@ -162,23 +168,42 @@ export function TrashWorkspace() {
 }
 
 function ObjectRecoveryPreview({
-  objectId,
+  item,
   onClose,
 }: {
-  readonly objectId: string;
+  readonly item: TrashItem;
   readonly onClose: () => void;
 }) {
   const t = useTranslations("trash");
+  const objectId = item.id;
   const preview = useRecoveryPreview(objectId);
   const recover = useRecoverObject(objectId);
   const [proposal, setProposal] = useState<RecoveryPreview | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [savedVersion, setSavedVersion] = useState<number | null>(null);
+  const followed = useFollowedObject(item, {
+    inTrash: true,
+    refusals: [recover.error, preview.error],
+  });
+  // A change to the record since the preview was confirmed asks for a
+  // review of the newer one, which the live change has read again.
+  const [seen, setSeen] = useState(followed.news);
+  if (followed.news !== seen) {
+    setSeen(followed.news);
+    setProposal(null);
+    setConfirmed(false);
+  }
   const shown = proposal ?? preview.data;
   const hasError = preview.isError || recover.isError;
   return (
     <RecoveryDialog title={t("recoveryPreview")} onClose={onClose}>
-      {savedVersion !== null ? (
+      {savedVersion === null && followed.gone !== null ? (
+        <GoneLine
+          gone={followed.gone}
+          object={followed.name}
+          onClose={onClose}
+        />
+      ) : savedVersion !== null ? (
         <>
           <Notice tone="success">
             {t("recovered", { version: savedVersion })}

@@ -102,20 +102,20 @@ function isVersionConflict(error: unknown): boolean {
 }
 
 /**
- * Sends a save on the newest version of its record: a save refused because
- * the record changed meanwhile is sent again, the same entries, on the
- * newest version read from `newest`, up to three sends in all. `rebased`
- * says whether the version moved on meanwhile.
+ * Sends a save on the newest state of its record: a save refused because
+ * the record changed meanwhile is sent again, the same change, on the
+ * newest state read from `newest` (a version, or the record itself), up to
+ * three sends in all. `rebased` says whether the record moved on meanwhile.
  */
-export async function saveOnNewest<Result>(
-  send: (version: number) => Promise<Result>,
-  version: number,
-  newest: () => Promise<number>,
+export async function saveOnNewest<Base, Result>(
+  send: (base: Base) => Promise<Result>,
+  base: Base,
+  newest: () => Promise<Base>,
 ): Promise<{ readonly result: Result; readonly rebased: boolean }> {
-  let current = version;
+  let current = base;
   for (let attempt = 1; ; attempt += 1) {
     try {
-      return { result: await send(current), rebased: current !== version };
+      return { result: await send(current), rebased: current !== base };
     } catch (error) {
       if (!isVersionConflict(error) || attempt >= 3) throw error;
       current = await newest();

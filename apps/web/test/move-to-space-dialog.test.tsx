@@ -246,7 +246,7 @@ function renderDialog() {
   render(
     <Providers>
       <MoveToSpaceDialog
-        event={{ id: eventId, displayName: "Garden wedding" }}
+        event={{ id: eventId, displayName: "Garden wedding", version: 1 }}
         session={session}
         onClose={onClose}
       />

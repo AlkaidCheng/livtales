@@ -48,9 +48,9 @@ function SessionProviders({ children }: { readonly children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ApiClientProvider>
         <EventScopeProvider>
-          <HistoryProvider>
-            <NoticesProvider>
-              <LiveProvider>
+          <NoticesProvider>
+            <LiveProvider>
+              <HistoryProvider>
                 <LifecycleProvider>
                   <EditorDraftProvider>
                     <CommandHistoryProvider>
@@ -60,9 +60,9 @@ function SessionProviders({ children }: { readonly children: ReactNode }) {
                     </CommandHistoryProvider>
                   </EditorDraftProvider>
                 </LifecycleProvider>
-              </LiveProvider>
-            </NoticesProvider>
-          </HistoryProvider>
+              </HistoryProvider>
+            </LiveProvider>
+          </NoticesProvider>
         </EventScopeProvider>
       </ApiClientProvider>
     </QueryClientProvider>

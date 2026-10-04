@@ -3,5 +3,12 @@
   "removeShare": "{name} will lose access to {resource}.",
   "removeMember": "{name} will lose access to this space.",
   "removeFriend": "Shares you gave each other stay until removed.",
-  "removeLabel": "Every task loses {name}."
+  "removeLabel": "Every task loses {name}.",
+  "gone": {
+    "trashed": "{object} was moved to Trash",
+    "restored": "{object} was restored from Trash",
+    "removed": "{object} was taken off this page",
+    "unavailable": "{object} is no longer available to you",
+    "changed": "{object} changed after you opened this"
+  }
 }

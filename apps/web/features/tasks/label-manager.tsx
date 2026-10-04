@@ -1,13 +1,17 @@
 "use client";
 
 import type { LabelResponse } from "@livtales/schemas";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { CountedField } from "../../components/counted-field";
 import { ErrorNotice } from "../../components/feedback";
+import { GoneLine } from "../../components/gone-line";
+import { refusalOf } from "../../lib/live/object-news";
 import {
+  queryKeys,
   useCreateLabel,
   useDeleteLabel,
   useLabelsQuery,
@@ -144,8 +148,12 @@ function LabelRow({ label }: { readonly label: LabelResponse }) {
   const remove = useDeleteLabel();
   const [name, setName] = useState(label.name);
   const [confirming, setConfirming] = useState(false);
+  const cache = useQueryClient();
   const busy = update.isPending || remove.isPending;
-  const failure = update.error ?? remove.error;
+  // A removal refused because the label changed or went away says so in
+  // place of the confirmation; other failures keep their line.
+  const refused = refusalOf(remove.error);
+  const failure = update.error ?? (refused === null ? remove.error : null);
   return (
     <li>
       <CountedField
@@ -169,7 +177,17 @@ function LabelRow({ label }: { readonly label: LabelResponse }) {
       >
         {update.isPending ? t("renaming") : t("rename")}
       </button>
-      {confirming ? (
+      {confirming && refused !== null ? (
+        <GoneLine
+          gone={refused}
+          object={label.name}
+          onClose={() => {
+            remove.reset();
+            setConfirming(false);
+            void cache.invalidateQueries({ queryKey: queryKeys.labels });
+          }}
+        />
+      ) : confirming ? (
         <>
           <button
             className="button button-primary button-small"

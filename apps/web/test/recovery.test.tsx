@@ -198,28 +198,34 @@ it("distinguishes empty type filters and clears them without hiding recoverable 
   ).toBeNull();
 });
 
-it("clears confirmation and requires a fresh preview after a conflict", async () => {
+it("says a conflict changed the record in place of the confirmation, and a new preview asks again", async () => {
   conflict = true;
   const { user, dialog } = await openPreview();
   await user.click(dialog.getByRole("checkbox"));
   await user.click(dialog.getByRole("button", { name: "Confirm recovery" }));
-  await dialog.findByRole("alert");
+  const reason = await dialog.findByRole("status");
+  expect(reason).toHaveTextContent("Workshop changed after you opened this");
+  expect(dialog.queryByRole("alert")).toBeNull();
   expect(
     dialog.queryByRole("link", { name: "Open recovered event" }),
   ).toBeNull();
-  expect(
-    dialog.getByRole("button", { name: "Confirm recovery" }),
-  ).toBeDisabled();
+  expect(dialog.queryByRole("button", { name: "Confirm recovery" })).toBeNull();
+  await user.click(within(reason).getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
   currentVersion = 4;
-  await user.click(dialog.getByRole("button", { name: "Refresh latest" }));
+  conflict = false;
+  await user.click(
+    screen.getByRole("button", { name: "Preview recovery for Workshop" }),
+  );
+  const again = within(screen.getByRole("dialog"));
   await waitFor(() =>
     expect(
-      dialog.getByText("Preview based on deleted version 4."),
+      again.getByText("Preview based on deleted version 4."),
     ).toBeVisible(),
   );
-  expect(dialog.getByRole("checkbox")).not.toBeChecked();
+  expect(again.getByRole("checkbox")).not.toBeChecked();
   expect(
-    dialog.getByRole("button", { name: "Confirm recovery" }),
+    again.getByRole("button", { name: "Confirm recovery" }),
   ).toBeDisabled();
 });
 

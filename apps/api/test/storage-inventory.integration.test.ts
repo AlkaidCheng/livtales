@@ -372,7 +372,7 @@ describe.sequential("workspace storage inventory", () => {
     const db = database.connection.db;
     await db
       .update(objects)
-      .set({ archivedAt: currentTime })
+      .set({ archivedAt: sql`now()` })
       .where(eq(objects.id, archived.document.id));
     expect(
       (

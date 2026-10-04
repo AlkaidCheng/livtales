@@ -1182,7 +1182,7 @@ layout schema before submission; existing backend checks remain authoritative.
 The append is one versioned layout mutation, recoverable through Page options
 in the active page's menu.
 Preview and cancellation perform no writes. Save failures preserve the name
-and preset; after a conflict, close and reopen to review the latest layout.
+and preset; a page added while others changed the layout joins their pages.
 
 Arrange components, in the event's More menu and in the active page's menu,
 reveals page ordering, component move buttons, cross-page moves, and drag
@@ -1209,9 +1209,8 @@ A card says "On this page" or "On another page" when the page or another
 page already holds that kind; adding another view is allowed and does not
 copy canonical records. Successful insertion names the component and
 destination. Closing the dialog restores focus; losing Edit access discards
-the open catalog. A pending save locks the cards and dismissal. A conflict
-keeps the dialog open with the captured source version; close and reopen to
-retry against the latest layout.
+the open catalog. A pending save locks the cards and dismissal. A component
+added while others changed the layout joins the page as it now stands.
 
 The mode is local to the open event and session. It survives page selection,
 but resets on leaving the Pages view, reload, event/session changes, and loss
@@ -1455,6 +1454,25 @@ newest version and goes again on it, with nothing shown, so the person's
 changes land over what others changed meanwhile. When both changed the same
 field, the later save stands and History keeps the other. A save still
 refused after three tries shows the error with the draft kept.
+
+## Confirmations that follow their record
+
+An open confirmation follows its record the same way: a record's Actions
+dialog (Remove from this event, Move to Trash and its question), the Trash
+recovery preview, History's restore preview, and Move to space. A new name
+shows in the title and the question, Move to Trash goes on the newest
+version, a change to a record whose preview was confirmed asks for a review
+of the newer preview, and what Move to space counts is read again as the
+event's page changes. When the action no longer applies, one line takes the
+place of its confirmation, naming who did it when the change said, in the
+pop-up's words, and Close ("Ana moved Book the hall to Trash", "Ana took
+Book the hall off this page", "Ana restored Old idea"); Remove from this
+event gives way alone when the record only left the event, and Move to
+Trash stays. An action the server refuses because the record changed or went
+away says so in the same place ("Book the hall changed after you opened
+this", "Book the hall is no longer available to you") instead of an error,
+and the page reads its records again; removing a label and recovering a
+removed link say it the same way.
 
 ## Removing things
 

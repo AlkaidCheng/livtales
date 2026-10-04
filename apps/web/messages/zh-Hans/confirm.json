@@ -3,5 +3,12 @@
   "removeShare": "{name}将失去对{resource}的访问权限。",
   "removeMember": "{name}将失去对此空间的访问权限。",
   "removeFriend": "你们互相给予的共享将保留，直到被移除。",
-  "removeLabel": "所有任务都将失去{name}。"
+  "removeLabel": "所有任务都将失去{name}。",
+  "gone": {
+    "trashed": "「{object}」已移到回收站",
+    "restored": "「{object}」已从回收站恢复",
+    "removed": "「{object}」已移出此页",
+    "unavailable": "你已无法访问「{object}」",
+    "changed": "「{object}」在你打开后已被更改"
+  }
 }

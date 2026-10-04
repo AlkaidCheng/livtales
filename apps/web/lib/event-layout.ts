@@ -81,6 +81,37 @@ export function moveEventComponent(
   });
 }
 
+/** The pages without one page; the same pages when it is not among them. */
+export function removeEventPage(
+  pages: EventPage[],
+  pageId: string,
+): EventPage[] {
+  return pages.some((page) => page.id === pageId)
+    ? pages.filter((page) => page.id !== pageId)
+    : pages;
+}
+
+/** The pages without one component; the same pages when no page holds it. */
+export function removeEventComponent(
+  pages: EventPage[],
+  componentId: string,
+): EventPage[] {
+  const holder = pages.find((page) =>
+    page.components.some((component) => component.id === componentId),
+  );
+  if (holder === undefined) return pages;
+  return pages.map((page) =>
+    page === holder
+      ? {
+          ...page,
+          components: page.components.filter(
+            (component) => component.id !== componentId,
+          ),
+        }
+      : page,
+  );
+}
+
 /** Records the view of one component; the pages are returned unchanged when it already shows it. */
 export function setEventComponentView(
   pages: EventPage[],
