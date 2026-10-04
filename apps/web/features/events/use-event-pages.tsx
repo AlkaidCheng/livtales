@@ -1,5 +1,6 @@
 "use client";
 
+import type { EventPage } from "@livtales/schemas";
 import { useTranslations } from "next-intl";
 import {
   type ReactNode,
@@ -56,21 +57,24 @@ export function usePageOrder(eventId: string, canEdit: boolean) {
   function reorder(order: readonly string[]) {
     const keep = () => changeView(() => ({ pages: [...order] }));
     const shared = layout.data;
-    const pages =
-      canEdit && shared !== undefined
-        ? pagesInOrder(shared.pages, order)
-        : undefined;
+    // The event takes the account's order, made again on its newest pages.
+    const inOrder = (pages: EventPage[]) => {
+      const next = pagesInOrder(pages, order);
+      return next.every((page, index) => page === pages[index])
+        ? pages
+        : [...next];
+    };
     if (
+      !canEdit ||
       shared === undefined ||
-      pages === undefined ||
-      pages.every((page, index) => page === shared.pages[index])
+      inOrder(shared.pages) === shared.pages
     )
       keep();
     // The editor's own order follows the event's save even when Manage
     // tabs has closed by then.
     else
       save
-        .mutateAsync({ expectedVersion: shared.version, pages: [...pages] })
+        .mutateAsync({ source: shared, change: inOrder })
         .then(keep, () => undefined);
   }
   return {

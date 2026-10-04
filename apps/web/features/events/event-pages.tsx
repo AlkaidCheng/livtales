@@ -74,25 +74,30 @@ function AddComponentDialog({
 
   function add(kind: EventComponentKind) {
     if (save.isPending) return;
-    const pages: EventPage[] = source.pages.map((page) =>
-      page.id === pageId
-        ? {
-            ...page,
-            components: [...page.components, { id: newId(), kind }],
-          }
-        : page,
-    );
+    const component = { id: newId(), kind };
+    // The component joins the page as the newest layout has it; a page gone
+    // meanwhile takes nothing.
+    const change = (pages: EventPage[]) =>
+      pages.some((page) => page.id === pageId)
+        ? pages.map((page) =>
+            page.id === pageId
+              ? { ...page, components: [...page.components, component] }
+              : page,
+          )
+        : pages;
     save.mutate(
-      { expectedVersion: source.version, pages },
+      { source, change },
       {
-        onSuccess: () => {
-          onSaved(
-            pageId,
-            t("added", {
-              component: componentKindLabel(kind),
-              page: target?.name ?? "",
-            }),
-          );
+        // A page removed meanwhile took nothing, and nothing is announced.
+        onSuccess: ({ previousVersion }) => {
+          if (previousVersion !== null)
+            onSaved(
+              pageId,
+              t("added", {
+                component: componentKindLabel(kind),
+                page: target?.name ?? "",
+              }),
+            );
           onClose();
         },
       },
