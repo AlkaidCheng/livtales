@@ -185,7 +185,7 @@ export function EventPageCanvas({
 
   function persist(
     source: EventLayoutResponse,
-    pages: EventPage[],
+    change: (pages: EventPage[]) => readonly EventPage[],
     message: string,
     {
       targetPageId,
@@ -196,7 +196,8 @@ export function EventPageCanvas({
       readonly onSaved?: () => void;
     } = {},
   ) {
-    if (!isArranging || locked.current || pages === source.pages) return;
+    if (!isArranging || locked.current || change(source.pages) === source.pages)
+      return;
     locked.current = true;
     let trigger =
       document.activeElement instanceof HTMLElement
@@ -208,9 +209,9 @@ export function EventPageCanvas({
     // What follows the save runs even when the page has closed by then.
     void save
       .mutateAsync(
-        { expectedVersion: source.version, pages },
+        { source, change },
         {
-          onSuccess: (saved) => {
+          onSuccess: ({ layout: saved }) => {
             version = saved.version;
             setAnnouncement(message);
             if (selected) onSelect(targetPageId ?? selected.id);
@@ -241,11 +242,17 @@ export function EventPageCanvas({
       delta,
     );
     const keep = () => changeYours(() => ({ pages: [...order] }));
-    const next = [...pagesInOrder(layout.pages, order)];
-    if (next.every((page, index) => page === layout.pages[index])) {
+    // The event takes the account's order, made again on its newest pages.
+    const inOrder = (shared: EventPage[]) => {
+      const next = pagesInOrder(shared, order);
+      return next.every((page, index) => page === shared[index])
+        ? shared
+        : [...next];
+    };
+    if (inOrder(layout.pages) === layout.pages) {
       keep();
       setAnnouncement(message);
-    } else persist(layout, next, message, { onSaved: keep });
+    } else persist(layout, inOrder, message, { onSaved: keep });
   }
 
   // A component's layout is chosen while reading, so Arrange mode is not
@@ -255,8 +262,9 @@ export function EventPageCanvas({
     if (locked.current) return;
     const keep = () =>
       changeYours(() => ({ layouts: { [componentId]: view } }));
-    const next = setEventComponentView(layout.pages, componentId, view);
-    if (!canEdit || next === layout.pages) {
+    const change = (pages: EventPage[]) =>
+      setEventComponentView(pages, componentId, view);
+    if (!canEdit || change(layout.pages) === layout.pages) {
       keep();
       setAnnouncement(describeShownView(view));
       return;
@@ -265,7 +273,7 @@ export function EventPageCanvas({
     setAnnouncement("");
     void save
       .mutateAsync(
-        { expectedVersion: layout.version, pages: next },
+        { source: layout, change },
         {
           onSuccess: () => setAnnouncement(describeShownView(view)),
           onSettled: () => {
@@ -285,7 +293,7 @@ export function EventPageCanvas({
     const target = source.pages.find((page) => page.id === targetPageId);
     persist(
       source,
-      moveEventComponent(source.pages, componentId, targetPageId, beforeId),
+      (pages) => moveEventComponent(pages, componentId, targetPageId, beforeId),
       tc("componentMoved", { name: target?.name ?? tc("page") }),
       {
         targetPageId: targetPageId !== selected?.id ? targetPageId : undefined,

@@ -102,32 +102,30 @@ test("persists composition moves through the authorized versioned layout API", a
   await expect(
     page.getByRole("heading", { name: "Day", exact: true }),
   ).toBeVisible();
+  // A rename saved elsewhere is learned only when the move is refused; the
+  // move is then made again on the renamed pages, which keep the name.
   const concurrent = await request.patch(layoutUrl, {
     headers,
-    data: { expectedVersion: 4, pages: saved.pages },
+    data: {
+      expectedVersion: 4,
+      pages: saved.pages.map((entry: { id: string; name: string }) =>
+        entry.id === pages[0]?.id ? { ...entry, name: "Work week" } : entry,
+      ),
+    },
   });
   expect(concurrent.status()).toBe(200);
-  await page
-    .getByRole("button", { name: "Move page later", exact: true })
-    .click();
-  const notice = page
-    .getByRole("region", { name: "Event pages", exact: true })
-    .getByRole("alert");
-  await expect(notice).toContainText("A newer version is available");
-  expect(
-    (await (await request.get(layoutUrl, { headers })).json()).version,
-  ).toBe(5);
-  await page
-    .getByRole("button", { name: "Refresh latest", exact: true })
-    .click();
-  await expect(notice).toHaveCount(0);
   await page
     .getByRole("button", { name: "Move page later", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Move page later", exact: true }),
   ).toBeDisabled();
-  await expect(tabs).toHaveText(["Work", "Day"]);
+  await expect(tabs).toHaveText(["Work week", "Day"]);
+  await expect(
+    page
+      .getByRole("region", { name: "Event pages", exact: true })
+      .getByRole("alert"),
+  ).toHaveCount(0);
   expect(
     (await (await request.get(layoutUrl, { headers })).json()).version,
   ).toBe(6);

@@ -1176,7 +1176,7 @@ layout schema before submission; existing backend checks remain authoritative.
 The append is one versioned layout mutation, recoverable through Page options
 in the active page's menu.
 Preview and cancellation perform no writes. Save failures preserve the name
-and preset; after a conflict, close and reopen to review the latest layout.
+and preset; a page added while others changed the layout joins their pages.
 
 Arrange components, in the event's More menu and in the active page's menu,
 reveals page ordering, component move buttons, cross-page moves, and drag
@@ -1203,9 +1203,8 @@ A card says "On this page" or "On another page" when the page or another
 page already holds that kind; adding another view is allowed and does not
 copy canonical records. Successful insertion names the component and
 destination. Closing the dialog restores focus; losing Edit access discards
-the open catalog. A pending save locks the cards and dismissal. A conflict
-keeps the dialog open with the captured source version; close and reopen to
-retry against the latest layout.
+the open catalog. A pending save locks the cards and dismissal. A component
+added while others changed the layout joins the page as it now stands.
 
 The mode is local to the open event and session. It survives page selection,
 but resets on leaving the Pages view, reload, event/session changes, and loss

@@ -51,10 +51,7 @@ export function AddEventPageDialog({
     event.preventDefault();
     if (save.isPending || !candidate.success) return;
     save.mutate(
-      {
-        expectedVersion: source.version,
-        pages: candidate.data,
-      },
+      { source, change: (pages) => [...pages, page] },
       {
         onSuccess: () => {
           onSaved(page.id, t("added", { name: page.name }));
