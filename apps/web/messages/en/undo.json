@@ -12,5 +12,11 @@
     "reopen": "reopen {name}",
     "move": "move {name}",
     "edit": "edit {name}"
+  },
+  "refused": {
+    "changedOne": "Can't {direction, select, redo {redo} other {undo}}: {name} changed the {part} since",
+    "changedTwo": "Can't {direction, select, redo {redo} other {undo}}: {name} changed the {first} and {second} since",
+    "updated": "Can't {direction, select, redo {redo} other {undo}}: {name} changed {type, select, event {this event} task {this task} other {it}} since",
+    "changed": "Can't {direction, select, redo {redo} other {undo}}: {type, select, event {this event} task {this task} other {it}} was changed since"
   }
 }

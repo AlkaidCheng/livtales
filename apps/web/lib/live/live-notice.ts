@@ -57,6 +57,17 @@ export type Part =
   | "text"
   | "contacts";
 
+/** The parts the fields belong to, each once in the order they come; null when a field belongs to none. */
+export function partsOfFields(fields: readonly string[]): Part[] | null {
+  const parts: Part[] = [];
+  for (const field of fields) {
+    const part = partOfField[field];
+    if (part === undefined) return null;
+    if (!parts.includes(part)) parts.push(part);
+  }
+  return parts;
+}
+
 /** The parts of an object that differ between two of its states, in the order its fields come. */
 export function changedParts(before: Resource, after: Resource): Part[] {
   const parts: Part[] = [];
