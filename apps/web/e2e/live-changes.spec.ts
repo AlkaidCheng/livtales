@@ -219,12 +219,12 @@ test("says why a Move to Trash was refused when the change behind it never arriv
     .click();
   await expect(dialog).toContainText("Move Book the hall to Trash?");
 
-  // Ana's other session moves it to Trash first.
-  const trashed = await request.delete(
-    `/api/objects/${hall.id}?expectedVersion=${hall.version}`,
-    { headers: ana },
-  );
-  expect(trashed.status()).toBe(200);
+  // Ana's other session renames it first.
+  const renamed = await request.patch(`/api/tasks/${hall.id}`, {
+    headers: ana,
+    data: { expectedVersion: hall.version, displayName: "Book the town hall" },
+  });
+  expect(renamed.status()).toBe(200);
   await dialog
     .getByRole("button", { name: "Move to Trash", exact: true })
     .click();
@@ -236,7 +236,9 @@ test("says why a Move to Trash was refused when the change behind it never arriv
   await reason.getByRole("button", { name: "Close", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   // The refusal had the list read again.
-  await expect(row).toHaveCount(0);
+  await expect(
+    page.getByRole("row", { name: /Book the town hall/ }),
+  ).toBeVisible();
   await anaBrowser.context.close();
 });
 
