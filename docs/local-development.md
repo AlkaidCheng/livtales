@@ -379,6 +379,14 @@ from the order as it stands on the rpc path, as the TypeScript service does.
 Run `pnpm db:migrate` and restart the API; it changes no tables and the
 runtime role script needs no rerun.
 
+Migration `0083_undo_moves_and_drop_refused_steps.sql` redefines
+`chronelle_command_content` and `chronelle_command_transition` and adds
+`chronelle_command_drop_object`, so on the rpc path, as in the TypeScript
+service, an undo or redo puts a task back in its rank and section and a step
+refused because its object changed since leaves the stack with the other
+entries of that object. Run `pnpm db:migrate` and restart the API; it changes
+no tables and the runtime role script needs no rerun.
+
 Migration `0021_add_object_search_function.sql` adds `chronelle_object_search`,
 the read-only function the CloudBase search adapter calls. It changes no
 tables and needs no baseline.

@@ -94,10 +94,25 @@ after the new command is undone. Dropping a branch never deletes durable history
 Out-of-band edits, including existing PATCH, restoration, scope changes, and
 trash/recovery, invalidate affected inverse preconditions through object versions.
 The stack query marks a conflicting undo unavailable and omits a stale redo.
-An inverse request still checks live versions and fails with `409 version_conflict`.
+An inverse request still checks live versions and fails with `409
+version_conflict`, whose `error.objectId` names the object that changed. The
+refusal takes the step off the stack, together with every other undo and redo
+entry that changed that object, since the same change blocks each of them, and
+the stack takes a version step; it writes no edit, receipt, or audit event, and
+drops the version expectations only those entries held. The next undo reaches
+the latest step of other objects. The web client says who changed what since,
+from the object's latest revision.
 Unrelated resource edits do not invalidate a command. A stale stack/head fails
 with `409 command_stack_conflict`. Refresh state and ask for a new decision;
 there is no automatic rebase or overwrite mode.
+
+Undo and Redo write each object's content from the revision before or after
+the command: the content a History restore writes, and for a task also its
+rank in manual order and its section, which a History restore never writes.
+A section that is no longer one of the To-dos of the task's Event, because it
+was deleted or the task left that Event, is left out, and the task comes back
+outside any section. A revision written before a task had a rank or a section
+leaves that part as it is.
 
 A forward content edit carries only the fields it changes. The web client
 sends an edit refused with `409 version_conflict` again, as a new command on
