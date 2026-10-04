@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import type { Browser, Request } from "@playwright/test";
 import { type APIRequestContext, expect, test } from "./fixtures";
+import { withoutLiveChanges } from "./helpers/live";
+import { chooseRowAction } from "./helpers/row-menu";
 
 /** Signs an account in on a fresh browser of its own. */
 async function signedIn(browser: Browser, name: string, email: string) {
@@ -144,6 +146,100 @@ test("keeps an open editor on the newest version, so its save carries only its o
   // The save was made on the newest version, never refused.
   expect(refused).toEqual([]);
   await ben.context.close();
+});
+
+test("keeps an open Actions dialog on its task, and says who moved it to Trash meanwhile", async ({
+  browser,
+  request,
+}) => {
+  const benEmail = `ben-${randomUUID()}@example.test`;
+  const { ana, event, addTask } = await sharedEvent(request, benEmail);
+  const hall = await addTask("Book the hall");
+  const ben = await signedIn(browser, "Ben", benEmail);
+  await ben.page.goto(`/events/${event.id}?view=todos`);
+  await chooseRowAction(
+    ben.page,
+    ben.page.getByRole("row", { name: /Book the hall/ }),
+    "Move to Trash",
+  );
+  const dialog = ben.page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("button", { name: "Remove from this event", exact: true }),
+  ).toBeVisible();
+
+  // Ana renames the task: the dialog names it as it now is.
+  const renamed = await request.patch(`/api/tasks/${hall.id}`, {
+    headers: ana,
+    data: { expectedVersion: hall.version, displayName: "Book the town hall" },
+  });
+  expect(renamed.status()).toBe(200);
+  await expect(
+    dialog.getByRole("heading", { name: "Book the town hall", exact: true }),
+  ).toBeVisible();
+
+  // Ana moves it to Trash: the verbs give way to why, and Close.
+  const version = ((await renamed.json()) as { version: number }).version;
+  const trashed = await request.delete(
+    `/api/objects/${hall.id}?expectedVersion=${version}`,
+    { headers: ana },
+  );
+  expect(trashed.status()).toBe(200);
+  const reason = dialog.getByRole("status");
+  await expect(reason).toContainText("Ana moved Book the town hall to Trash");
+  await expect(
+    dialog.getByRole("button", { name: "Remove from this event", exact: true }),
+  ).toHaveCount(0);
+  await reason.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    ben.page.getByRole("row", { name: /Book the town hall/ }),
+  ).toHaveCount(0);
+  await ben.context.close();
+});
+
+test("says why a Move to Trash was refused when the change behind it never arrived", async ({
+  browser,
+  request,
+}) => {
+  const benEmail = `ben-${randomUUID()}@example.test`;
+  const { ana, anaEmail, event, addTask } = await sharedEvent(
+    request,
+    benEmail,
+  );
+  const hall = await addTask("Book the hall");
+  const anaBrowser = await signedIn(browser, "Ana", anaEmail);
+  const { page } = anaBrowser;
+  await withoutLiveChanges(page);
+  await page.goto(`/events/${event.id}?view=todos`);
+  const row = page.getByRole("row", { name: /Book the hall/ });
+  await chooseRowAction(page, row, "Move to Trash");
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("button", { name: "Move to Trash", exact: true })
+    .click();
+  await expect(dialog).toContainText("Move Book the hall to Trash?");
+
+  // Ana's other session renames it first.
+  const renamed = await request.patch(`/api/tasks/${hall.id}`, {
+    headers: ana,
+    data: { expectedVersion: hall.version, displayName: "Book the town hall" },
+  });
+  expect(renamed.status()).toBe(200);
+  await dialog
+    .getByRole("button", { name: "Move to Trash", exact: true })
+    .click();
+  const reason = dialog.getByRole("status");
+  await expect(reason).toContainText(
+    "Book the hall changed after you opened this",
+  );
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await reason.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  // The refusal had the list read again.
+  await expect(
+    page.getByRole("row", { name: /Book the town hall/ }),
+  ).toBeVisible();
+  await anaBrowser.context.close();
 });
 
 test("holds one stream for all of a browser's tabs and hands it on when that tab closes", async ({

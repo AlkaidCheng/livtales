@@ -18,8 +18,10 @@ import {
 } from "react";
 import { EditorDialogHeader } from "../../components/editor-dialog-controls";
 import { ErrorNotice, LoadingState } from "../../components/feedback";
+import { GoneLine } from "../../components/gone-line";
 import { WorkspaceMark } from "../../components/workspace-mark";
 import { useAuthSession } from "../../lib/auth-session";
+import { useFollowedObject } from "../../lib/live/use-followed-object";
 import { newId } from "../../lib/new-id";
 import {
   useMoveEvent,
@@ -63,7 +65,11 @@ export function MoveToSpaceDialog({
   session,
   onClose,
 }: {
-  readonly event: { readonly id: string; readonly displayName: string };
+  readonly event: {
+    readonly id: string;
+    readonly displayName: string;
+    readonly version: number;
+  };
   readonly session: SessionResponse;
   readonly onClose: () => void;
 }) {
@@ -82,6 +88,10 @@ export function MoveToSpaceDialog({
     step === "review" ? chosen : null,
   );
   const move = useMoveEvent(event.id);
+  const followed = useFollowedObject(event, {
+    refusals: [move.error, preview.error, targets.error],
+  });
+  const gone = followed.gone?.kind === "removed" ? null : followed.gone;
   const [changed, setChanged] = useState(false);
   // One move keeps its command id across retries, so a repeat after a lost
   // response returns the first result; another space starts a new one.
@@ -110,7 +120,13 @@ export function MoveToSpaceDialog({
       return;
     }
     const reviewed = preview.data;
-    if (reviewed === undefined || chosen === null || move.isPending) return;
+    if (
+      reviewed === undefined ||
+      chosen === null ||
+      move.isPending ||
+      gone !== null
+    )
+      return;
     setChanged(false);
     const commandId = commandIds.current.get(chosen) ?? newId();
     commandIds.current.set(chosen, commandId);
@@ -128,9 +144,9 @@ export function MoveToSpaceDialog({
           switchWorkspace(result.to.id, {
             message:
               removed === 0
-                ? t("moved", { name: event.displayName, space: to })
+                ? t("moved", { name: followed.name, space: to })
                 : t("movedRemoving", {
-                    name: event.displayName,
+                    name: followed.name,
                     space: to,
                     count: removed,
                   }),
@@ -182,7 +198,9 @@ export function MoveToSpaceDialog({
       />
       <form onSubmit={submit} aria-busy={move.isPending}>
         <div className="event-create-body move-dialog-body">
-          {step === "choose" ? (
+          {gone !== null ? (
+            <GoneLine gone={gone} object={followed.name} onClose={onClose} />
+          ) : step === "choose" ? (
             targets.isPending ? (
               <LoadingState label={t("loading")} />
             ) : targets.isError ? (
@@ -257,12 +275,13 @@ export function MoveToSpaceDialog({
               session={session}
             />
           )}
-          {changed ? (
+          {changed && gone === null ? (
             <p className="move-changed" role="alert">
               {t("changed")}
             </p>
           ) : null}
           {move.isError &&
+          gone === null &&
           !(
             move.error instanceof ApiClientError &&
             move.error.code === "move_changed"
@@ -270,7 +289,7 @@ export function MoveToSpaceDialog({
             <ErrorNotice error={move.error} />
           ) : null}
         </div>
-        <footer className="event-create-footer">
+        <footer className="event-create-footer" hidden={gone !== null}>
           <button
             className="button button-quiet"
             disabled={move.isPending}

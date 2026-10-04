@@ -3,7 +3,10 @@
 import { useTranslations } from "next-intl";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { ErrorNotice, LoadingState } from "../../components/feedback";
+import { GoneLine } from "../../components/gone-line";
 import { useNotices } from "../../components/notices";
+import { type Gone, refusalOf } from "../../lib/live/object-news";
+import { useFollowedObject } from "../../lib/live/use-followed-object";
 import {
   type LifecycleTarget,
   useLifecycleActions,
@@ -80,10 +83,25 @@ function LifecycleDialog({
   const { post } = useNotices();
   const [askingTrash, setAskingTrash] = useState(false);
   const pending = actions.trash.isPending || actions.remove.isPending;
+  // The dialog follows the record: a refusal or a change that ends a verb
+  // takes its place with the reason, and the other errors keep a notice.
+  const followed = useFollowedObject(target, {
+    refusals: [actions.trash.error, actions.objectAccess.error],
+  });
+  const name = followed.name;
+  const gone = followed.gone?.kind === "removed" ? null : followed.gone;
+  const removed: Gone | null =
+    followed.gone?.kind === "removed"
+      ? followed.gone
+      : refusalOf(actions.remove.error) === null
+        ? null
+        : { kind: "removed", actor: null };
   const error =
-    actions.trash.error ??
-    actions.remove.error ??
-    actions.objectAccess.error ??
+    [
+      actions.trash.error,
+      actions.remove.error,
+      actions.objectAccess.error,
+    ].find((failure) => failure !== null && refusalOf(failure) === null) ??
     actions.contextAccess.error ??
     actions.relations.error;
   const inclusion = actions.inclusion;
@@ -93,6 +111,9 @@ function LifecycleDialog({
       ? actions.contextAccess.data?.actions.includes("edit")
       : actions.objectAccess.data?.actions.includes("edit"));
   const canTrash = actions.objectAccess.data?.actions.includes("delete");
+  // Once offered, Remove from event keeps its place to say why it went.
+  const [offeredRemove, setOfferedRemove] = useState(false);
+  if (canRemove && !offeredRemove) setOfferedRemove(true);
 
   // Each outcome is posted once the API has answered, past tense, with the
   // step that reverses it; a refusal stays in the dialog under the verb.
@@ -119,7 +140,7 @@ function LifecycleDialog({
     );
   }
   function moveToTrash() {
-    actions.trash.mutate(undefined, {
+    actions.trash.mutate(followed.version, {
       onSuccess: (deleted) => {
         onClose();
         post({
@@ -135,68 +156,85 @@ function LifecycleDialog({
   }
 
   return (
-    <RecoveryDialog title={target.displayName} onClose={onClose}>
-      {actions.objectAccess.isPending ? (
-        <LoadingState label={t("checking")} />
-      ) : null}
-      {error !== null ? <ErrorNotice error={error} /> : null}
-      <div className="lifecycle-options">
-        {canRemove ? (
-          <div className="lifecycle-option">
-            <button
-              className="button button-secondary"
-              type="button"
-              disabled={pending}
-              onClick={removeFromEvent}
-            >
-              {actions.remove.isPending
-                ? t("saving")
-                : verbs("removeFromEvent")}
-            </button>
-            <p className="muted">{t("removeNote")}</p>
-          </div>
-        ) : null}
-        {canTrash ? (
-          <div className="lifecycle-option">
-            {askingTrash ? (
-              <div className="confirm-line">
-                <span>{confirm("trash", { name: target.displayName })}</span>
-                <button
-                  className="button button-primary button-small"
-                  type="button"
-                  disabled={pending}
-                  onClick={moveToTrash}
-                >
-                  {actions.trash.isPending ? t("saving") : verbs("moveToTrash")}
-                </button>
-                <button
-                  className="button button-quiet button-small"
-                  type="button"
-                  disabled={pending}
-                  onClick={() => setAskingTrash(false)}
-                >
-                  {common("cancel")}
-                </button>
+    <RecoveryDialog title={name} onClose={onClose}>
+      {gone !== null ? (
+        <GoneLine gone={gone} object={name} onClose={onClose} />
+      ) : (
+        <>
+          {actions.objectAccess.isPending ? (
+            <LoadingState label={t("checking")} />
+          ) : null}
+          {error !== null ? <ErrorNotice error={error} /> : null}
+          <div className="lifecycle-options">
+            {canRemove || (offeredRemove && removed !== null) ? (
+              <div className="lifecycle-option">
+                {removed !== null ? (
+                  <GoneLine gone={removed} object={name} onClose={onClose} />
+                ) : (
+                  <>
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={pending}
+                      onClick={removeFromEvent}
+                    >
+                      {actions.remove.isPending
+                        ? t("saving")
+                        : verbs("removeFromEvent")}
+                    </button>
+                    <p className="muted">{t("removeNote")}</p>
+                  </>
+                )}
               </div>
-            ) : (
-              <>
-                <button
-                  className="button button-secondary"
-                  type="button"
-                  disabled={pending}
-                  onClick={() => setAskingTrash(true)}
-                >
-                  {verbs("moveToTrash")}
-                </button>
-                <p className="muted">{t("trashNote")}</p>
-              </>
-            )}
+            ) : null}
+            {canTrash ? (
+              <div className="lifecycle-option">
+                {askingTrash ? (
+                  <div className="confirm-line">
+                    <span>{confirm("trash", { name })}</span>
+                    <button
+                      className="button button-primary button-small"
+                      type="button"
+                      disabled={pending}
+                      onClick={moveToTrash}
+                    >
+                      {actions.trash.isPending
+                        ? t("saving")
+                        : verbs("moveToTrash")}
+                    </button>
+                    <button
+                      className="button button-quiet button-small"
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setAskingTrash(false)}
+                    >
+                      {common("cancel")}
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setAskingTrash(true)}
+                    >
+                      {verbs("moveToTrash")}
+                    </button>
+                    <p className="muted">{t("trashNote")}</p>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
-      {actions.objectAccess.isSuccess && !canTrash && !canRemove ? (
-        <p className="muted">{t("noActions")}</p>
-      ) : null}
+          {actions.objectAccess.isSuccess &&
+          !canTrash &&
+          !canRemove &&
+          removed === null ? (
+            <p className="muted">{t("noActions")}</p>
+          ) : null}
+        </>
+      )}
     </RecoveryDialog>
   );
 }

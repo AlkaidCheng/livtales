@@ -1449,6 +1449,25 @@ changes land over what others changed meanwhile. When both changed the same
 field, the later save stands and History keeps the other. A save still
 refused after three tries shows the error with the draft kept.
 
+## Confirmations that follow their record
+
+An open confirmation follows its record the same way: a record's Actions
+dialog (Remove from this event, Move to Trash and its question), the Trash
+recovery preview, History's restore preview, and Move to space. A new name
+shows in the title and the question, Move to Trash goes on the newest
+version, a change to a record whose preview was confirmed asks for a review
+of the newer preview, and what Move to space counts is read again as the
+event's page changes. When the action no longer applies, one line takes the
+place of its confirmation, naming who did it when the change said, in the
+pop-up's words, and Close ("Ana moved Book the hall to Trash", "Ana took
+Book the hall off this page", "Ana restored Old idea"); Remove from this
+event gives way alone when the record only left the event, and Move to
+Trash stays. An action the server refuses because the record changed or went
+away says so in the same place ("Book the hall changed after you opened
+this", "Book the hall is no longer available to you") instead of an error,
+and the page reads its records again; removing a label and recovering a
+removed link say it the same way.
+
 ## Removing things
 
 One vocabulary names every removal by what reverses it. Move to Trash (a

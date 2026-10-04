@@ -8,9 +8,11 @@ import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { ErrorNotice, LoadingState, Notice } from "../../components/feedback";
+import { GoneLine } from "../../components/gone-line";
 import { tr } from "../../i18n/active-locale";
 import { formatCalendarDate } from "../../lib/event-schedule";
 import { formatDateTime, formatMoment, shortId } from "../../lib/format";
+import { useFollowedObject } from "../../lib/live/use-followed-object";
 import {
   useObjectHistory,
   useRestorePreview,
@@ -181,19 +183,40 @@ function ChangeList({
 
 function RestorationPreview({
   objectId,
+  displayName,
   version,
   onRestored,
+  onClose,
 }: {
   readonly objectId: string;
+  readonly displayName: string;
   readonly version: number;
   readonly onRestored: (version: number) => void;
+  readonly onClose: () => void;
 }) {
   const t = useTranslations("history");
   const preview = useRestorePreview(objectId, version);
   const restore = useRestoreRevision(objectId);
   const [confirmed, setConfirmed] = useState(false);
   const [proposal, setProposal] = useState<RevisionRestorePreview | null>(null);
-  // Confirmation is pinned to the exact preview shown, even if a background refresh completes.
+  const followed = useFollowedObject(
+    {
+      id: objectId,
+      displayName,
+      version: preview.data?.currentVersion ?? 0,
+    },
+    { refusals: [restore.error, preview.error] },
+  );
+  const gone = followed.gone?.kind === "removed" ? null : followed.gone;
+  // Confirmation is pinned to the exact preview shown, even if a background
+  // refresh completes, until another person changes the record: the newer
+  // preview the live change read is then reviewed again.
+  const [seen, setSeen] = useState(followed.news);
+  if (followed.news !== seen) {
+    setSeen(followed.news);
+    setProposal(null);
+    setConfirmed(false);
+  }
   const shown = proposal ?? preview.data;
   const hasError = preview.isError || restore.isError;
   const region = useRef<HTMLElement>(null);
@@ -201,6 +224,13 @@ function RestorationPreview({
   useEffect(() => {
     if (isReady) region.current?.focus();
   }, [isReady]);
+  if (gone !== null)
+    return (
+      <section className="history-preview" aria-label={t("restorePreview")}>
+        <h3>{t("restoreVersion", { version })}</h3>
+        <GoneLine gone={gone} object={followed.name} onClose={onClose} />
+      </section>
+    );
   if (shown === undefined)
     return preview.isError ? (
       <ErrorNotice
@@ -461,11 +491,13 @@ export function HistoryDrawer({
             <RestorationPreview
               key={restoreVersion}
               objectId={objectId}
+              displayName={displayName}
               version={restoreVersion}
               onRestored={(version) => {
                 setRestoreVersion(null);
                 setMessage(t("restored", { version }));
               }}
+              onClose={() => setRestoreVersion(null)}
             />
           ) : null}
         </>
