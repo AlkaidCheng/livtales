@@ -198,7 +198,7 @@ describe("a refused undo", () => {
     render(<UndoButton />, { wrapper: Providers });
     await userEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Can't undo: it was changed since",
+      "Can't undo: this record was changed since",
     );
   });
 });

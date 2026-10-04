@@ -16,7 +16,7 @@
   "refused": {
     "changedOne": "無法{direction, select, redo {重做} other {復原}}：{name} 此後更改了{part}",
     "changedTwo": "無法{direction, select, redo {重做} other {復原}}：{name} 此後更改了{first}與{second}",
-    "updated": "無法{direction, select, redo {重做} other {復原}}：{name} 此後更改了{type, select, event {此活動} task {此任務} other {它}}",
-    "changed": "無法{direction, select, redo {重做} other {復原}}：{type, select, event {此活動} task {此任務} other {它}}此後已被更改"
+    "updated": "無法{direction, select, redo {重做} other {復原}}：{name} 此後更改了{type, select, event {此活動} task {此任務} other {此記錄}}",
+    "changed": "無法{direction, select, redo {重做} other {復原}}：{type, select, event {此活動} task {此任務} other {此記錄}}此後已被更改"
   }
 }
