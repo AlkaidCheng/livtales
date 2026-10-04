@@ -130,6 +130,38 @@ export async function saveCommandStack(
   if (updated === undefined) throw new CommandStackConflictError();
 }
 
+/**
+ * Take every undo and redo entry whose command changed the object off the
+ * stack and advance it; the command records stay.
+ */
+export async function dropObjectCommands(
+  transaction: DatabaseTransaction,
+  stack: CommandStack,
+  objectId: string,
+): Promise<void> {
+  const listed = [...stack.undoIds, ...stack.redoIds];
+  const dropped = new Set(
+    (
+      await transaction
+        .selectDistinct({ commandId: commandChanges.commandId })
+        .from(commandChanges)
+        .where(
+          and(
+            eq(commandChanges.workspaceId, stack.workspaceId),
+            eq(commandChanges.userId, stack.userId),
+            eq(commandChanges.objectId, objectId),
+            inArray(commandChanges.commandId, listed),
+          ),
+        )
+    ).map((change) => change.commandId),
+  );
+  await saveCommandStack(transaction, {
+    ...stack,
+    undoIds: stack.undoIds.filter((id) => !dropped.has(id)),
+    redoIds: stack.redoIds.filter((id) => !dropped.has(id)),
+  });
+}
+
 export async function recordCommandReceipt(
   transaction: DatabaseTransaction,
   context: MutationContext,

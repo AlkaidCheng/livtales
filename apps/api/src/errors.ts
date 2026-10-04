@@ -1,12 +1,20 @@
 export class HttpError extends Error {
   readonly code: string;
   readonly statusCode: number;
+  /** The object a refusal is about, when the response names one. */
+  readonly objectId: string | undefined;
 
-  constructor(statusCode: number, code: string, message: string) {
+  constructor(
+    statusCode: number,
+    code: string,
+    message: string,
+    objectId?: string,
+  ) {
     super(message);
     this.name = "HttpError";
     this.statusCode = statusCode;
     this.code = code;
+    this.objectId = objectId;
   }
 }
 

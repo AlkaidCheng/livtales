@@ -93,3 +93,12 @@ as the record it now follows (`afterId`) or precedes (`beforeId`):
 as it stands, under the workspace's fence, and `chronelle_object_update`
 calls it before locking the object, so commands take it too. It changes no
 tables.
+
+Migration 0083 has undo and redo put a task back in its place and take a
+refused step off the caller's stack. `chronelle_command_content` carries a
+task's duration, repeat rule, location, and the rank and section its
+revision recorded; `chronelle_command_transition` leaves out a section that
+is no longer one of the task's Event's To-dos, and, when an object changed
+since, calls the new `chronelle_command_drop_object` to take every entry of
+that object off the stack and answers `{"refusedObjectId": ...}` in place of
+a receipt. It changes no tables.

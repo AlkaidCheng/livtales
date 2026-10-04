@@ -181,6 +181,28 @@ export function preservedRevisionFields(
   ];
 }
 
+/**
+ * A task's place: its rank in manual order and its section. Undo and redo
+ * put it back, since a move is a step they reverse; restoring a revision
+ * never does.
+ */
+const taskPlaceFields = ["rank", "sectionId"] as const;
+
+/**
+ * The content an undo or redo writes from a revision: the restorable
+ * content, and for a task the parts of its place the revision recorded.
+ */
+export function selectCommandContent(
+  snapshot: RevisionSnapshot,
+  recorded: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  const content = selectRestorableContent(snapshot);
+  if (snapshot.objectType !== "task") return content;
+  for (const key of taskPlaceFields)
+    if (Object.hasOwn(recorded, key)) content[key] = snapshot[key];
+  return content;
+}
+
 /** Select only content eligible for generic restoration. */
 export function selectRestorableContent(
   snapshot: RevisionSnapshot,

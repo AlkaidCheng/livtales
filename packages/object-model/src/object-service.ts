@@ -594,23 +594,42 @@ async function assertSectionMember(
   view: SectionView,
 ): Promise<void> {
   if (sectionId === null) return;
-  const [section] =
-    scopeId === objectId
-      ? []
-      : await transaction
-          .select({ id: sections.id })
-          .from(sections)
-          .where(
-            and(
-              eq(sections.workspaceId, workspaceId),
-              eq(sections.id, sectionId),
-              eq(sections.eventId, scopeId),
-              eq(sections.view, view),
-            ),
-          )
-          .limit(1);
-  if (section === undefined)
+  if (
+    !(await isSectionMember(
+      transaction,
+      workspaceId,
+      scopeId,
+      objectId,
+      sectionId,
+      view,
+    ))
+  )
     throw new InvalidObjectStateError(sectionMemberMessage);
+}
+
+/** Whether a section is one a record with this scope may carry. */
+export async function isSectionMember(
+  transaction: DatabaseTransaction,
+  workspaceId: string,
+  scopeId: string,
+  objectId: string,
+  sectionId: string,
+  view: SectionView,
+): Promise<boolean> {
+  if (scopeId === objectId) return false;
+  const [section] = await transaction
+    .select({ id: sections.id })
+    .from(sections)
+    .where(
+      and(
+        eq(sections.workspaceId, workspaceId),
+        eq(sections.id, sectionId),
+        eq(sections.eventId, scopeId),
+        eq(sections.view, view),
+      ),
+    )
+    .limit(1);
+  return section !== undefined;
 }
 
 /**

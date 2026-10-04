@@ -27,18 +27,26 @@ import {
   type CommandReadRepository,
 } from "./command-reads.js";
 import {
+  dropObjectCommands,
   readCommandChanges,
   readCommandReceipt,
   readCommandStack,
   recordCommandReceipt,
   saveCommandStack,
 } from "./command-store.js";
-import { CommandStackConflictError, ObjectConflictError } from "./errors.js";
-import { EventPlanningObjectService } from "./object-service.js";
+import {
+  CommandStackConflictError,
+  CommandStepRefusedError,
+  ObjectConflictError,
+} from "./errors.js";
+import {
+  EventPlanningObjectService,
+  isSectionMember,
+} from "./object-service.js";
 import { readObjectState } from "./object-state.js";
 import type { CommandWriteRepository } from "./object-writes.js";
-import { selectRestorableContent } from "./restoration-policy.js";
-import type { MutationContext } from "./types.js";
+import { selectCommandContent } from "./restoration-policy.js";
+import type { EventPlanningResource, MutationContext } from "./types.js";
 
 /**
  * Apply bounded content commands and inverses under current authorization
@@ -186,10 +194,13 @@ export class ReversibleCommandService {
     if (this.#writes !== undefined)
       return this.#writes.transition(context, input, direction);
     const requestHash = hashCommand({ direction, input });
-    return withStableAuthorization(
+    const result = await withStableAuthorization(
       this.database,
       context.principal.workspaceId,
-      async (transaction, authorization) => {
+      async (
+        transaction,
+        authorization,
+      ): Promise<CommandReceipt | { readonly refusedObjectId: string }> => {
         const replay = await this.replay(
           transaction,
           authorization,
@@ -224,17 +235,17 @@ export class ReversibleCommandService {
             change.objectId,
           );
           if (current.deletedAt !== null) throw new AuthorizationDeniedError();
-          if (current.version !== stack.expectedVersions[change.objectId])
-            throw new ObjectConflictError();
+          // The object changed since: the step, and every other one that
+          // changed the object, would cross that change, so they leave the
+          // stack and the step is refused.
+          if (current.version !== stack.expectedVersions[change.objectId]) {
+            await dropObjectCommands(transaction, stack, change.objectId);
+            return { refusedObjectId: change.objectId };
+          }
           const sourceVersion =
             direction === "undo" ? change.beforeVersion : change.afterVersion;
           edits.push(
-            await this.readContentEdit(
-              transaction,
-              change.objectId,
-              sourceVersion,
-              current.version,
-            ),
+            await this.readContentEdit(transaction, current, sourceVersion),
           );
         }
         const commandContext = {
@@ -269,6 +280,9 @@ export class ReversibleCommandService {
         });
       },
     );
+    if ("refusedObjectId" in result)
+      throw new CommandStepRefusedError(result.refusedObjectId);
+    return result;
   }
 
   private async applyEdits(
@@ -292,18 +306,22 @@ export class ReversibleCommandService {
     return versions;
   }
 
+  /**
+   * The edit that writes a revision's content over the object's current
+   * version. A task's section that is no longer one of its Event's To-dos
+   * is left out, so the task comes back outside any section.
+   */
   private async readContentEdit(
     transaction: DatabaseTransaction,
-    objectId: string,
+    current: EventPlanningResource,
     sourceVersion: number,
-    expectedVersion: number,
   ): Promise<CommandEdit> {
     const [revision] = await transaction
       .select()
       .from(objectRevisions)
       .where(
         and(
-          eq(objectRevisions.objectId, objectId),
+          eq(objectRevisions.objectId, current.id),
           eq(objectRevisions.objectVersion, sourceVersion),
         ),
       );
@@ -312,10 +330,26 @@ export class ReversibleCommandService {
     const snapshot = revisionSnapshotSchema.parse(revision.snapshot);
     if (snapshot.deletedAt !== null)
       throw new Error("Command content must reference a live revision.");
+    const content = selectCommandContent(
+      snapshot,
+      revision.snapshot as Record<string, unknown>,
+    );
+    if (
+      typeof content.sectionId === "string" &&
+      !(await isSectionMember(
+        transaction,
+        current.workspaceId,
+        current.permissionScopeId,
+        current.id,
+        content.sectionId,
+        "todos",
+      ))
+    )
+      content.sectionId = null;
     return commandEditSchema.parse({
       objectType: snapshot.objectType,
-      objectId,
-      patch: { ...selectRestorableContent(snapshot), expectedVersion },
+      objectId: current.id,
+      patch: { ...content, expectedVersion: current.version },
     });
   }
 
