@@ -8,6 +8,7 @@ import { createId } from "@livtales/db";
 import {
   CommandConflictError,
   CommandStackConflictError,
+  CommandStepRefusedError,
   DocumentTransferUnavailableError,
   InvalidDocumentUploadError,
   InvalidObjectStateError,
@@ -104,6 +105,14 @@ function resolveHttpError(error: unknown): HttpError {
     const [status, code] = deletionRefusals[error.reason];
     return new HttpError(status, code, error.message);
   }
+  // A refused undo or redo names the object that changed since.
+  if (error instanceof CommandStepRefusedError)
+    return new HttpError(
+      409,
+      "version_conflict",
+      error.message,
+      error.objectId,
+    );
   if (error instanceof ObjectMoveRefusedError) {
     if (error.reason === "target_unavailable")
       return new WorkspaceUnavailableError();
@@ -176,7 +185,11 @@ function sendHttpError(reply: FastifyReply, error: HttpError) {
     .header("x-request-id", reply.request.id)
     .status(error.statusCode)
     .send({
-      error: { code: error.code, message: error.message },
+      error: {
+        code: error.code,
+        message: error.message,
+        ...(error.objectId !== undefined && { objectId: error.objectId }),
+      },
     });
 }
 

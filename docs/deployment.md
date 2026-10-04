@@ -530,6 +530,20 @@ new function needs the same execute grant as the other rpc functions. On
 CloudBase, apply it through the console SQL editor, then redeploy the API
 and the web.
 
+Migration `0083_undo_moves_and_drop_refused_steps.sql` redefines
+`chronelle_command_content` and `chronelle_command_transition` in place
+(their privileges carry over) and adds `chronelle_command_drop_object`,
+which the transition calls. An undo or redo then writes a task's rank and
+section, leaving out a section deleted since, and a step refused because its
+object changed since leaves the stack with the other entries of that object;
+the function answers `{"refusedObjectId": ...}` for it in place of a receipt.
+It changes no tables. Apply 0083 after 0082 and before deploying the API. An
+older API reads the refusal as a malformed receipt and answers 500 instead of
+409 until it is replaced; the step has left the stack either way. The new
+function needs the same execute grant as the other rpc functions. On
+CloudBase, apply it through the console SQL editor, then redeploy the API
+and the web.
+
 Enable the WeChat routes only after CloudBase authentication is configured:
 
 ```dotenv

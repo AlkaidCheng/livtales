@@ -279,12 +279,20 @@ export interface DocumentFileInput {
 export class ApiClientError extends Error {
   readonly code: string;
   readonly status: number;
+  /** The object the refusal is about, when the API names one. */
+  readonly objectId: string | undefined;
 
-  constructor(status: number, code: string, message: string) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    objectId?: string,
+  ) {
     super(message);
     this.name = "ApiClientError";
     this.status = status;
     this.code = code;
+    this.objectId = objectId;
   }
 }
 
@@ -1787,6 +1795,7 @@ export class LivTalesApiClient {
       error.success
         ? error.data.error.message
         : "The request could not be completed.",
+      error.success ? error.data.error.objectId : undefined,
     );
   }
 }

@@ -12,5 +12,11 @@
     "reopen": "重新打开 {name}",
     "move": "移动 {name}",
     "edit": "编辑 {name}"
+  },
+  "refused": {
+    "changedOne": "无法{direction, select, redo {重做} other {撤销}}：{name} 此后更改了{part}",
+    "changedTwo": "无法{direction, select, redo {重做} other {撤销}}：{name} 此后更改了{first}和{second}",
+    "updated": "无法{direction, select, redo {重做} other {撤销}}：{name} 此后更改了{type, select, event {此活动} task {此任务} other {此记录}}",
+    "changed": "无法{direction, select, redo {重做} other {撤销}}：{type, select, event {此活动} task {此任务} other {此记录}}此后已被更改"
   }
 }

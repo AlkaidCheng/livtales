@@ -105,6 +105,9 @@ test("names removals by what reverses them and never reports one that was refuse
   const recovery = page.getByRole("dialog");
   await recovery.getByRole("checkbox").check();
   await recovery.getByRole("button", { name: "Confirm link recovery" }).click();
+  await expect(recovery.getByRole("status")).toHaveText(
+    "Link recovered. Neither canonical object was changed.",
+  );
   await recovery.getByRole("button", { name: "Close", exact: true }).click();
   await openEventView(page, "Tasks");
   await expect(table).toBeVisible();

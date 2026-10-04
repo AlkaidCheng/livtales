@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { CloudBaseCommandWriteRepository } from "../src/cloudbase-command-write-repository.js";
 import { hashCommand } from "../src/command-hash.js";
-import { CommandStackConflictError } from "../src/errors.js";
+import {
+  CommandStackConflictError,
+  CommandStepRefusedError,
+} from "../src/errors.js";
 
 const workspaceId = "00000000-0000-7000-8000-000000000001";
 const eventId = "00000000-0000-7000-8000-000000000002";
@@ -106,6 +109,23 @@ describe("CloudBaseCommandWriteRepository", () => {
       request_hash: hashCommand({ direction: "undo", input }),
     });
     expect(result.direction).toBe("undo");
+  });
+
+  it("reports a refused step with the object that changed", async () => {
+    const repository = new CloudBaseCommandWriteRepository({
+      rpc: vi.fn().mockResolvedValue({ refusedObjectId: taskId }),
+    });
+    const refused = repository.transition(
+      context,
+      {
+        operationId: "00000000-0000-7000-8000-000000000012",
+        commandId: operationId,
+        expectedStackVersion: 4,
+      },
+      "undo",
+    );
+    await expect(refused).rejects.toThrow(CommandStepRefusedError);
+    await expect(refused).rejects.toMatchObject({ objectId: taskId });
   });
 
   it("rejects a malformed receipt", async () => {

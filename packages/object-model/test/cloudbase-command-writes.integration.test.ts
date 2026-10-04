@@ -20,6 +20,7 @@ import { ReversibleCommandService } from "../src/command-service.js";
 import {
   CommandConflictError,
   CommandStackConflictError,
+  CommandStepRefusedError,
   InvalidObjectStateError,
   ObjectConflictError,
 } from "../src/errors.js";
@@ -623,17 +624,26 @@ describe.sequential("CloudBase command writes", () => {
         expectedVersion: 2,
         displayName: "Edited outside the stack",
       });
-      await refuse(() =>
+      const refusal = await failure(() =>
         backend.commands.undo(context(), {
           operationId: op("1d"),
           commandId: op("19"),
           expectedStackVersion: stackVersion + 1,
         }),
       );
-      // A refused undo changes nothing: the stack still expects the same head.
+      record(refusal);
+      expect(refusal).toMatchObject({ objectId: task.id });
+      // A refused undo takes the step off the stack and writes nothing else.
       const state = await commandState(backend.actor, {});
-      expect(state.stack?.version).toBe(stackVersion + 1);
-      expect(state.stack?.undoIds.at(-1)).toBe(op("19"));
+      expect(state.stack?.version).toBe(stackVersion + 2);
+      expect(state.stack?.undoIds).not.toContain(op("19"));
+      expect(state.receipts.map((entry) => entry.operationId)).not.toContain(
+        op("1d"),
+      );
+      expect(await current(event.id)).toMatchObject({
+        version: 2,
+        displayName: "Changed",
+      });
       outcomes.push(seen);
     }
     expect(outcomes[1]).toEqual(outcomes[0]);
@@ -652,7 +662,7 @@ describe.sequential("CloudBase command writes", () => {
       stackConflict,
       stackConflict,
       stackConflict,
-      objectConflict,
+      `${CommandStepRefusedError.name}: ${new ObjectConflictError().message}`,
     ]);
   });
 

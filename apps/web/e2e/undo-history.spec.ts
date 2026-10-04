@@ -156,7 +156,7 @@ test("undoes and redoes edits by name, keeps layout undo apart, and previews his
   );
   await page.keyboard.press("Escape");
 
-  // Another account's edit makes the head unreachable; the item says why.
+  // Another account's edit blocks the head; the item says why.
   const otherEmail = `other-${randomUUID()}@example.test`;
   const other = await (
     await request.post("/api/auth/development/sign-in", {
@@ -196,7 +196,22 @@ test("undoes and redoes edits by name, keeps layout undo apart, and previews his
   await page.reload();
   more = await openMore(page, "Autumn retreat, moved again");
   const blocked = more.getByRole("menuitem", { name: /^Undo edit/ });
-  await expect(blocked).toHaveAttribute("aria-disabled", "true");
   await expect(blocked).toContainText("Changed by someone else since");
+  await expect(blocked).not.toHaveAttribute("aria-disabled", "true");
+
+  // Pressing it says who changed what, and the step leaves the list.
+  await blocked.click();
+  await expect(
+    page.locator(".notice-toast", {
+      hasText: "Can't undo: Guest changed the name since",
+    }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Autumn retreat, moved again",
+  );
+  more = await openMore(page, "Autumn retreat, moved again");
+  await expect(
+    more.getByRole("menuitem", { name: /^Undo edit/ }),
+  ).toContainText("Nothing to undo");
   expect(task.resource.displayName).toBe("Book the lodge");
 });

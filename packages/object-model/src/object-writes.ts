@@ -194,7 +194,9 @@ export interface EventLayoutWriteRepository {
  * one unit, and the undo and redo transitions that restore each changed
  * object from the revision before or after the command. Each call records
  * the command, advances the caller's stack, and writes the receipt with its
- * audit event; a repeated operation returns its receipt.
+ * audit event; a repeated operation returns its receipt. An undo or redo
+ * refused because an object changed since takes every command that changed
+ * that object off the stack and fails with CommandStepRefusedError.
  */
 export interface CommandWriteRepository {
   execute(

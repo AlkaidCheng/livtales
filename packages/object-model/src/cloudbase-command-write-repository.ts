@@ -8,6 +8,7 @@ import {
 
 import { mapRpcError } from "./cloudbase-rpc-errors.js";
 import { hashCommand } from "./command-hash.js";
+import { CommandStepRefusedError } from "./errors.js";
 import type { CommandWriteRepository } from "./object-writes.js";
 import type { MutationContext } from "./types.js";
 
@@ -16,7 +17,8 @@ import type { MutationContext } from "./types.js";
  * chronelle_command_transition: the edits, the command record, the stack
  * advance, and the receipt in one call. The request hash is computed here
  * with the service's own function, so both backends agree on what counts as
- * a replay.
+ * a replay. A refused undo or redo answers the object that changed, after
+ * the function has taken the step off the stack.
  */
 export class CloudBaseCommandWriteRepository implements CommandWriteRepository {
   readonly #client: Pick<CloudBaseRdbClient, "rpc">;
@@ -68,8 +70,17 @@ export class CloudBaseCommandWriteRepository implements CommandWriteRepository {
       if (error instanceof CloudBaseRpcError) throw mapRpcError(error);
       throw error;
     }
+    const refused = refusedObjectId(result);
+    if (refused !== null) throw new CommandStepRefusedError(refused);
     return commandReceiptSchema.parse(result);
   }
+}
+
+/** The object chronelle_command_transition names for a step it refused, else null. */
+function refusedObjectId(result: unknown): string | null {
+  if (typeof result !== "object" || result === null) return null;
+  const refused = (result as { refusedObjectId?: unknown }).refusedObjectId;
+  return typeof refused === "string" ? refused : null;
 }
 
 function principalArguments(context: MutationContext) {

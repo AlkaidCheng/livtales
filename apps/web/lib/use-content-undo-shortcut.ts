@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { undoDirection } from "./keyboard";
 import { useCommandState, useCommandTransition } from "./queries";
+import { useStepRefusalNotice } from "./undo-refusal";
 
 /**
  * Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z run the content undo and redo of the
@@ -11,8 +12,8 @@ import { useCommandState, useCommandTransition } from "./queries";
  */
 export function useContentUndoShortcut(enabled = true) {
   const state = useCommandState();
-  const undo = useCommandTransition("undo");
-  const redo = useCommandTransition("redo");
+  const undo = useCommandTransition("undo", useStepRefusalNotice("undo"));
+  const redo = useCommandTransition("redo", useStepRefusalNotice("redo"));
   const heads = state.data;
   const busy = undo.isPending || redo.isPending;
   const runUndo = undo.mutate;
@@ -23,7 +24,7 @@ export function useContentUndoShortcut(enabled = true) {
       const direction = undoDirection(event);
       if (direction === null || busy) return;
       const head = heads?.[direction];
-      if (head === null || head === undefined || !head.available) return;
+      if (head === null || head === undefined) return;
       event.preventDefault();
       (direction === "undo" ? runUndo : runRedo)();
     }

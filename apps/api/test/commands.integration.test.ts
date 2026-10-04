@@ -249,11 +249,12 @@ describe("reversible content commands", () => {
       displayName: "Collaborator edit",
       version: 3,
     });
-    expect((await state(owner)).version).toBe(1);
+    // The refused step left the owner's stack; the collaborator's is as it was.
+    expect(await state(owner)).toEqual({ version: 2, undo: null, redo: null });
     expect((await state(collaborator, owner.workspace.id)).version).toBe(1);
   });
 
-  it("rejects undo after a racing direct writer and preserves stack state", async () => {
+  it("refuses undo after a racing direct writer and takes the step off the stack", async () => {
     const owner = await signIn();
     const event = await create(owner);
     const command = await forward(owner, [edit(event.id, 1, "Command edit")]);
@@ -306,7 +307,7 @@ describe("reversible content commands", () => {
       displayName: "Direct edit",
       version: 3,
     });
-    expect((await state(owner)).version).toBe(1);
+    expect(await state(owner)).toEqual({ version: 2, undo: null, redo: null });
   });
   it("advances preconditions across consecutive undos and redos without duplicating canonical data", async () => {
     const owner = await signIn();
@@ -506,7 +507,7 @@ describe("reversible content commands", () => {
       displayName: "Task",
       version: 2,
     });
-    expect((await state(owner)).version).toBe(1);
+    expect(await state(owner)).toEqual({ version: 2, undo: null, redo: null });
   });
 
   it("never carries an old inverse across an untracked edit followed by a new command", async () => {

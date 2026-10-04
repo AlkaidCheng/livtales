@@ -277,6 +277,8 @@ export const apiErrorResponseSchema = z.object({
   error: z.object({
     code: z.string(),
     message: z.string(),
+    /** The object a refusal is about: for a refused undo or redo, the one that changed since. */
+    objectId: z.string().optional(),
   }),
 });
 

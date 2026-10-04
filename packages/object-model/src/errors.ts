@@ -5,6 +5,22 @@ export class ObjectConflictError extends Error {
   }
 }
 
+/**
+ * An undo or redo refused because an object its command changed has
+ * changed since. The refusal has already taken the command, and every other
+ * one that changed that object, off the caller's stack; `objectId` names the
+ * object.
+ */
+export class CommandStepRefusedError extends ObjectConflictError {
+  readonly objectId: string;
+
+  constructor(objectId: string) {
+    super();
+    this.name = "CommandStepRefusedError";
+    this.objectId = objectId;
+  }
+}
+
 export class CommandConflictError extends Error {
   constructor() {
     super("The command ID was already used with different input.");

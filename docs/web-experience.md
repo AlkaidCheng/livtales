@@ -690,8 +690,14 @@ Undo edit and Redo edit for the account's stack in this space, or, on an
 event or a person shared from another space, for the account's stack
 where that record lives, since its edits are kept there: the item
 reads the command this browser ran ("Undo: rename Kyoto in November"), and is
-disabled with the reason when the head is not reachable (Nothing to undo, or
-Changed by someone else since, when another account edited the record). After
+disabled when there is nothing to undo or redo. When the record changed since
+the step, the item reads Changed by someone else since and still runs: the API
+refuses the step, a notice with that person's face says why ("Can't undo: Chen
+Li changed the due date since", or "Can't undo: this task was changed since"
+when the change was the account's own or names nobody), and the step leaves the
+list with the other steps of that record, which the same change blocks; the
+next Undo reaches the latest step left. Undoing a move puts the task back in its place and section; a section
+deleted since leaves it outside any section. After
 a reload the items still work but name nothing. Cmd/Ctrl + Z and Shift +
 Cmd/Ctrl + Z run them outside text fields and dialogs, and each item shows its
 keys for the platform at its end; while arranging a page,

@@ -189,8 +189,9 @@ invalid body lengths return 400; oversized bodies return 413
 `unsupported_media_type`. Unknown routes return a generic 404 without echoing
 the URL. Domain conflict and authorization codes remain unchanged.
 
-Responses use `{ error: { code, message } }` for failures and
-`Cache-Control: private, no-store` for API data. Ordinary responses include a
+Responses use `{ error: { code, message } }` for failures, with an
+`objectId` beside them when a refusal names the object it is about (a
+refused undo or redo), and `Cache-Control: private, no-store` for API data. Ordinary responses include a
 server-generated `x-request-id`; incoming request IDs are not trusted. Raw HTTP
 parser failures before routing return safe 400/408/431 responses without
 reflecting request bytes.
@@ -218,6 +219,26 @@ workspace of the object its first edit names; `POST /api/commands/undo` and
 `objectId` query names, as the read does. Every mutation requires an
 operation ID and expected stack version. See [Commands](commands.md) for typed
 examples, object preconditions, idempotency, and explicit eligibility limits.
+
+An undo or redo of a task writes its rank in manual order and its section
+back, as they were before or after the command; a section deleted since
+leaves the task outside any section. An undo or redo refused because an
+object the command changed has changed since answers 409 `version_conflict`
+naming that object, and takes the step off the stack:
+
+```json
+{
+  "error": {
+    "code": "version_conflict",
+    "message": "The object changed after the supplied version was read.",
+    "objectId": "0199a3c2-7c1e-7d4a-9f0b-5b2d8e6a1c33"
+  }
+}
+```
+
+Every other undo and redo entry that changed the same object leaves with it,
+and the stack takes a version step, so the next undo reaches the latest step
+of other objects. The refusal writes no edit, receipt, or audit event.
 
 ## Event collection
 

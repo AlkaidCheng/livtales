@@ -1513,10 +1513,15 @@ export function useCommandState() {
 }
 
 /**
- * Reverses or reapplies the pinned head. A head that is gone or unreachable
- * reports a stack conflict; the refreshed state then shows why.
+ * Reverses or reapplies the pinned head. A head that is gone reports a
+ * stack conflict; the refreshed state then shows why. A head whose object
+ * changed since is sent all the same: the server refuses it, naming the
+ * object, and takes it off the stack, and `onRefused` hears which object.
  */
-export function useCommandTransition(direction: "undo" | "redo") {
+export function useCommandTransition(
+  direction: "undo" | "redo",
+  onRefused?: (objectId: string) => void,
+) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   const history = useCommandHistory();
@@ -1527,7 +1532,7 @@ export function useCommandTransition(direction: "undo" | "redo") {
         throw new ApiClientError(401, "unauthenticated", "Sign in again.");
       const state = await readCommandState(client, queryClient, history);
       const head = state[direction];
-      if (head === null || !head.available)
+      if (head === null)
         throw new ApiClientError(
           409,
           "command_stack_conflict",
@@ -1541,6 +1546,14 @@ export function useCommandTransition(direction: "undo" | "redo") {
       return direction === "undo"
         ? client.undoCommand(input, history.objectId)
         : client.redoCommand(input, history.objectId);
+    },
+    onError: (error) => {
+      if (
+        error instanceof ApiClientError &&
+        error.code === "version_conflict" &&
+        error.objectId !== undefined
+      )
+        onRefused?.(error.objectId);
     },
     onSettled: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.commands });
