@@ -29,9 +29,9 @@
     "@livtales/object-model": "workspace:*",
     "@livtales/schemas": "workspace:*",
     "@livtales/storage": "workspace:*",
-    "drizzle-orm": "0.45.2",
+    "drizzle-orm": "0.45.4",
     "fastify": "5.12.5",
-    "nodemailer": "^10.0.10",
-    "zod": "4.6.5"
+    "nodemailer": "^10.1.0",
+    "zod": "4.6.6"
   }
 }
