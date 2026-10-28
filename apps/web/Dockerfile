@@ -1,9 +1,10 @@
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 
-RUN corepack enable
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+# The image has no corepack; install the pnpm that packageManager names.
+RUN npm install --global "$(node -p "require('./package.json').packageManager.split('+')[0]")"
 COPY apps/web/package.json apps/web/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/schemas/package.json packages/schemas/package.json
@@ -14,7 +15,7 @@ COPY packages/api-client packages/api-client
 COPY packages/schemas packages/schemas
 RUN pnpm --filter @livtales/web build
 
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 ENV HOSTNAME=0.0.0.0
 ENV NODE_ENV=production

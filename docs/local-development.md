@@ -782,7 +782,7 @@ its version and digest together with `@playwright/test`; a workflow test enforce
 the version match. The container reaches the PostgreSQL service at `postgres`,
 while tests and application servers communicate over loopback inside the job.
 
-For Linux reproduction, use that same image with Node.js 24, the repository's
+For Linux reproduction, use that same image with Node.js 26, the repository's
 pinned pnpm version, a frozen-lockfile install, and a disposable PostgreSQL 17
 service. Run `pnpm check`, `pnpm test:e2e`, and `pnpm test:sandbox` with `CI=true`.
 The quality gate also needs a `psql` client; the GitHub runner provides it and
