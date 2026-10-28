@@ -46,16 +46,16 @@
     "typecheck:units": "pnpm -r --parallel --workspace-concurrency=4 typecheck:unit"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
+    "@biomejs/biome": "2.6.3",
     "@cloudbase/js-sdk": "3.10.0",
     "@playwright/test": "1.62.0",
-    "@types/node": "26.6.3",
+    "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "prettier": "3.9.9",
+    "prettier": "3.9.10",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "4.1.11",
+    "vitest": "4.1.12",
     "yaml": "2.9.1"
   },
   "dependencies": {
