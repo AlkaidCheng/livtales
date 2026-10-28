@@ -5,6 +5,14 @@ updates:
     schedule:
       interval: weekly
     groups:
+      # Taro's packages release together and must share one version, but its
+      # runtime is a production dependency and its build tools are development
+      # ones. A dependency joins the first group it matches, so this group comes
+      # first and keeps them in one pull request.
+      taro:
+        patterns:
+          - "@tarojs/*"
+          - babel-preset-taro
       production-dependencies:
         dependency-type: production
       development-dependencies:
