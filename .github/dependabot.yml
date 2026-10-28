@@ -46,9 +46,16 @@ updates:
       - dependency-name: webpack
         versions: [">5.91.0"]
   - package-ecosystem: docker
-    directory: /
+    directories:
+      - /apps/api
+      - /apps/web
     schedule:
       interval: weekly
+    # The API and web images build on the same Node base image.
+    groups:
+      base-images:
+        patterns:
+          - "*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
