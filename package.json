@@ -46,7 +46,7 @@
     "typecheck:units": "pnpm -r --parallel --workspace-concurrency=4 typecheck:unit"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.14",
+    "@biomejs/biome": "2.6.3",
     "@cloudbase/js-sdk": "3.10.0",
     "@playwright/test": "1.62.0",
     "@types/node": "26.6.3",
