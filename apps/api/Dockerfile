@@ -1,4 +1,4 @@
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 
 RUN corepack enable
 WORKDIR /app
@@ -22,7 +22,7 @@ RUN pnpm --filter @livtales/api build
 RUN pnpm --filter @livtales/api deploy --prod --legacy /runtime
 RUN find /runtime/node_modules -type d -name .claude -prune -exec rm -rf '{}' +
 
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV LIVTALES_MIGRATIONS_DIR=/app/migrations

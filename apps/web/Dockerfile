@@ -1,4 +1,4 @@
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 
 RUN corepack enable
 WORKDIR /app
@@ -14,7 +14,7 @@ COPY packages/api-client packages/api-client
 COPY packages/schemas packages/schemas
 RUN pnpm --filter @livtales/web build
 
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 ENV HOSTNAME=0.0.0.0
 ENV NODE_ENV=production
