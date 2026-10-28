@@ -1,9 +1,10 @@
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 
-RUN corepack enable
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+# The image has no corepack; install the pnpm that packageManager names.
+RUN npm install --global "$(node -p "require('./package.json').packageManager.split('+')[0]")"
 COPY apps/api/package.json apps/api/package.json
 COPY packages/authorization/package.json packages/authorization/package.json
 COPY packages/object-model/package.json packages/object-model/package.json
@@ -22,7 +23,7 @@ RUN pnpm --filter @livtales/api build
 RUN pnpm --filter @livtales/api deploy --prod --legacy /runtime
 RUN find /runtime/node_modules -type d -name .claude -prune -exec rm -rf '{}' +
 
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 ENV NODE_ENV=production
 ENV LIVTALES_MIGRATIONS_DIR=/app/migrations
