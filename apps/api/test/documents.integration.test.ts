@@ -54,7 +54,8 @@ let testResourcesReady = false;
 beforeEach(async () => {
   testResourcesReady = false;
   storageRoot = await mkdtemp(join(tmpdir(), "livtales-documents-"));
-  currentTime = new Date("2026-10-01T12:00:00Z");
+  // Creation times come from the database's now(), so the clock starts now.
+  currentTime = new Date();
   testDatabase = await createTestDatabase();
   await applyMigrations(
     { DATABASE_URL: testDatabase.databaseUrl },

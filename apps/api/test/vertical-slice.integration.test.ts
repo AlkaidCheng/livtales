@@ -40,7 +40,8 @@ const migrationDirectory = resolve(
   import.meta.dirname,
   "../../../infrastructure/migrations",
 );
-const currentTime = new Date("2026-10-01T12:00:00Z");
+// Creation times come from the database's now(), so the clock starts now.
+const currentTime = new Date();
 
 let app: FastifyInstance;
 let storageRoot: string;
