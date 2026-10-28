@@ -5,6 +5,14 @@ updates:
     schedule:
       interval: weekly
     groups:
+      # Taro's packages release together and must share one version, but its
+      # runtime is a production dependency and its build tools are development
+      # ones. A dependency joins the first group it matches, so this group comes
+      # first and keeps them in one pull request.
+      taro:
+        patterns:
+          - "@tarojs/*"
+          - babel-preset-taro
       production-dependencies:
         dependency-type: production
       development-dependencies:
@@ -46,9 +54,16 @@ updates:
       - dependency-name: webpack
         versions: [">5.91.0"]
   - package-ecosystem: docker
-    directory: /
+    directories:
+      - /apps/api
+      - /apps/web
     schedule:
       interval: weekly
+    # The API and web images build on the same Node base image.
+    groups:
+      base-images:
+        patterns:
+          - "*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
