@@ -177,7 +177,7 @@ describe("the date panel", () => {
     ];
     for (const [keys, day] of moves) {
       await user.keyboard(keys);
-      expect(screen.getByRole("button", { name: dayName(day) })).toHaveFocus();
+      expect(document.activeElement).toHaveAccessibleName(dayName(day));
     }
     expect(held()).toMatchObject({ startDate: "", endDate: "" });
   });
