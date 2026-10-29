@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -149,6 +155,31 @@ describe("the date panel", () => {
     });
     expect(onClose).not.toHaveBeenCalled();
     expect(typed()).toHaveValue("Oct 23, 2030 to Oct 25, 2030");
+  });
+
+  it("moves focus by day, week, month, year, and to the week's edges", async () => {
+    const user = userEvent.setup();
+    render(<SpanHarness />, { wrapper: Providers });
+    act(() => {
+      screen.getByRole("button", { name: dayName("2030-10-23") }).focus();
+    });
+    const moves: (readonly [keys: string, day: string])[] = [
+      ["{ArrowRight}", "2030-10-24"],
+      ["{ArrowLeft}", "2030-10-23"],
+      ["{ArrowDown}", "2030-10-30"],
+      ["{ArrowUp}", "2030-10-23"],
+      ["{PageDown}", "2030-11-23"],
+      ["{PageUp}", "2030-10-23"],
+      ["{Shift>}{PageDown}{/Shift}", "2031-10-23"],
+      ["{Shift>}{PageUp}{/Shift}", "2030-10-23"],
+      ["{Home}", "2030-10-20"],
+      ["{End}", "2030-10-26"],
+    ];
+    for (const [keys, day] of moves) {
+      await user.keyboard(keys);
+      expect(document.activeElement).toHaveAccessibleName(dayName(day));
+    }
+    expect(held()).toMatchObject({ startDate: "", endDate: "" });
   });
 
   it("reads a typed span and refuses an end before its start", () => {

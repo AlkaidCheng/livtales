@@ -54,6 +54,7 @@ export function createShortcutPreference<Value extends string>(
     window.dispatchEvent(new Event(changeEvent));
   }
 
+  // biome-ignore lint/correctness/noComponentHookFactories: each preference creates its hook once, at module scope.
   return function useShortcutPreference() {
     const value = useSyncExternalStore(subscribe, snapshot, () => serverValue);
     return { value, setValue };

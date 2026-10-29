@@ -104,6 +104,35 @@ function monthWeeks(month: MonthKey, firstDay: WeekStart): (DayKey | null)[][] {
   return weeks;
 }
 
+/** The day a grid key moves focus to from `day`, or undefined for other keys. */
+function keyTarget(
+  key: string,
+  day: DayKey,
+  shiftKey: boolean,
+  firstDay: WeekStart,
+): DayKey | undefined {
+  switch (key) {
+    case "ArrowLeft":
+      return shiftCalendarDate(day, -1);
+    case "ArrowRight":
+      return shiftCalendarDate(day, 1);
+    case "ArrowUp":
+      return shiftCalendarDate(day, -7);
+    case "ArrowDown":
+      return shiftCalendarDate(day, 7);
+    case "PageUp":
+      return shiftCalendarMonth(day, shiftKey ? -12 : -1);
+    case "PageDown":
+      return shiftCalendarMonth(day, shiftKey ? 12 : 1);
+    case "Home":
+      return shiftCalendarDate(day, -columnOf(day, firstDay));
+    case "End":
+      return shiftCalendarDate(day, 6 - columnOf(day, firstDay));
+    default:
+      return undefined;
+  }
+}
+
 /** How a day reads on the grid. */
 export interface DayMarks {
   /** The day is chosen: a due date, or an end of a range. */
@@ -332,20 +361,10 @@ export function MonthList({
     else setShown(month);
   };
   const onGridKey = (event: KeyboardEvent<HTMLButtonElement>, day: DayKey) => {
-    const moves: Record<string, () => DayKey> = {
-      ArrowLeft: () => shiftCalendarDate(day, -1),
-      ArrowRight: () => shiftCalendarDate(day, 1),
-      ArrowUp: () => shiftCalendarDate(day, -7),
-      ArrowDown: () => shiftCalendarDate(day, 7),
-      PageUp: () => shiftCalendarMonth(day, event.shiftKey ? -12 : -1),
-      PageDown: () => shiftCalendarMonth(day, event.shiftKey ? 12 : 1),
-      Home: () => shiftCalendarDate(day, -columnOf(day, firstDay)),
-      End: () => shiftCalendarDate(day, 6 - columnOf(day, firstDay)),
-    };
-    const move = moves[event.key];
-    if (move === undefined) return;
+    const target = keyTarget(event.key, day, event.shiftKey, firstDay);
+    if (target === undefined) return;
     event.preventDefault();
-    focusDay(move());
+    focusDay(target);
   };
   const onDayClick = (day: DayKey) => {
     if (drag.current.suppressClick) {
