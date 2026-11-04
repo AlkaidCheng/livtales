@@ -9,15 +9,15 @@ importers:
   .:
     dependencies:
       ws:
-        specifier: 8.22.0
-        version: 8.22.0
+        specifier: 8.22.1
+        version: 8.22.1
     devDependencies:
       '@biomejs/biome':
         specifier: 2.6.3
         version: 2.6.3
       '@cloudbase/js-sdk':
-        specifier: 3.10.3
-        version: 3.10.3
+        specifier: 3.10.4
+        version: 3.10.4
       '@playwright/test':
         specifier: 1.62.0
         version: 1.62.0
@@ -65,13 +65,13 @@ importers:
         version: link:../../packages/storage
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(postgres@3.4.9)
+        version: 0.45.4(postgres@4.0.0)
       fastify:
         specifier: 5.12.7
         version: 5.12.7
       nodemailer:
-        specifier: ^10.2.1
-        version: 10.2.1
+        specifier: ^10.3.1
+        version: 10.3.1
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -92,8 +92,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/schemas
       '@tanstack/react-query':
-        specifier: 5.104.5
-        version: 5.104.5(@types/react@19.3.0)(react@19.3.0)
+        specifier: 5.105.1
+        version: 5.105.1(@types/react@19.3.0)(react@19.3.0)
       '@tanstack/react-table':
         specifier: 8.21.3
         version: 8.21.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -135,8 +135,8 @@ importers:
         specifier: 7.29.10
         version: 7.29.10
       '@cloudbase/js-sdk':
-        specifier: 3.10.3
-        version: 3.10.3
+        specifier: 3.10.4
+        version: 3.10.4
       '@livtales/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -144,8 +144,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/schemas
       '@tanstack/react-query':
-        specifier: 5.104.5
-        version: 5.104.5(@types/react@18.3.31)(react@18.3.1)
+        specifier: 5.105.1
+        version: 5.105.1(@types/react@18.3.31)(react@18.3.1)
       '@tarojs/components':
         specifier: 4.3.1
         version: 4.3.1(@tarojs/helper@4.3.1(@swc/helpers@0.5.23)(supports-color@8.1.1))(@types/react@18.3.31)(html-webpack-plugin@5.6.8(webpack@5.91.0(@swc/core@1.3.96(@swc/helpers@0.5.23))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.31))(csso@5.0.5)(esbuild@0.21.5)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(uglify-js@3.19.3)))(postcss@8.5.31)(rollup@3.30.0)(webpack-chain@6.5.1)(webpack-dev-server@4.15.2(debug@4.4.3(supports-color@8.1.1))(supports-color@8.1.1)(webpack@5.91.0(@swc/core@1.3.96(@swc/helpers@0.5.23))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.31))(csso@5.0.5)(esbuild@0.21.5)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(uglify-js@3.19.3)))(webpack@5.91.0(@swc/core@1.3.96(@swc/helpers@0.5.23))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.31))(csso@5.0.5)(esbuild@0.21.5)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(uglify-js@3.19.3))
@@ -242,25 +242,25 @@ importers:
         version: link:../db
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(postgres@3.4.9)
+        version: 0.45.4(postgres@4.0.0)
 
   packages/db:
     dependencies:
       '@cloudbase/js-sdk':
-        specifier: 3.10.3
-        version: 3.10.3
+        specifier: 3.10.4
+        version: 3.10.4
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(postgres@3.4.9)
+        version: 0.45.4(postgres@4.0.0)
       postgres:
-        specifier: 3.4.9
-        version: 3.4.9
+        specifier: 4.0.0
+        version: 4.0.0
       uuid:
         specifier: 14.0.3
         version: 14.0.3
       ws:
-        specifier: 8.22.0
-        version: 8.22.0
+        specifier: 8.22.1
+        version: 8.22.1
       zod:
         specifier: 4.6.7
         version: 4.6.7
@@ -281,7 +281,7 @@ importers:
         version: link:../storage
       drizzle-orm:
         specifier: 0.45.4
-        version: 0.45.4(postgres@3.4.9)
+        version: 0.45.4(postgres@4.0.0)
 
   packages/schemas:
     dependencies:
@@ -959,14 +959,11 @@ packages:
   '@cloudbase/adapter-interface@0.7.1':
     resolution: {integrity: sha512-BjHTAvIMSLxbp26SeT6qLiSSBygz3kAVno/PMwwBwjgzVkVUvuZGVcvf1mhHxY/BjdRGLrd6X60OgvymV/aAUw==}
 
-  '@cloudbase/adapter-wx_mp@1.3.1':
-    resolution: {integrity: sha512-rS0N1aD1a0zc421ds17/HzM4RChQ6T2ixMz87bhPJ1yveqJt/KUqYxiXJDWhZ803wwTmJs8aqNkgugsNusNhbg==}
-
   '@cloudbase/adapter-wx_mp@1.4.1':
     resolution: {integrity: sha512-EEdsmANIh0TDeW2OAbjt+urpvX2xIr9U3HyqKyA2BVTJwvpgjKbONOIC7Ls5wqEvQ92ueeJ3vFCYrH1zlpmA+w==}
 
-  '@cloudbase/js-sdk@3.10.3':
-    resolution: {integrity: sha512-ZAKZGOkzrAKuGsB4+hibBOeoLyCRsczsfmXEG7tjiyLEg+3ENFpAtTPmUOiLlFEsX68a+IFRhDc2JhUN7f+k5g==}
+  '@cloudbase/js-sdk@3.10.4':
+    resolution: {integrity: sha512-9j+N4fw44aCsmMpcZOng1iCgIIAIYeMofo7opMEwaYsovyZpY5UQ6GWs3eCKi20nVwAjqiv1BWwsMEfaAVfhog==}
 
   '@cloudbase/signature-nodejs@2.0.0':
     resolution: {integrity: sha512-eFtRiZuD21+/s/4opejhcN8msFLBK5POwkT445yyA47kps35qXrHGqlLQgt00bmRU4VtjwN6LHr2O3PjHjWW6Q==}
@@ -2123,11 +2120,11 @@ packages:
     resolution: {integrity: sha512-XIB2XbzHTN6ieIjfIMV9hlVcfPU26s2vafYWQcZHWXHOxiaRZYEDKEwdl129Zyg50+foYV2jCgtrqSA6qNuNSA==}
     engines: {node: '>=6'}
 
-  '@tanstack/query-core@5.104.5':
-    resolution: {integrity: sha512-Q94gI8Opd+CbdVNOdj8ZCyV8WqLYitrDq1t96Xc8WZT6lY0r5iRnJLXYDxMex7EEf2v+mXvn4FcjaBKSxXZQ9A==}
+  '@tanstack/query-core@5.105.1':
+    resolution: {integrity: sha512-B/rNlZoZ54w1dlddiUt9oEe1SLM+37c00SKLJEg9YH+7as3Y54P81o9Fh+2ujZ36tXPnQJ5oVe7AcyEWkyFhPg==}
 
-  '@tanstack/react-query@5.104.5':
-    resolution: {integrity: sha512-RORgFe052U+93weaNuqg7qHq7vNVNzXN/VrXqD4bbAuQCWUqOl2lV5Ui9flWk5CVvMyL/Bh27QWhzwH0aaOx9g==}
+  '@tanstack/react-query@5.105.1':
+    resolution: {integrity: sha512-qcu+/+PtBOjW8qU4/0l47QVmNG7hPOWsCLzP0bTRhE1X7HYa757C4732wXTUH0QhCjTV1yedX8onsCiEwlNYrA==}
     peerDependencies:
       '@types/react': ^18 || ^19
       react: ^18 || ^19
@@ -5257,8 +5254,8 @@ packages:
     resolution: {integrity: sha512-x0InOIyzgdk+eyaWaRJFH5snEtiImgBgblZ2CyPrLmqqcuMQkEvcDPHbzqbD8eDsSeJbVOjn+crzyzHaM4D+/A==}
     engines: {node: '>=18'}
 
-  nodemailer@10.2.1:
-    resolution: {integrity: sha512-ZrDNsPFoDMwefNs7sJwrYiEJ/CG4ClJWDZv05iNJsEBWa8GRDry1QJHTJxsuTAY9eDDKjX4k+q3SxslXJOao7w==}
+  nodemailer@10.3.1:
+    resolution: {integrity: sha512-uF0AFsJC07Y1vdW7p580DKAnh7rAO+4UPSSB3mDCPNDufoiaOebV6JmrzpxB14OjEEEiBsNdYoM2Y+fN8M7BBA==}
     engines: {node: '>=20.0.0'}
 
   normalize-path@3.0.0:
@@ -5796,9 +5793,9 @@ packages:
     resolution: {integrity: sha512-YUbWYCgErwnMAVkjUnYa+KlMBzGpHwiIt/DE7f0G33AuX2LH9UcTk6KgWxd3zRU+pN3u/C+Xl3EnMLM4Hea7Sg==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postgres@3.4.9:
-    resolution: {integrity: sha512-GD3qdB0x1z9xgFI6cdRD6xu2Sp2WCOEoe3mtnyB5Ee0XrrL5Pe+e4CCnJrRMnL1zYtRDZmQQVbvOttLnKDLnaw==}
-    engines: {node: '>=12'}
+  postgres@4.0.0:
+    resolution: {integrity: sha512-kBh8qXtcvvIAc00DftQyOxz7M/3Zxww1tRMXZPLzipNXXl5PIzHml+9zB3Mrge2U8ldc0WF1ZdLp1iYQi7Kh3A==}
+    engines: {node: '>=20'}
 
   prelude-ls@1.2.1:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
@@ -6129,11 +6126,6 @@ packages:
         optional: true
       webpack:
         optional: true
-
-  sass@1.105.0:
-    resolution: {integrity: sha512-4EjSuRTyG8M4yRXXY1PT9OUV5zz23xBxJkbIAprohKHqf6HOU4MCpE3U3vAC+iO1gxobBjESNbcj8rYAQZWnyA==}
-    engines: {node: '>=20.19.0'}
-    hasBin: true
 
   sass@1.106.1:
     resolution: {integrity: sha512-kD+Gi66vycZcbJt+42NC4z4PXNMcCajVrJPhqoKKXy5cOBMmJQt052CxIBcRjwYXeImHYOpu/ydWWGZQIenl7A==}
@@ -7033,8 +7025,8 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.22.0:
-    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
+  ws@8.22.1:
+    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
@@ -7918,17 +7910,12 @@ snapshots:
 
   '@cloudbase/adapter-interface@0.7.1': {}
 
-  '@cloudbase/adapter-wx_mp@1.3.1':
-    dependencies:
-      '@cloudbase/adapter-interface': 0.7.1
-      web-streams-polyfill: 4.3.0
-
   '@cloudbase/adapter-wx_mp@1.4.1':
     dependencies:
       '@cloudbase/adapter-interface': 0.7.1
       web-streams-polyfill: 4.3.0
 
-  '@cloudbase/js-sdk@3.10.3':
+  '@cloudbase/js-sdk@3.10.4':
     dependencies:
       '@cloudbase/adapter-interface': 0.7.1
       '@cloudbase/adapter-wx_mp': 1.4.1
@@ -7944,7 +7931,7 @@ snapshots:
       '@cloudbase/signature-nodejs': 2.0.0
       jsonwebtoken: 9.0.3
       node-fetch: 2.7.0
-      ws: 8.22.0
+      ws: 8.22.1
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -7960,7 +7947,7 @@ snapshots:
 
   '@cloudbase/wx-cloud-client-sdk@1.8.10':
     dependencies:
-      '@cloudbase/adapter-wx_mp': 1.3.1
+      '@cloudbase/adapter-wx_mp': 1.4.1
       core-js-pure: 3.50.0
 
   '@csstools/color-helpers@5.1.0': {}
@@ -8728,18 +8715,18 @@ snapshots:
     dependencies:
       defer-to-connect: 1.1.3
 
-  '@tanstack/query-core@5.104.5': {}
+  '@tanstack/query-core@5.105.1': {}
 
-  '@tanstack/react-query@5.104.5(@types/react@18.3.31)(react@18.3.1)':
+  '@tanstack/react-query@5.105.1(@types/react@18.3.31)(react@18.3.1)':
     dependencies:
-      '@tanstack/query-core': 5.104.5
+      '@tanstack/query-core': 5.105.1
       react: 18.3.1
     optionalDependencies:
       '@types/react': 18.3.31
 
-  '@tanstack/react-query@5.104.5(@types/react@19.3.0)(react@19.3.0)':
+  '@tanstack/react-query@5.105.1(@types/react@19.3.0)(react@19.3.0)':
     dependencies:
-      '@tanstack/query-core': 5.104.5
+      '@tanstack/query-core': 5.105.1
       react: 19.3.0
     optionalDependencies:
       '@types/react': 19.3.0
@@ -9275,7 +9262,7 @@ snapshots:
 
   '@types/sass@1.45.0':
     dependencies:
-      sass: 1.105.0
+      sass: 1.106.1
 
   '@types/send@0.17.6':
     dependencies:
@@ -10487,9 +10474,9 @@ snapshots:
       p-event: 2.3.1
       pify: 3.0.0
 
-  drizzle-orm@0.45.4(postgres@3.4.9):
+  drizzle-orm@0.45.4(postgres@4.0.0):
     optionalDependencies:
-      postgres: 3.4.9
+      postgres: 4.0.0
 
   dunder-proto@1.0.1:
     dependencies:
@@ -11565,7 +11552,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
-      ws: 8.22.0
+      ws: 8.22.1
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -11592,7 +11579,7 @@ snapshots:
       whatwg-encoding: 3.1.1
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
-      ws: 8.22.0
+      ws: 8.22.1
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
       - bufferutil
@@ -12121,7 +12108,7 @@ snapshots:
 
   node-releases@2.0.56: {}
 
-  nodemailer@10.2.1: {}
+  nodemailer@10.3.1: {}
 
   normalize-path@3.0.0: {}
 
@@ -12619,7 +12606,7 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.2
 
-  postgres@3.4.9: {}
+  postgres@4.0.0: {}
 
   prelude-ls@1.2.1: {}
 
@@ -12940,14 +12927,6 @@ snapshots:
       sass: 1.106.1
       webpack: 5.91.0(@swc/core@1.3.96(@swc/helpers@0.5.23))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.31))(csso@5.0.5)(esbuild@0.21.5)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(uglify-js@3.19.3)
 
-  sass@1.105.0:
-    dependencies:
-      chokidar: 5.0.0
-      immutable: 5.1.9
-      source-map-js: 1.2.2
-    optionalDependencies:
-      '@parcel/watcher': 2.6.0
-
   sass@1.106.1:
     dependencies:
       chokidar: 5.0.0
@@ -13009,7 +12988,7 @@ snapshots:
       loglevel: 1.9.2
       loglevel-plugin-prefix: 0.8.4
       pretty-bytes: 5.6.0
-      sass: 1.105.0
+      sass: 1.106.1
       tslib: 1.14.1
 
   secure-json-parse@4.1.0: {}
@@ -13767,7 +13746,7 @@ snapshots:
       sockjs: 0.3.24
       spdy: 4.0.2(supports-color@8.1.1)
       webpack-dev-middleware: 5.3.4(webpack@5.91.0(@swc/core@1.3.96(@swc/helpers@0.5.23))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.31))(csso@5.0.5)(esbuild@0.21.5)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(uglify-js@3.19.3))
-      ws: 8.22.0
+      ws: 8.22.1
     optionalDependencies:
       webpack: 5.91.0(@swc/core@1.3.96(@swc/helpers@0.5.23))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.31))(csso@5.0.5)(esbuild@0.21.5)(html-minifier-terser@6.1.0)(lightningcss@1.33.0)(postcss@8.5.31)(uglify-js@3.19.3)
     transitivePeerDependencies:
@@ -13906,7 +13885,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.22.0: {}
+  ws@8.22.1: {}
 
   xml-name-validator@5.0.0: {}
 
