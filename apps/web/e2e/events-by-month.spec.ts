@@ -85,11 +85,17 @@ test("groups the Events list by year and month, folds each heading, and keeps th
   await expect(
     page.getByRole("button", { name: `${before} 2 events` }),
   ).toHaveAttribute("aria-expanded", "false");
+  const aheadHeading = page.getByRole("heading", {
+    level: 2,
+    name: `${ahead}`,
+  });
+  await expect(aheadHeading).toBeVisible();
+  // Within its year: in November, this year's month reads the same.
   await expect(
-    page.getByRole("heading", { level: 2, name: `${ahead}` }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { level: 3, name: "November 1 event" }),
+    page
+      .locator(".event-year")
+      .filter({ has: aheadHeading })
+      .getByRole("heading", { level: 3, name: "November 1 event" }),
   ).toBeVisible();
   // Under its year's heading a card's dates leave the year out: a day with
   // its weekday and the place, a span of days.
