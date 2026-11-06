@@ -141,9 +141,11 @@ const traditionalChinese: Wording = {
       subject: "{{product}}：{{sender}} 想與您成為好友",
       text: "{{sender}}（{{senderEmail}}）邀請您在 {{product}} 上成為好友。{{note}}登入後開啟「好友」即可接受或拒絕。",
     },
+    // No {{note}}: SES review refuses it here as a variable that holds any
+    // text. The claim page shows the note.
     friend_invitation: {
       subject: "{{product}}：{{sender}} 邀請您加入",
-      text: "{{sender}}（{{senderEmail}}）邀請您加入 {{product}}。{{note}}請透過此連結接受邀請：{{web}}/invite/{{token}} 連結 {{days}} 天內有效。如果您不認識 {{sender}}，請忽略這封郵件。",
+      text: "{{sender}}（{{senderEmail}}）邀請您加入 {{product}}。請透過此連結接受邀請：{{web}}/invite/{{token}} 連結 {{days}} 天內有效。如果您不認識 {{sender}}，請忽略這封郵件。",
     },
   },
   note: "對方留言：「{{message}}」 ",
@@ -154,6 +156,16 @@ const wordings: Readonly<Record<EmailLocale, Wording>> = {
   "zh-Hans": simplifiedChinese,
   "zh-Hant": traditionalChinese,
 };
+
+/** The values `template` has a `{{name}}` for. */
+function valuesNamedIn(
+  template: string,
+  values: Readonly<Record<string, string>>,
+): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([name]) => template.includes(`{{${name}}}`)),
+  );
+}
 
 /** Fills each `{{name}}` that `values` names; any other placeholder stays. */
 export function fillPlaceholders(
@@ -177,7 +189,11 @@ function writer(wording: Wording): CodeEmailMessages {
     return {
       subject: fillPlaceholders(subject, values),
       text: fillPlaceholders(text, values),
-      template: { name, locale: wording.locale, data },
+      template: {
+        name,
+        locale: wording.locale,
+        data: valuesNamedIn(text, data),
+      },
     };
   };
   const note = (message: string | null) =>

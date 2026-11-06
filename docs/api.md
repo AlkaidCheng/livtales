@@ -1198,8 +1198,9 @@ When exactly one account has the address a pending connection is made and
 that account is emailed in its language, whichever channel was asked for;
 otherwise an invitation is recorded with a token (kept, with its digest)
 valid for fourteen days, and by email the address is emailed the link
-`<WEB_PUBLIC_URL>/invite/<token>` in the caller's language, while a link is
-answered for the caller to hand on. Refusals: 400 `invalid_request` for a
+`<WEB_PUBLIC_URL>/invite/<token>` in the caller's language, with the note
+except in Traditional Chinese, while a link is answered for the caller to
+hand on. Refusals: 400 `invalid_request` for a
 send by email without an address, the caller's own address (`You cannot
 invite yourself.`), an untrimmed or overlong note, a card that is not an
 unlinked person the caller can view, or an address that belongs to more

@@ -101,6 +101,37 @@ describe("friend emails", () => {
   });
 });
 
+describe("the note in an invitation email", () => {
+  const input = {
+    productName: "LivTales",
+    senderName: "Ana",
+    senderEmail: "ana@example.test",
+    message: "Climbing on Saturday?",
+    webBaseUrl: "https://livtales.example",
+    token: "t/1",
+    expiresInDays: 14,
+  };
+
+  it("is written out where the template has a place for it", () => {
+    for (const locale of ["en", "zh-Hans"]) {
+      const email = messagesFor(locale).friendInvitationEmail(input);
+      expect(email.text).toContain("Climbing on Saturday?");
+      expect(email.template.data.note).toContain("Climbing on Saturday?");
+    }
+  });
+
+  it("stays out of the Traditional Chinese template, which has no variable for it", () => {
+    const email = messagesFor("zh-Hant").friendInvitationEmail(input);
+    expect(email.text).not.toContain("Climbing on Saturday?");
+    expect(Object.keys(email.template.data).sort()).toEqual([
+      "days",
+      "sender",
+      "senderEmail",
+      "token",
+    ]);
+  });
+});
+
 describe("email templates", () => {
   const webBaseUrl = "https://livtales.example";
   const written = (locale: string) => {
@@ -172,6 +203,19 @@ describe("email templates", () => {
         );
         expect(filled).toBe(email.text);
         expect(filled).not.toMatch(/\{\{\w+\}\}/);
+      }
+  });
+
+  it("gives a stored template only the variables it names", () => {
+    for (const locale of emailLocales)
+      for (const email of written(locale)) {
+        const source = sources.find(
+          (item) =>
+            item.name === email.template.name &&
+            item.locale === email.template.locale,
+        );
+        for (const name of Object.keys(email.template.data))
+          expect(source?.text).toContain(`{{${name}}}`);
       }
   });
 });
