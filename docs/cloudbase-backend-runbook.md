@@ -262,8 +262,10 @@ individual real-name verification. Set it up in this order:
    wording (the invitation template carries the web origin, so each origin
    has its own templates) and prints the `TENCENT_SES_TEMPLATES` JSON.
    Without `--create` it prints the templates for reading; `--status` shows
-   their review; `--update` replaces their bodies after the wording changes,
-   which sends them back to review.
+   their review and any `ReviewReason`; `--update` replaces every body after
+   the wording changes, which sends them all back to review. To answer a
+   refusal of one template, change the wording here and correct that template
+   alone in the console (详情, then 提交并重新审核).
 4. Once every template is approved (usually within one working day), set the
    variables and deploy. The API refuses to start while any template ID is
    missing.

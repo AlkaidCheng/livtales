@@ -599,9 +599,9 @@ a card, linking the card when they accept), or the state that already holds
 points at the section below, Not on LivTales yet?: a person of the current
 space without an account link, or Someone new, an optional email, and
 an optional note, then Send by email or Create link. An invitation is a
-link: Send by email emails it to the address (an address with an account
-gets a request instead and the dialog closes); Create link needs no
-address. Either way the dialog then shows the link, its QR code, "One use.
+link: Send by email emails it to the address, with the note except in
+Traditional Chinese (an address with an account gets a request instead and
+the dialog closes); Create link needs no address. Either way the dialog then shows the link, its QR code, "One use.
 Valid until 2 Oct 2026.", how it was sent ("Sent by email to ..." or "Send
 it in WeChat, a message, or any way you like."), Copy link, and Done.
 
