@@ -636,12 +636,6 @@ renaming a constant fails.
 as a literal, so a client or monitor built before the rename would reject any
 other value.
 
-**CloudBase resources.** The CloudBase Run services `chronelle-api` and
-`chronelle-web`, the `chronelle-run` API key, the environment IDs, default
-domains, and image repositories cannot be renamed; the
-[CloudBase backend runbook](cloudbase-backend-runbook.md) names the services as
-they are.
-
 **Transition aids.** The legacy settings `CHRONELLE_BACKEND`,
 `CHRONELLE_MIGRATIONS_DIR`, and `CHRONELLE_RUNTIME_ROLE` appear only in the
 guards that stop a deployment still setting them

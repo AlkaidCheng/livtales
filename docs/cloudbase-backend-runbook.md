@@ -191,7 +191,7 @@ an existing setup to a new name (`livtales` below):
    git remote set-url deploy git@github.com:<deployment-account>/livtales.git
    ```
 
-3. Rebind each service (`chronelle-api`, then `chronelle-web`): open
+3. Rebind each service (`livtales-api`, then `livtales-web`): open
    更新服务 (update service), choose the Git deployment method
    (使用公开 GIT 仓库部署), and under Git 仓库 select `GitHub (已授权)` (the
    authorized account), then `<deployment-account>/livtales` and `main`. Never
@@ -201,11 +201,10 @@ an existing setup to a new name (`livtales` below):
 4. Deploy, then check each service's variable list, as after any Git-mode
    deploy.
 
-The services keep the names `chronelle-api` and `chronelle-web`, which cannot
-change. Until a service is rebound, its saved source still names the old
-repository, and its deploys depend on the old name redirecting to the new one.
+Until a service is rebound, its saved source still names the old repository,
+and its deploys depend on the old name redirecting to the new one.
 
-### Service: chronelle-api
+### Service: livtales-api
 
 | Setting                        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -213,7 +212,7 @@ repository, and its deploys depend on the old name redirecting to the new one.
 | Port                           | `4000`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Health check                   | `GET /api/health`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Access                         | Internal only: the web service forwards `/api` to it, including document transfer URLs                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| Instances                      | At least one warm instance; the readiness call and the SDK client make a cold start noticeable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Instances                      | At least one warm instance: the internal address does not wake a service at zero instances, and the readiness call and the SDK client make a cold start noticeable. Raising the minimum in place may not start an instance; release a new version instead                                                                                                                                                                                                                                                                                                                                                                                              |
 | `LIVTALES_BACKEND`             | `cloudbase`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `CLOUDBASE_ENV_ID`             | The environment id                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `CLOUDBASE_APIKEY`             | The server API key (a secret; set it as a protected variable, never in the image)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -223,12 +222,8 @@ repository, and its deploys depend on the old name redirecting to the new one.
 | `DOCUMENT_STORAGE_PROVIDER`    | `tencent-cos` with `COS_BUCKET`, `COS_REGION`, `COS_SECRET_ID`, `COS_SECRET_KEY` (secrets), or `local-filesystem` with `LOCAL_STORAGE_ROOT=/app/.livtales/storage` for a smoke deployment                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `CLOUDBASE_REQUEST_TIMEOUT_MS` | Optional; 30000 by default                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
-Operator note: the service was created with `CHRONELLE_BACKEND=cloudbase`;
-rename the variable at its next deploy by adding `LIVTALES_BACKEND=cloudbase`
-before releasing the new image (which stops at startup while
-`CHRONELLE_BACKEND` is set alone) and removing `CHRONELLE_BACKEND` once no
-rollback to an older image is expected. A failed Git-mode deploy can drop
-newly added variables, so check the list after every deploy.
+A failed Git-mode deploy can drop newly added variables, so check the list
+after every deploy.
 
 A service on `local-filesystem` that sets
 `LOCAL_STORAGE_ROOT=/app/.chronelle/storage`, the value this runbook gave
@@ -270,7 +265,7 @@ individual real-name verification. Set it up in this order:
    variables and deploy. The API refuses to start while any template ID is
    missing.
 
-### Service: chronelle-web
+### Service: livtales-web
 
 | Setting                   | Value                                                                                                          |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -288,7 +283,7 @@ URLs the API issues, which are relative to its own origin.
 
 ### Verify a deployment
 
-1. Open the web address, sign in with a development identity, create an
+1. Open the web address, sign in with an existing account, create an
    Event, edit it, undo the edit, upload an attachment, download it, delete
    the Event, and find it in Trash. Each step exercises a different function
    family through the gateway.

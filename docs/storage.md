@@ -45,10 +45,13 @@ does not protect version-enabled buckets. Documents currently identify immutable
 keys, not COS versions, so enabling versioning requires a separate model change.
 
 Grant the runtime identity only the required bucket configuration reads
-(`cos:GetBucketACL`, `cos:GetBucketVersioning`) and object uploads/downloads
-(`cos:PutObject`, `cos:GetObject`) under `workspaces/*/documents/*` in this bucket.
-Inventory also needs `cos:GetBucket` listing permission, constrained to the
-application's document prefixes. Validate the resource and prefix conditions
+(`cos:GetBucketACL`, `cos:GetBucketVersioning`, on the resource `<bucket>/`) and
+object uploads/downloads (`cos:PutObject`, `cos:GetObject`) under
+`workspaces/*/documents/*` in this bucket. Inventory also needs `cos:GetBucket`
+listing permission on the resource `<bucket>/*`, constrained to the application's
+document prefixes by a `cos:prefix` condition whose value is URL-encoded:
+`workspaces%2F*%2Fdocuments%2F*`. With the resource `<bucket>/` or an unencoded
+value, COS refuses every listing with a 403 that gives no reason. Validate these
 against the deployment's CAM policy; object GET permission does not authorize
 bucket listing. The API never returns listing credentials or raw keys.
 Verify the exact IAM policy, including private object ACL and KMS requirements,

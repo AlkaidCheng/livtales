@@ -594,10 +594,7 @@ of migrations and the verification commands, is in
 were named `CHRONELLE_*` before. The API, the migration runner, and the
 runtime role script stop, naming the replacement, when a legacy name is set
 without the new one or with a different value; both names with the same value
-are accepted. Operator note: rename the variable on the `chronelle-api`
-service at its next deploy (add `LIVTALES_BACKEND=cloudbase` before releasing
-the new image, then remove `CHRONELLE_BACKEND` once no rollback to an older
-image is expected).
+are accepted.
 
 ### Seed the test accounts
 
