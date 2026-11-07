@@ -7,8 +7,8 @@ person's life.
 LivTales is both the product and the codebase: the repository, the
 `@livtales/*` packages, and the code carry the name, and
 [`brand/`](brand/README.md) holds the brand sources and their usage rules. The
-database objects, the keys browsers and Mini Programs already store, and the
-CloudBase services keep the earlier name Chronelle on purpose;
+database objects and the keys browsers and Mini Programs already store keep
+the earlier name Chronelle on purpose;
 [Names that keep Chronelle](docs/architecture.md#names-that-keep-chronelle)
 lists them.
 
